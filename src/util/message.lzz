@@ -1,0 +1,64 @@
+// message
+
+class Message
+{
+public:
+  Message (char const * ts)
+    : ts_ (ts)
+  {
+    next ();
+  }
+
+  // add arg
+  template <class T>
+  inline Message & operator << (T t)
+  {
+    if (* ts_ == '%')
+    {
+      ss_ << t;
+      ++ ts_;
+      next ();
+    }
+    return * this;
+  }
+
+  // conversion to string
+  operator std::string () const
+  {
+    return ss_.str ();
+  }
+
+private:
+  // advance to next '%', send chars to ss
+  void next ()
+  {
+    for (;;)
+    {
+      char c = * ts_;
+      if (! c)
+      {
+        /*
+        ss_ << '\n';
+        */
+        break;
+      }
+      if (c == '%')
+      {
+        break;
+      }
+      ss_ << c;
+      ++ ts_;
+    }
+  }
+private:
+  char const * ts_;
+  std::ostringstream ss_;
+};
+
+#hdr
+#include <sstream>
+#include <string>
+#end
+
+#src
+#end

@@ -1,0 +1,91 @@
+// section in file
+class Section
+{
+public:
+  Section (SectionKind kind)
+    : m_kind (kind), m_indent (0)
+  {}
+  ~ Section ()
+  {}
+
+  // get kind
+  inline SectionKind getKind () const
+  {
+    return m_kind;
+  }
+
+  // return output stream, do not first indent
+  inline std::ostream & getStream ()
+  {
+    return m_os;
+  }
+
+  // indent, increment line and return output stream with optional indent offset
+  std::ostream & indent (int offset = 0)
+  {
+    return indentExactly ((m_indent + offset) * 2);
+  }
+
+  // indent exactly number of spaces
+  std::ostream & indentExactly (int num)
+  {
+    enum { MAX_INDENT = 128 };
+    char buf [MAX_INDENT];
+    if (num > MAX_INDENT - 1)
+    {
+      num = MAX_INDENT - 1;
+    }
+    memset (buf, ' ', num);
+    buf [num] = '\0';
+    m_os << buf;
+    return m_os;
+  }
+
+  // increment indent
+  void incIndent ()
+  {
+    ++ m_indent;
+  }
+
+  // decrement indent
+  void decIndent ()
+  {
+    assert (m_indent > 0);
+    -- m_indent;
+  }
+
+  // freeze output, return output as string and output size
+  std::string const & freeze ()
+  {
+    m_str = m_os.str ();
+    m_os.str (std::string ());
+    return m_str;
+  }
+
+  // get string, assume already frozen
+  std::string const & getString () const
+  {
+    return m_str;
+  }
+
+private:
+  SectionKind m_kind;
+  // string buffer
+  std::ostringstream m_os;
+  // string to hold content after freezing section
+  std::string m_str;
+  // current indentation
+  int m_indent;
+}
+
+using namespace std;
+
+#hdr
+#include <output/section_kind.h>
+#include <sstream>
+#end
+
+#src
+#include <cassert>
+#include <cstring>
+#end

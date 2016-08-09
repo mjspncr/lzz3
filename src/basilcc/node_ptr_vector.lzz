@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <NodePtr> NodePtrVector;
+  typedef NodePtrVector::const_iterator NodePtrVectorConstIter;
+  typedef NodePtrVector::iterator NodePtrVectorIter;
+}
+
+#hdr
+#include <basilcc/node_ptr.h>
+#include <vector>
+#end

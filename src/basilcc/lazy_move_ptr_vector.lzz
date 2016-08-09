@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <LazyMovePtr> LazyMovePtrVector;
+  typedef std::vector <LazyMovePtr>::iterator LazyMovePtrVectorIter;
+  typedef std::vector <LazyMovePtr>::const_iterator LazyMovePtrVectorConstIter;
+}
+
+#hdr
+#include <basilcc/lazy_move_ptr.h>
+#include <vector>
+#end

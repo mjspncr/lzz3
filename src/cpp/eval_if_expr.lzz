@@ -1,0 +1,499 @@
+namespace cpp
+{
+  // evaluate #if expression, return true if condition is true, throws exception if error
+  bool evalHashIfExpr (Session & session, std::string const & dir_name, Loc const & eol_loc, TokenPtrVector const & in_tokens)
+  {
+    ExprParser parser (session, dir_name, eol_loc, in_tokens.begin (), in_tokens.end ());
+    return parser.parse ();
+  }
+}
+
+using namespace cpp;
+using namespace std;
+
+namespace
+{
+  typedef long int ValueType;
+
+  struct ExprParser (Session & session, string const & dir_name, Loc const & eol_loc,
+      TokenPtrVectorConstIter beg, TokenPtrVectorConstIter end)
+  {
+    // parse entry function, return true if expr is non-zero
+    bool parse ()
+    {
+      nextToken ();
+      ValueType value = parseExpr ();
+      if (kind != EOT)
+      {
+        error ();
+      }
+      return value != 0;
+    }
+
+    // kind of next token or EOT if end
+    int kind;
+    // next token
+    TokenPtr token;
+
+    // get next token
+    void nextToken ()
+    {
+      if (beg == end)
+      {
+        kind = EOT;
+      }
+      else
+      {
+        token = * beg;
+        ++ beg;
+        kind = token->getNumber ();
+        // must lex pp-numers to literal tokens
+        if (kind == TOKEN_PP_NUMBER)
+        {
+          lexPPNumber (token);
+          kind = token->getNumber ();
+        }
+        if (kind == TOKEN_IDENT && isKeyword (session, token->getLexeme (), kind))
+        {
+          token->setNumber (kind);
+        }
+      }
+    }
+
+    // expr -> cond-expr
+    ValueType parseExpr ()
+    {
+      return parseCondExpr ();
+    }
+
+    // cond-expr -> log-or-expr QMARK expr COLON expr
+    // cond-expr -> log-or-expr
+    ValueType parseCondExpr ()
+    {
+      ValueType value = parseLogOrExpr ();
+      if (kind == TOKEN_QMARK)
+      {
+        nextToken ();
+        ValueType t_value = parseExpr ();
+        if (kind != TOKEN_COLON)
+        {
+          error ();
+        }
+        nextToken ();
+        ValueType f_value = parseExpr ();
+        value = (value != 0) ? t_value : f_value;
+      }
+      return value;
+    }
+
+    // log-or-cxpr -> log-or-cxpr OR log-and-cxpr
+    // log-or-cxpr -> log-and-cxpr
+    ValueType parseLogOrExpr ()
+    {
+      ValueType value = parseLogAndExpr ();
+      for (;;)
+      {
+        if (kind == TOKEN_OR)
+        {
+          nextToken ();
+          value = parseLogAndExpr () != 0 || value != 0;
+        }
+        else
+        {
+          break;
+        }
+      }
+      return value;
+    }
+
+    // log-and-cxpr -> log-and-cxpr AND incl-or-cxpr
+    // log-and-cxpr -> incl-or-cxpr
+    ValueType parseLogAndExpr ()
+    {
+      ValueType value = parseInclOrExpr ();
+      for (;;)
+      {
+        if (kind == TOKEN_AND)
+        {
+          nextToken ();
+          value = parseInclOrExpr () != 0 && value != 0;
+        }
+        else
+        {
+          break;
+        }
+      }
+      return value;
+    }
+
+    // incl-or-cxpr -> incl-or-cxpr BITOR excl-or-cxpr
+    // incl-or-cxpr -> excl-or-cxpr
+    ValueType parseInclOrExpr ()
+    {
+      ValueType value = parseExclOrExpr ();
+      for (;;)
+      {
+        if (kind == TOKEN_BITOR)
+        {
+          nextToken ();
+          value |= parseExclOrExpr ();
+        }
+        else
+        {
+          break;
+        }
+      }
+      return value;
+    }
+
+    // excl-or-cxpr -> excl-or-cxpr XOR and-cxpr
+    // excl-or-cxpr -> and-cxpr
+    ValueType parseExclOrExpr ()
+    {
+      ValueType value = parseAndExpr ();
+      for (;;)
+      {
+        if (kind == TOKEN_XOR)
+        {
+          nextToken ();
+          value ^= parseAndExpr ();
+        }
+        else
+        {
+          break;
+        }
+      }
+      return value;
+    }
+
+    // and-cxpr -> and-cxpr BITAND eq-cxpr
+    // and-cxpr -> eq-cxpr
+    ValueType parseAndExpr ()
+    {
+      ValueType value = parseEqExpr ();
+      for (;;)
+      {
+        if (kind == TOKEN_BITAND)
+        {
+          nextToken ();
+          value = value & parseEqExpr ();
+        }
+        else
+        {
+          break;
+        }
+      }
+      return value;
+    }
+
+    // eq-cxpr -> eq-cxpr EQ rel-cxpr
+    // eq-cxpr -> eq-cxpr NOTEQ rel-cxpr
+    // eq-cxpr -> rel-cxpr
+    ValueType parseEqExpr ()
+    {
+      ValueType value = parseRelExpr ();
+      for (;;)
+      {
+        if (kind == TOKEN_EQ)
+        {
+          nextToken ();
+          value = value == parseRelExpr ();
+        }
+        else if (kind == TOKEN_NOTEQ)
+        {
+          nextToken ();
+          value = value != parseRelExpr ();
+        }
+        else
+        {
+          break;
+        }
+      }
+      return value;
+    }
+
+    // rel-cxpr -> rel-cxpr LT shift-cxpr
+    // rel-cxpr -> rel-cxpr GT shift-cxpr
+    // rel-cxpr -> rel-cxpr LTEQ shift-cxpr
+    // rel-cxpr -> rel-cxpr GTEQ shift-cxpr
+    // rel-cxpr -> shift-cxpr
+    ValueType parseRelExpr ()
+    {
+      ValueType value = parseShiftExpr ();
+      for (;;)
+      {
+        if (kind == TOKEN_LT)
+        {
+          nextToken ();
+          value = value < parseShiftExpr ();
+        }
+        else if (kind == TOKEN_GT)
+        {
+          nextToken ();
+          value = value > parseShiftExpr ();
+        }
+        else if (kind == TOKEN_LTEQ)
+        {
+          nextToken ();
+          value = value <= parseShiftExpr ();
+        }
+        else if (kind == TOKEN_GTEQ)
+        {
+          nextToken ();
+          value = value >= parseShiftExpr ();
+        }
+        else
+        {
+          break;
+        }
+      }
+      return value;
+    }
+
+    // shift-cxpr -> shift-cxpr LSHIFT add-cxpr
+    // shift-cxpr -> shift-cxpr RSHIFT add-cxpr
+    // shift-cxpr -> add-cxpr
+    ValueType parseShiftExpr ()
+    {
+      ValueType value = parseAddExpr ();
+      for (;;)
+      {
+        if (kind == TOKEN_LSHIFT)
+        {
+          nextToken ();
+          value <<= parseAddExpr ();
+        }
+        else if (kind == TOKEN_RSHIFT)
+        {
+          nextToken ();
+          value >>= parseAddExpr ();
+        }
+        else
+        {
+          break;
+        }
+      }
+      return value;
+    }
+
+    // add-cxpr -> add-cxpr PLUS mul-cxpr
+    // add-cxpr -> add-cxpr MINUS mul-cxpr
+    // add-cxpr -> mul-cxpr
+    ValueType parseAddExpr ()
+    {
+      ValueType value = parseMulExpr ();
+      for (;;)
+      {
+        if (kind == TOKEN_PLUS)
+        {
+          nextToken ();
+          value += parseMulExpr ();
+        }
+        else if (kind == TOKEN_MINUS)
+        {
+          nextToken ();
+          value -= parseMulExpr ();
+        }
+        else
+        {
+          break;
+        }
+      }
+      return value;
+    }
+
+    // mul-cxpr -> mul-cxpr TIMES unary-cxpr
+    // mul-cxpr -> mul-cxpr DIVIDE unary-cxpr
+    // mul-cxpr -> mul-cxpr MOD unary-cxpr
+    // mul-cxpr -> unary-cxpr
+    ValueType parseMulExpr ()
+    {
+      ValueType value = parseUnaryExpr ();
+      for (;;)
+      {
+        if (kind == TOKEN_TIMES)
+        {
+          nextToken ();
+          value *= parseUnaryExpr ();
+        }
+        else if (kind == TOKEN_DIVIDE || kind == TOKEN_MOD)
+        {
+          bool is_divide = kind == TOKEN_DIVIDE;
+          Loc const & op_loc = token->getLocation ();
+          nextToken ();
+          ValueType divisor = parseUnaryExpr ();
+          if (divisor == 0)
+          {
+            throw ParseException (op_loc, "divide by zero");
+          }
+          value = is_divide ? value / divisor : value % divisor;
+        }
+        else
+        {
+          break;
+        }
+      }
+      return value;
+    }
+
+    // unary-cxpr -> PLUS unary-cxpr
+    // unary-cxpr -> MINUS unary-cxpr
+    // unary-cxpr -> NOT unary-cxpr
+    // unary-cxpr -> BITNOT unary-cxpr
+    // unary-cxpr -> DEFINED ( IDENT )
+    // unary-cxpr -> DEFINED IDENT
+    // unary-cxpr -> primary-cxpr
+    ValueType parseUnaryExpr ()
+    {
+      ValueType value;
+      if (kind == TOKEN_PLUS)
+      {
+        nextToken ();
+        value = + parseUnaryExpr ();
+      }
+      else if (kind == TOKEN_MINUS)
+      {
+        nextToken ();
+        value = - parseUnaryExpr ();
+      }
+      else if (kind == TOKEN_NOT)
+      {
+        nextToken ();
+        value = ! parseUnaryExpr ();
+      }
+      else if (kind == TOKEN_BITNOT)
+      {
+        nextToken ();
+        value = ~ parseUnaryExpr ();
+      }
+      else if (kind == TOKEN_IDENT && token->getLexeme () == "defined")
+      {
+        nextToken ();
+        if (kind == TOKEN_IDENT)
+        {
+          value = isMacro (session, token->getLexeme ()) ? 1 : 0;
+          nextToken ();
+        }
+        else if (kind == TOKEN_LPAREN)
+        {
+          nextToken ();
+          if (kind == TOKEN_IDENT)
+          {
+            value = isMacro (session, token->getLexeme ()) ? 1 : 0;
+            nextToken ();
+            if (kind == TOKEN_RPAREN)
+            {
+              nextToken ();
+            }
+            else
+            {
+              error ();
+            }
+          }
+          else
+          {
+            error ();
+          }
+        }
+        else
+        {
+          error ();
+        }
+      }
+      else
+      {
+        value = parsePrimaryExpr ();
+      }
+      return value;
+    }
+
+    // primary-cxpr -> LPAREN cxpr RPAREN
+    // primary-cxpr -> ZERO
+    // primary-cxpr -> LITERAL_INT
+    // primary-cxpr -> LITERAL_CHAR
+    // primary-cxpr -> LITERAL_FLOAT
+    // primary-cxpr -> IDENT
+    ValueType parsePrimaryExpr ()
+    {
+      ValueType value;
+      if (kind == TOKEN_LPAREN)
+      {
+        nextToken ();
+        value = parseExpr ();
+        if (kind == TOKEN_RPAREN)
+        {
+          nextToken ();
+        }
+        else
+        {
+          error ();
+        }
+      }
+      else if (kind == TOKEN_LITERAL_INT || kind == TOKEN_ZERO)
+      {
+        value = strtol (token->getLexeme ().c_str (), 0, 0);
+        nextToken ();
+      }
+      else if (kind == TOKEN_LITERAL_CHAR)
+      {
+        value = literalCharToInt (session, token->getLocation (), token->getLexeme ());
+        nextToken ();
+      }
+      else if (kind == TOKEN_LITERAL_FLOAT)
+      {
+        // read integer part
+        value = strtol (token->getLexeme ().c_str (), 0, 0);
+        nextToken ();
+      }
+      else if (kind == TOKEN_IDENT)
+      {
+        if (token->getLexeme () == "true")
+        {
+          value = 1;
+        }
+        else
+        {
+          value = 0;
+        }
+        nextToken ();
+      }
+      else
+      {
+        error ();
+      }
+      return value;
+    }
+
+    // throw syntax error
+    void error ()
+    {
+      if (kind == EOT)
+      {
+        throw ParseException (eol_loc, "unexpected end of expression");
+      }
+      else
+      {
+        throw ParseException (token->getLoc (), Message ("syntax error before %") << token->getLexeme ());
+      }
+    }
+  }
+}
+
+#hdr
+#include <cpp/session_fwd.h>
+#include <cpp/token_ptr_vector.h>
+#include <util/loc.h>
+#include <util/string.h>
+#end
+
+#src
+#include <cpp/keyword_table.h>
+#include <cpp/lex_pp_number.h>
+#include <cpp/literal_char_to_int.h>
+#include <cpp/macro_table.h>
+#include <cpp/token.h>
+#include <cpp/token_numbers.h>
+#include <util/message.h>
+#include <util/parse_exception.h>
+#include <stdlib.h>
+#end

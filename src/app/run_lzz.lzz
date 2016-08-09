@@ -1,0 +1,69 @@
+// run lzz over all lzz files
+void runLzz (std::string const & scripts_dir, StringVector const & filenames)
+{
+  basil::App app (scripts_dir, LZZ_FSM, LZZ_APP);
+  for (StringVectorConstIter i = filenames.begin (), endi = filenames.end (); i != endi; ++ i)
+  {
+    string const & filename (* i);
+    StringTable strings;
+    Output output (filename);
+    Logger logger (cout);
+    try
+    {
+      Lzz (app).run (strings, filename, output, logger);
+    }
+    // catch parse exceptions only
+    catch (ParseException const & e)
+    {
+      logger.error (e.where (), e.what ());
+    }
+    output.close (! logger.hasError ());
+  }
+}
+
+using namespace std;
+
+namespace
+{
+  struct Lzz
+  {
+    Lzz (basil::App & app)
+      : app (app)
+    {}
+    ~ Lzz ()
+    {
+      lua_pushnil (app.L);
+      lua_setglobal (app.L, "lzz");
+      luaL_unref (app.L, LUA_REGISTRYINDEX, lzz_ref);
+    }
+    void run (StringTable & strings, string const & filename, Output & output, Logger & logger)
+    {
+      lzz_ref = registerOutput (app.L, output, logger);
+      lua_rawgeti (app.L, LUA_REGISTRYINDEX, lzz_ref);
+      lua_setglobal (app.L, "lzz");
+      cpp::Session session (strings, app.getKeywords (), output, logger);
+      cpp::Preprocessor preprocessor (session, filename);
+      app.run (preprocessor, logger);
+    }
+    basil::App & app;
+    int lzz_ref;
+  }
+}
+
+
+#hdr
+#include <util/string_vector.h>
+#end
+
+#src
+#include <app/filenames.h>
+#include <basil/app.h>
+#include <cpp/preprocessor.h>
+#include <cpp/session.h>
+#include <cpp/token_numbers.h>
+#include <output/output.h>
+#include <output/output_lua.h>
+#include <util/parse_exception.h>
+#include <util/string_table.h>
+#include <iostream>
+#end

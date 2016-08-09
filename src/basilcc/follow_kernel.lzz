@@ -1,0 +1,79 @@
+namespace basilcc
+{
+  class CC;
+
+  class FollowKernel
+  {
+  public:
+    // steals follow rules
+    FollowKernel (int num, FollowRulePtrVector & follow_rules)
+      : m_num (num), m_shift_kernel (0), m_follow_base (0)
+    {
+      m_follow_rules.swap (follow_rules);
+    }
+    ~ FollowKernel ()
+    {
+      deleteObject (m_follow_base);
+    }
+
+    // get follow kernel number
+    inline int getNumber () const
+    {
+      return m_num;
+    }
+
+    // get shift kernel
+    ShiftKernelPtr getShiftKernel (CC & cc)
+    {
+      // create on demand
+      if (! m_shift_kernel)
+      {
+        m_shift_kernel = basilcc::getShiftKernel (cc, m_follow_rules);
+      }
+      return m_shift_kernel;
+    }
+
+    // get follow base
+    FollowBasePtr getFollowBase (CC & cc)
+    {
+      // create on demand
+      if (! m_follow_base)
+      {
+        m_follow_base = new FollowBase (getShiftKernel (cc)->getShiftBase (cc), m_follow_rules);
+        m_follow_base->closure (cc);
+      }
+      return m_follow_base;
+    }
+
+    // get follow base, must be set
+    FollowBasePtr getFollowBase () const
+    {
+      assert (m_follow_base != 0);
+      return m_follow_base;
+    }
+
+  private:
+    int m_num;
+    // follow rules, passed to follow base
+    FollowRulePtrVector m_follow_rules;
+    // shift kernel on demand
+    ShiftKernelPtr m_shift_kernel;
+    // follow base on demand, responsible for deleting it 
+    FollowBasePtr m_follow_base;
+  }
+}
+
+#hdr
+#include <basilcc/follow_base_ptr.h>
+#include <basilcc/follow_kernel_ptr.h>
+#include <basilcc/follow_rule_ptr_vector.h>
+#include <basilcc/shift_kernel_ptr.h>
+#end
+
+#src
+#include <basilcc/follow_base.h>
+#include <basilcc/shift_kernel.h>
+#include <basilcc/shift_kernel_api.h>
+#include <basilcc/util.h>
+#include <assert.h>
+#end

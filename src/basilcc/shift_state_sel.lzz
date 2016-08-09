@@ -1,0 +1,30 @@
+namespace basilcc
+{
+  class ShiftStateSel
+  {
+  public:
+    // steals shift states
+    ShiftStateSel (size_t num, ShiftStateVector & shift_states)
+      : m_num (num)
+    {
+      m_shift_states.swap (shift_states);
+    }
+    ~ ShiftStateSel ()
+    {}
+    size_t getNumber () const
+    {
+      return m_num;
+    }
+    ShiftStateVector const & getShiftStates () const
+    {
+      return m_shift_states;
+    }
+  private:
+    size_t m_num;
+    ShiftStateVector m_shift_states;
+  }
+}
+
+#hdr
+#include <basilcc/shift_state_vector.h>
+#end

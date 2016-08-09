@@ -1,0 +1,41 @@
+namespace basilcc
+{
+  class Node
+  {
+  public:
+    Node (size_t num, Ident name)
+      : m_num (num), m_name (name), m_rule (0)
+    {}
+    ~ Node ()
+    {}
+    // get number
+    size_t getNumber () const
+    {
+      return m_num;
+    }
+    // get name
+    Ident getName () const
+    {
+      return m_name;
+    }
+    // set/get rule
+    void setRule (RulePtr rule)
+    {
+      m_rule = rule;
+    }
+    RulePtr getRule () const
+    {
+      return m_rule;
+    }
+  private:
+    size_t m_num;
+    Ident m_name;
+    RulePtr m_rule;
+  }
+}
+
+#hdr
+#include <basilcc/rule_ptr.h>
+#include <util/ident.h>
+#include <cstddef>
+#end

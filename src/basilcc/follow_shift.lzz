@@ -1,0 +1,49 @@
+namespace basilcc
+{
+  class FollowShift
+  {
+  public:
+    FollowShift (SymbolPtr symbol, FollowKernelPtr follow_kernel)
+      : m_symbol (symbol), m_follow_kernel (follow_kernel)
+    {}
+    ~ FollowShift ()
+    {}
+
+    // get symbol
+    inline SymbolPtr getSymbol () const
+    {
+      return m_symbol;
+    }
+
+    // get follow kernel
+    inline FollowKernelPtr getFollowKernel () const
+    {
+      return m_follow_kernel;
+    }
+
+  private:
+    SymbolPtr m_symbol;
+    FollowKernelPtr m_follow_kernel;
+  }
+
+  // a < b
+  bool operator < (FollowShift const & a, FollowShift const & b)
+  {
+    return symbolLess (a.getSymbol (), b.getSymbol ());
+  }
+
+  // true if follow shift symbol
+  inline bool IsFollowShiftSymbol (SymbolPtr symbol; FollowShift const & follow_shift) const
+  {
+    return symbol == follow_shift.getSymbol ();
+  }
+}
+
+#hdr
+#include <basilcc/follow_kernel_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#end
+
+#src
+#include <basilcc/symbol.h>
+#end

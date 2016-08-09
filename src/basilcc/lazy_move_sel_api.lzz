@@ -1,0 +1,20 @@
+namespace basilcc
+{
+  class CC;
+
+  // get lazy move selection from moves
+  LazyMoveSelPtr getLazyMoveSel (CC & cc, LazyMovePtrVector const & lazy_moves)
+  {
+    return getTable <LazyMoveSelTable> (cc).getLazyMoveSel (lazy_moves);
+  }
+}
+
+#hdr
+#include <basilcc/lazy_move_sel_ptr.h>
+#include <basilcc/lazy_move_ptr_vector.h>
+#end
+
+#src
+#include <basilcc/cc.h>
+#include <basilcc/lazy_move_sel_table.h>
+#end

@@ -1,0 +1,60 @@
+namespace basilcc
+{
+  // print shift base, base if base true
+  void printShiftBase (ShiftBasePtr shift_base, bool base, bool kernel_only, std::ostream & os)
+  {
+    ShiftRulePtrVector const & shift_rules = shift_base->getShiftRules ();
+    int num = kernel_only ? shift_base->getBaseKernel ()->getKernelSize () : shift_rules.size ();
+    for_each (shift_rules.begin (), shift_rules.begin () + num, PrintShiftRule (os, base));
+  }
+
+  // print follow base
+  void printFollowBase (FollowBasePtr follow_base, bool kernel_only, std::ostream & os)
+  {
+    FollowRulePtrVector const & follow_rules = follow_base->getFollowRules ();
+    int num = kernel_only ? follow_base->getShiftBase ()->getBaseKernel ()->getKernelSize () : follow_rules.size ();
+    for_each (follow_rules.begin (), follow_rules.begin () + num, PrintFollowRule (os));
+  }
+}
+
+using namespace basilcc;
+using namespace std;
+
+namespace
+{
+  // print shift rule, base rule if base true
+  void PrintShiftRule (std::ostream & os, bool base; ShiftRulePtr shift_rule) const
+  {
+    if (base)
+    {
+      os << shift_rule->getBaseRule ()->toString () << '\n';
+    }
+    else
+    {
+      os << shift_rule->toString () << '\n';
+    }
+  }
+
+  // print follow rule
+  void PrintFollowRule (std::ostream & os; FollowRulePtr follow_rule) const
+  {
+    os << follow_rule->toString () << '\n';
+  }
+}
+
+#hdr
+#include <basilcc/follow_base_ptr.h>
+#include <basilcc/shift_base_ptr.h>
+#include <iosfwd>
+#end
+
+#src
+#include <basilcc/base_kernel.h>
+#include <basilcc/base_rule.h>
+#include <basilcc/follow_base.h>
+#include <basilcc/follow_rule.h>
+#include <basilcc/shift_base.h>
+#include <basilcc/shift_rule.h>
+#include <algorithm>
+#include <iostream>
+#end

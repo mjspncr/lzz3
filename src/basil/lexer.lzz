@@ -1,0 +1,21 @@
+namespace basil
+{
+  class Lexer
+  {
+  public:
+    Lexer ()
+    {}
+    virtual ~ Lexer ()
+    {}
+    // set location and lexeme of next token and return token number
+    virtual int getNextToken (int lex_state, Loc & loc, std::string & lexeme) = 0;
+  }
+}
+
+#hdr
+#include <util/loc.h>
+#include <string>
+#end
+
+#src
+#end

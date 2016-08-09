@@ -1,0 +1,33 @@
+// loc_to_string.lzz
+//
+
+class Loc;
+
+// loc to string
+std::ostream & operator << (std::ostream & os, Loc const & loc)
+{
+  if (loc.isSet ())
+  {
+    os << loc.getFilename () << ':' << loc.getLine () << ':' <<  loc.getColumn () << ':';
+  }
+  return os;
+}
+// loc to string
+std::string locToString (Loc const & loc)
+{
+  ostringstream ss;
+  ss << loc;
+  return ss.str ();
+}
+
+using namespace std;
+
+#hdr
+#include <iosfwd>
+#include <string>
+#end
+
+#src
+#include <util/loc.h>
+#include <sstream>
+#end

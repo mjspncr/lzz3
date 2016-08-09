@@ -1,0 +1,25 @@
+// exception for parse errors
+class ParseException : public Exception
+{
+public:
+  ParseException (Loc const & loc, std::string const & msg)
+    : Exception (msg), loc (loc)
+  {}
+  ParseException (std::string const & msg)
+    : Exception (msg)
+  {}
+  ~ ParseException () throw ()
+  {}
+
+  inline Loc const & where () const
+  {
+    return loc;
+  }
+private:
+  Loc loc; 
+}
+
+#hdr
+#include <util/loc.h>
+#include <util/exception.h>
+#end

@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <ConflictPtr> ConflictPtrVector;
+  typedef std::vector <ConflictPtr>::iterator ConflictPtrVectorIter;
+  typedef std::vector <ConflictPtr>::const_iterator ConflictPtrVectorConstIter;
+}
+
+#hdr
+#include <basilcc/conflict_ptr.h>
+#include <vector>
+#end

@@ -1,0 +1,35 @@
+namespace basilcc
+{
+  // move selection
+  class MoveSel
+  {
+  public:
+    // steals moves
+    MoveSel (size_t num, MovePtrVector & moves)
+      : m_num (num)
+    {
+      m_moves.swap (moves);
+    }
+    ~ MoveSel ()
+    {}
+
+    // get move sel number
+    inline size_t getNumber () const
+    {
+      return m_num;
+    }
+
+    // get moves
+    inline MovePtrVector const & getMoves () const
+    {
+      return m_moves;
+    }
+  private:
+    size_t m_num;
+    MovePtrVector m_moves;
+  }
+}
+
+#hdr
+#include <basilcc/move_ptr_vector.h>
+#end

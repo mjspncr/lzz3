@@ -1,0 +1,432 @@
+class File
+{
+public:
+  File (std::string const & fullname, std::string const & name, std::string const & ext, bool has_hash_lines, bool smart_write)
+    : m_fullname (fullname), m_name (name), m_ext (ext), m_has_hash_lines (has_hash_lines), m_smart_write (smart_write), m_closed (false)
+  {}
+  ~ File ()
+  {}
+
+  // get fullname (path/name.ext)
+  std::string const & getFullName () const
+  {
+    return m_fullname;
+  }
+
+  // get name, fullname w/o path
+  std::string const & getName () const
+  {
+    return m_name;
+  }   
+
+  // get ext
+  std::string const & getExt () const
+  {
+    return m_ext;
+  }   
+
+  // true if closed
+  bool isClosed () const
+  {
+    return m_closed;
+  }
+
+  // true if has hash lines
+  bool hasHashLines () const
+  {
+    return m_has_hash_lines;
+  }
+
+  // if has section, return true and set section
+  bool hasSection (SectionKind kind, SectionPtr & section)
+  {
+    bool result = false;
+    SectionPtrVectorConstIter i = std::find_if (m_sections.begin (), m_sections.end (), IsSectionKind (kind));
+    if (i != m_sections.end ())
+    {
+      section = (* i).unref ();
+      result = true;
+    }
+    return result;
+  }
+
+  // if has section, return true and set section
+  bool hasSection (SectionKind kind)
+  {
+    SectionPtr section;
+    return hasSection (kind, section);
+  }
+
+  // get section, create one if not present
+  SectionPtr getSection (SectionKind kind)
+  {
+    SectionPtr section;
+    if (! hasSection (kind, section))
+    {
+      section = SectionPtr (new Section (kind));
+      m_sections.push_back (section);
+      section = section.unref ();
+    }
+    return section;
+  }
+
+  // get section stream
+  std::ostream & getStream (SectionKind kind)
+  {
+    return getSection (kind)->getStream ();
+  }
+
+  // indent, increment line and return output stream with optional indent offset
+  std::ostream & indent (SectionKind kind, int offset = 0)
+  {
+    return getSection (kind)->indent (offset);
+  }
+
+  // indent exactly number of spaces
+  std::ostream & indentExactly (SectionKind kind, int num)
+  {
+    return getSection (kind)->indentExactly (num);
+  }
+
+  // increment indent
+  void incIndent (SectionKind kind)
+  {
+    getSection (kind)->incIndent ();
+  }
+
+  // decrement indent
+  void decIndent (SectionKind kind)
+  {
+    getSection (kind)->decIndent ();
+  }
+
+  // close 
+  void close (FileKind kind)
+  {
+    if (m_closed)
+    {
+      return;
+    }
+    m_closed = true;
+    // freeze all sections
+    std::for_each (m_sections.begin (), m_sections.end (), FreezeSection ());
+    // order the sections
+    SectionPtrVector out_sections;
+    addSection (SECTION_HEADER, out_sections);
+    if (kind == FILE_SOURCE)
+    {
+      // inline sections
+      addSection (SECTION_INLINE_HEADER, out_sections);
+      addSection (SECTION_INLINE_USER, out_sections);
+      addSection (SECTION_INLINE_TOP, out_sections);
+      addSection (SECTION_INLINE_BODY, out_sections);
+      addSection (SECTION_INLINE_TAIL, out_sections);
+    }
+    addSection (SECTION_USER, out_sections);
+    addSection (SECTION_TOP, out_sections);
+    addSection (SECTION_DECLARATION, out_sections);
+    addSection (SECTION_BODY, out_sections);
+    if (kind == FILE_HEADER)
+    {
+      // inline sections
+      addSection (SECTION_INLINE_HEADER, out_sections);
+      addSection (SECTION_INLINE_USER, out_sections);
+      addSection (SECTION_INLINE_TOP, out_sections);
+      addSection (SECTION_INLINE_BODY, out_sections);
+      addSection (SECTION_INLINE_TAIL, out_sections);
+    }
+    addSection (SECTION_TAIL, out_sections);
+    // compare with existing file if smart write on
+    bool write_file = true;
+    if (m_smart_write && file_op::exists (m_fullname))
+    {
+      if (FILE * fp = fopen (m_fullname.c_str (), "r"))
+      {
+        write_file = ! (std::find_if (out_sections.begin (), out_sections.end (),
+                std::not1 (CompareSection (fp))) == out_sections.end ()
+            && fgetc (fp) == EOF);
+        fclose (fp);
+      }
+      else
+      {
+        ThrowException () << "failed to open " << m_fullname;
+      }
+    }
+    if (write_file)
+    {
+      if (FILE * fp = fopen (m_fullname.c_str (), "w"))
+      {
+        std::for_each (out_sections.begin (), out_sections.end (), WriteSection (fp));
+        fclose (fp);
+      }
+      else
+      {
+        ThrowException () << "failed to open " << m_fullname;
+      }
+    }
+  }
+
+  // get body section
+  SectionPtr getBodySection () 
+  {
+    return getSection (SECTION_BODY);
+  }
+
+  // get header section
+  SectionPtr getHeaderSection () 
+  {
+    return getSection (SECTION_HEADER);
+  }
+
+  //
+  // compatibility with old interface
+  //
+    
+  // increment indent
+  void incIndent ()
+  {
+    getBodySection ()->incIndent ();
+  }
+
+  // decrement indent
+  void decIndent ()
+  {
+    getBodySection ()->decIndent ();
+  }
+
+  // indent, increment line and return output stream with optional indent offset
+  std::ostream & indent (int offset = 0)
+  {
+    return getBodySection ()->indent (offset);
+  }
+
+  // indent exactly number of spaces
+  std::ostream & indentExactly (int num)
+  {
+    return getBodySection ()->indentExactly (num);
+  }
+
+  // return output stream (without indenting)
+  std::ostream & getStream ()
+  {
+    return getBodySection ()->getStream ();
+  }
+
+  // return header output stream
+  std::ostream & header ()
+  {
+    return getHeaderSection ()->getStream ();
+  }
+
+  // return body output stream
+  std::ostream & body ()
+  {
+    return getBodySection ()->getStream ();
+  }
+
+  // return body output stream
+  std::ostream & top ()
+  {
+    return getSection (SECTION_TOP)->getStream ();
+  }
+
+  // return body output stream
+  std::ostream & tail ()
+  {
+    return getSection (SECTION_TAIL)->getStream ();
+  }
+
+  // return inline header output stream
+  std::ostream & inlineHeader ()
+  {
+    return getSection (SECTION_INLINE_HEADER)->getStream ();
+  }
+
+  // return inline header output stream
+  std::ostream & inlineTop ()
+  {
+    return getSection (SECTION_INLINE_TOP)->getStream ();
+  }
+
+  // return inline header output stream
+  std::ostream & inlineBody ()
+  {
+    return getSection (SECTION_INLINE_BODY)->getStream ();
+  }
+
+  // return body output stream
+  std::ostream & inlineTail ()
+  {
+    return getSection (SECTION_INLINE_TAIL)->getStream ();
+  }
+
+
+  // freeze header, return string
+  std::string const & freezeHeader ()
+  {
+    return getHeaderSection ()->freeze ();
+  }
+
+  // freeze body, return string
+  std::string const & freezeBody (int & size)
+  {
+    return getBodySection ()->freeze ();
+  }
+
+private:
+  // add section to out_section if present
+  void addSection (SectionKind kind, SectionPtrVector & out_sections)
+  {
+    SectionPtr section;
+    if (hasSection (kind, section))
+    {
+      out_sections.push_back (section);
+    }
+  }
+
+private:
+  // full name (path/base.ext) 
+  std::string m_fullname;
+
+  // name (base.ext)
+  std::string m_name;
+
+  // ext
+  std::string m_ext;
+
+  // has #lines
+  bool m_has_hash_lines;
+
+  // smart write
+  bool m_smart_write;
+
+  // sections
+  SectionPtrVector m_sections;
+
+  // true if closed
+  bool m_closed;
+}
+
+// print hash line to file section, get filename and line number from loc
+void printHashLine (File & file, SectionKind skind, Loc const & loc)
+{
+  if (file.hasHashLines ())
+  {
+    char const * fullname = loc.getFullname ();
+    file.getStream (skind) << "#line " << loc.getLine () << " \"" << fullname << '\"' << '\n';
+  }
+}
+
+// indent and print line and newline
+void printLine (File & file, SectionKind skind, std::string const & line, int offset = 0)
+{
+  file.indent (skind, offset) << line << '\n';
+}
+
+// indent and print line and newline at location
+void printLine (File & file, SectionKind skind, Loc const & loc, std::string const & line, int offset = 0)
+{
+  printHashLine (file, skind, loc);
+  file.indent (skind, offset) << line << '\n';
+}
+
+// print open brace and indent 
+void printOpenBrace (File & file, SectionKind skind)
+{
+  file.indent (skind) << '{' << '\n';
+  file.incIndent (skind);
+}
+
+// print close brace with optional semi-colon and decrement indent level
+void printCloseBrace (File & file, SectionKind skind, bool semi)
+{
+  file.decIndent (skind);
+  ostream & os = file.indent (skind) << '}';
+  if (semi)
+  {
+    os << ';';
+  }
+  os << '\n';
+}
+
+// print (#hdr, #src, etc) block to file
+void printBlock (File & file, Loc const & loc, std::string const & str)
+{
+  printHashLine (file, SECTION_USER, loc);
+  file.getStream (SECTION_USER) << str << '\n';
+}
+
+using namespace std;
+
+namespace
+{
+  // return true if file (at current position) starts with string
+  bool cmpfile (char const * str, int pcount, FILE * fp)
+  {
+    bool match = true;
+    for (; pcount > 0; -- pcount, ++ str)
+    {
+      int ch = fgetc (fp);
+      if (ch == EOF || * str != ch)
+      {
+        match = false;
+        break;
+      }
+    }
+    return match;
+  }
+
+  // freeze section
+  void FreezeSection (; SectionPtr const & section) const
+  {
+    section->freeze ();
+  }
+
+  // compare section
+  bool CompareSection (FILE * fp; SectionPtr const & section) const : std::unary_function <SectionPtr, bool>
+  {
+    bool match = true;
+    string const & str = section->getString ();
+    for (string::const_iterator i = str.begin (), endi = str.end (); i != endi; ++ i)
+    {
+      int ch = fgetc (fp);
+      if (ch == EOF || * i != ch)
+      {
+        match = false;
+        break;
+      }
+    }
+    return match;
+  }
+
+  // write section
+  void WriteSection (FILE * fp; SectionPtr const & section) const
+  {
+    string const & str = section->getString ();
+    fwrite (str.data (), sizeof (char), str.size (), fp);
+  }
+
+  // true if section kind
+  bool IsSectionKind (SectionKind kind; SectionPtr const & section) const
+  {
+    return section->getKind () == kind;
+  }
+}
+
+#hdr
+#include <output/file_kind.h>
+#include <output/section_kind.h>
+#include <output/section_ptr_vector.h>
+#include <util/loc.h>
+#include <cstdio>
+#include <string>
+#end
+
+#src
+#include <output/section.h>
+#include <util/file_op.h>
+#include <util/get_temp_file.h>
+#include <util/throw_exception.h>
+#include <algorithm>
+#include <functional>
+#end

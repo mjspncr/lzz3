@@ -1,0 +1,68 @@
+namespace cpp
+{
+  enum IfSyntax
+  {
+    // outside of if block
+    IFS_NONE,
+    // if or elif part 
+    IFS_IF,
+    // else part
+    IFS_ELSE
+  };
+  
+  enum IfRead
+  {
+    // processing tokens
+    IFR_ON,
+    // discarding tokens
+    IFR_OFF,
+    // pending
+    IFR_WAIT,
+  };
+
+  struct IfStat
+  {
+    // location of #if, #ifdef or #ifndef directive
+    Loc loc;
+    // syntax state
+    IfSyntax ss;
+    // read state
+    IfRead rs;
+    IfStat (Loc const & loc = Loc (), IfSyntax ss = IFS_NONE, IfRead rs = IFR_ON)
+      : loc (loc), ss (ss), rs (rs) 
+    {}
+    ~ IfStat ()
+    {}
+  };
+  typedef std::vector <IfStat> IfStatVector;
+
+  struct FileStat
+  {
+    // lexer
+    Lexer lexer;
+    // realname (needed for '#pragma once' and for checking include guard)
+    char const * realname;
+    // if stat stack
+    IfStatVector is_stack;
+    // true if #insert-ing file
+    bool insert;
+    FileStat (Session & session, char const * filename, char const * fullname, bool insert)
+      : lexer (session, filename, fullname), realname (fullname), insert (insert)
+    {
+      is_stack.push_back (IfStat ());
+    }
+    FileStat (Session & session, std::string const & str, Loc const & loc, bool insert)
+      : lexer (session, str, loc), realname (loc.getFullname ()), insert (insert)
+    {
+      is_stack.push_back (IfStat ());
+    }
+    ~ FileStat ()
+    {}
+  }
+}
+
+#hdr
+#include <cpp/session_fwd.h>
+#include <cpp/lexer.h>
+#include <vector>
+#end

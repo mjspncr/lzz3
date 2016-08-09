@@ -1,0 +1,14 @@
+namespace basilcc
+{
+  typedef Trie <unsigned int, 0xFFFFFFFF, 512, ShiftKernelPtr> ShiftKernelPtrTrie;
+}
+template class Trie <unsigned int, 0xFFFFFFFF, 512, basilcc::ShiftKernelPtr>;
+
+#hdr
+#include <basilcc/shift_kernel_ptr.h>
+#include <util/trie.h>
+#end
+
+#src
+#include <util/trie.tpl>
+#end

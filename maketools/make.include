@@ -1,0 +1,134 @@
+# if SUBDIRS set then just recurse
+ifdef SUBDIRS
+# all same as bins
+all bins: $(SUBDIRS:%=%-bins)
+# libs first if at top level
+ifeq (0,$(MAKELEVEL))
+%-bins: libs
+else
+%-bins:
+endif
+	$(MAKE) bins -C $*
+# libs
+libs:	$(SUBDIRS:%=%-libs)
+# srcs first if at top level
+ifeq (0,$(MAKELEVEL))
+%-libs: srcs
+else
+%-libs:
+endif
+	$(MAKE) libs -C $*
+# depend
+depend: $(SUBDIRS:%=%-depend)
+# srcs first if at top level
+ifeq (0,$(MAKELEVEL))
+%-depend: srcs
+else
+%-depend:
+endif
+	$(MAKE) depend -C $*
+# srcs
+srcs:	$(SUBDIRS:%=%-srcs)
+%-srcs:
+	$(MAKE) srcs -C $*
+# clean
+clean:  $(SUBDIRS:%=%-clean)
+%-clean:
+	$(MAKE) clean -C $*
+else # no SUBDIRS
+# read platform specific defines
+include $(MAKETOOLS)/make.$(CONFIG)
+# vars
+BUILDDIR  := $(DEVDIR)/build.$(CONFIG)
+SRCDIR    := $(BUILDDIR)/src/$(DIR)
+OBJDIR    := $(BUILDDIR)/obj/$(DIR)$(OPTSUFFIX)
+LIBDIR    := $(BUILDDIR)/lib
+BINDIR    := $(BUILDDIR)/bin
+ifeq ($(strip $(LZZFILES)),)
+LZZFILES  := $(wildcard *.lzz)
+endif
+SRCFILES  := $(addprefix $(SRCDIR)/,$(LZZFILES:%.lzz=%.cpp))
+OBJFILES  := $(addprefix $(OBJDIR)/,$(LZZFILES:%.lzz=%.o))
+INCFLAGS  := $(INCDIRS:%=-I%) -I$(BUILDDIR)/src
+DEFFLAGS  := $(DEFS:%=-D%) $(CONFIGDEFS:%=-D%)
+CPPFLAGS  := $(DEFFLAGS) $(INCFLAGS) $(DEBUGFLAG) -Wno-deprecated -Wall
+OUTDIRS   := $(SRCDIR) $(OBJDIR)
+# binary
+ifdef BIN
+BINFILE   := $(BINDIR)/$(BIN)$(OPTSUFFIX)
+LIBFILES  := $(addprefix $(LIBDIR)/,$(LIBS:%=lib%$(OPTSUFFIX).a))
+LOADLIBES := -L$(LIBDIR) $(MORELIBDIRS:%=-L%)
+LDLIBS    := $(LIBS:%=-l%$(OPTSUFFIX)) $(MORELIBS:%=-l%)
+OUTDIRS   += $(BINDIR)
+# all
+all: bins
+# bins depends on srcs if toplevel
+ifeq (0,$(MAKELEVEL))
+bins: srcs
+endif
+bins: $(BINFILE)
+# dummy libs target
+libs: ;
+# clean
+clean:
+	rm -rf $(SRCDIR) $(OBJDIR) $(BINFILE)
+# build binary
+$(BINFILE): $(LIBFILES) | $(BINDIR)
+$(BINDIR)/%: $(OBJFILES)
+	$(LINK.cc) $^ $(LOADLIBES) $(LDLIBS) -o $@
+else
+# default lib
+LIB       := lib$(DIR)$(OPTSUFFIX).a
+LIBFILE   := $(LIBDIR)/$(LIB)
+OUTDIRS   += $(LIBDIR)
+# all or libs
+all: libs
+# libs depends on srcs if toplevel
+ifeq (0,$(MAKELEVEL))
+libs: srcs
+endif
+libs: $(LIBFILE)
+# dummy bins target
+bins: ;
+# clean
+clean:
+	rm -rf $(SRCDIR) $(OBJDIR) $(LIBFILE)
+# build static library
+$(LIBFILE): | $(LIBDIR)
+$(LIBDIR)/%.a : $(OBJFILES)
+	$(AR) -sruv $@ $^ 
+endif
+# srcs
+srcs: $(SRCFILES)
+# depend
+ifeq (0,$(MAKELEVEL))
+depend: srcs
+endif
+depend:
+	$(COMPILE.cpp) -MM $(SRCFILES) > dep$$$$ ; \
+	sed 's;\([^ ]*\)\.o:;$$(OBJDIR)/\1.o:;' dep$$$$ > $(SRCDIR)/.depend ; \
+	rm dep$$$$
+# this makes the output directories
+$(OUTDIRS):
+	mkdir -p $@
+# lzz
+LZZFLAGS := -i -c -sl -hl -il -tl -nl -hd -d -x $(DEFFLAGS) -Ddll_api= $(INCFLAGS) -o $(SRCDIR)
+ifneq ($(strip $(INCFILE)),)
+LZZFLAGS += -a $(INCFILE)
+endif
+ifneq ($(strip $(DIR)),)
+LZZFLAGS += -k $(DIR)
+endif
+# cc and cpp to obj rules
+$(OBJFILES): | $(OBJDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	$(COMPILE.cpp) $(OUTPUT_OPTION) $<
+# lzz to cpp rule
+$(SRCFILES): | $(SRCDIR)
+$(SRCDIR)/%.cpp: %.lzz
+	$(LZZ) $(LZZFLAGS) $<
+# include the depend file if it exists
+ifneq ($(wildcard $(SRCDIR)/.depend),)
+include $(SRCDIR)/.depend
+endif
+endif

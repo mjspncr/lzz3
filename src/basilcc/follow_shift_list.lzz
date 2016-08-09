@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::list <FollowShift> FollowShiftList;
+  typedef FollowShiftList::const_iterator FollowShiftListConstIter;
+  typedef FollowShiftList::iterator FollowShiftListIter;
+}
+
+#hdr
+#include <basilcc/follow_shift.h>
+#include <list>
+#end

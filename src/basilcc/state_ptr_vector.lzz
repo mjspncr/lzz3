@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <StatePtr> StatePtrVector;
+  typedef std::vector <StatePtr>::iterator StatePtrVectorIter;
+  typedef std::vector <StatePtr>::const_iterator StatePtrVectorConstIter;
+}
+
+#hdr
+#include <basilcc/state_ptr.h>
+#include <vector>
+#end

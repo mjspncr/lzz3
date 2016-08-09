@@ -1,0 +1,40 @@
+// register loc
+void registerLoc (lua_State * L)
+{
+  // just create metatable
+  luaL_newmetatable (L, META_LOC);
+  lua_pop (L, 1);
+}
+
+// push copy of loc on stack
+void pushLoc (lua_State * L, Loc const & loc)
+{
+  new (lua_newuserdata (L, sizeof (Loc))) Loc (loc);
+  luaL_setmetatable (L, META_LOC);
+}
+
+// return loc at arg, or def if nil or missing
+Loc optLoc (lua_State * L, int arg, Loc const & def = Loc ())
+{
+  return lua_isnoneornil (L, arg) ? def : checkLoc (L, arg);
+}
+
+// return loc at arg, error if not loc
+Loc const & checkLoc (lua_State * L, int arg)
+{
+  return * static_cast <Loc *> (luaL_checkudata (L, arg, META_LOC));
+}
+
+namespace
+{
+  char const META_LOC [] = "Loc";
+}
+
+#hdr
+#include <util/loc.h>
+#include <lua.hpp>
+#end
+
+#src
+#include <new>
+#end

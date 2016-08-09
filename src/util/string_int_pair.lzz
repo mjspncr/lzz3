@@ -1,0 +1,28 @@
+// string_int_pair.lzz
+//
+
+typedef std::pair <String, int> StringIntPair;
+
+struct StringIntFirstLess
+{
+  inline bool operator () (StringIntPair const & p, StringIntPair const & q) const
+  {
+    return p.first < q.first;
+  }
+  inline bool operator () (StringIntPair const & p, String const & q) const
+  {
+    return p.first < q;
+  }
+  inline bool operator () (StringIntPair const & p, char const * q) const
+  {
+    return p.first < q;
+  }
+}
+
+#hdr
+#include <util/string.h>
+#include <utility>
+#end
+
+#src
+#end

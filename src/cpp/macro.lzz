@@ -1,0 +1,161 @@
+namespace cpp
+{
+  enum MacroKind
+  {
+    // object
+    OBJ_MACRO,
+    // function
+    FUNC_MACRO,
+    // __FILE__
+    FILE_MACRO,
+    // __LINE__
+    LINE_MACRO,
+  };
+
+  // base class
+  class Macro
+  {
+  public:
+    Macro (Loc const & loc, std::string const & name)
+      : loc_ (loc), name_ (name)
+    {}
+    virtual inline ~ Macro () = 0
+    {}
+    // get location
+    inline Loc const & getLoc () const
+    {
+      return loc_;
+    }
+    // get name
+    inline std::string const & getName () const
+    {
+      return name_;
+    }
+    // get kind
+    virtual MacroKind getKind () const = 0;
+  private:
+    // location of definition
+    Loc loc_;
+    // macro name
+    std::string name_;
+  }
+
+  // replacment macro
+  class RepMacro : public Macro
+  {
+  public:
+    RepMacro (Loc const & loc, std::string const & name, TokenPtrVector const & rep_tokens)
+      : Macro (loc, name), rep_tokens_ (rep_tokens)
+    {}
+    inline ~ RepMacro ()
+    {}
+    // get replacement token set
+    inline TokenPtrVector const & getRepTokens () const
+    {
+      return rep_tokens_;
+    }
+    // get tokens, makes copy
+    void getRepTokens (TokenPtrVector & tokens) const
+    {
+      cloneTokens (rep_tokens_, tokens);
+    }
+  private:
+    // replacement token set (need to be marked for gc)
+    TokenPtrVector rep_tokens_;
+  }
+
+  // object macro
+  class ObjMacro : public RepMacro
+  {
+  public:
+    ObjMacro (Loc const & loc, std::string const & name, TokenPtrVector const & rep_tokens)
+      : RepMacro (loc, name, rep_tokens)
+    {}
+    ~ ObjMacro ()
+    {}
+    // get kind
+    MacroKind getKind () const
+    {
+      return OBJ_MACRO;
+    }
+  }
+
+  // function macro
+  class FuncMacro : public RepMacro
+  {
+  public:
+    FuncMacro (Loc const & loc, std::string const & name, StringVector const & params, bool var,
+        TokenPtrVector const & rep_tokens)
+      : RepMacro (loc, name, rep_tokens), params_ (params), var_ (var)
+    {}
+    ~ FuncMacro ()
+    {}
+    // get kind
+    MacroKind getKind () const
+    {
+      return FUNC_MACRO;
+    }
+    // true if can take var args
+    inline bool hasVarArgs () const
+    {
+      return var_;
+    }
+    // get number of params
+    inline int getNumParams () const
+    {
+      return params_.size ();
+    }
+    // get param set
+    inline StringVector const & getParams () const
+    {
+      return params_;
+    }
+  private:
+    // parameter names
+    StringVector params_;
+    // true if macro can take variable number of args
+    bool var_;
+  }
+
+  // __FILE__ macro
+  class FileMacro : public Macro
+  {
+  public:
+    inline FileMacro (Loc const & loc, std::string const & name)
+      : Macro (loc, name)
+    {}
+    ~ FileMacro ()
+    {}
+    // get kind
+    MacroKind getKind () const
+    {
+      return FILE_MACRO;
+    }
+  }
+
+  // __LINE__ macro
+  class LineMacro : public Macro
+  {
+  public:
+    inline LineMacro (Loc const & loc, std::string const & name)
+      : Macro (loc, name)
+    {}
+    ~ LineMacro ()
+    {}
+    // get kind
+    MacroKind getKind () const
+    {
+      return LINE_MACRO;
+    }
+  }
+}
+
+#hdr
+#include <cpp/token_ptr_vector.h>
+#include <util/loc.h>
+#include <util/string_vector.h>
+#end
+
+#src
+#include <cpp/token.h>
+#end

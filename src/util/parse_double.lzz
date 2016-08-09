@@ -1,0 +1,51 @@
+// parse_double.lzz
+//
+
+// string to double
+double parseDouble (std::string const & str)
+{
+  double value;
+  if (! isDouble (str, value))
+  {
+    if (str.empty ())
+    {
+      throw Exception ("parseDouble: string is empty");
+    }
+    else
+    {
+      ostringstream ss;
+      ss << "parseDouble: invalid double: " << str;
+      throw Exception (ss.str ());
+    }
+  }
+  return value;
+}
+
+// true if double
+bool isDouble (std::string const & str, double & value)
+{
+  bool res (false);
+  if (! str.empty ())
+  {
+    char * endptr (0);
+    double num (strtod (str.c_str (), & endptr));
+    if (endptr && * endptr == '\0')
+    {
+      value = num;
+      res = true;
+    }
+  }
+  return res;
+}
+
+using namespace std;
+
+#hdr
+#include <string>
+#end
+
+#src
+#include <util/exception.h>
+#include <cstdlib>
+#include <sstream>
+#end

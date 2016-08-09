@@ -1,0 +1,14 @@
+namespace basilcc
+{
+  typedef ITrie <unsigned int, RulePtrVector> RulePtrVectorTrie;
+}
+template class ITrie <unsigned int, basilcc::RulePtrVector>;
+
+#hdr
+#include <basilcc/rule_ptr_vector.h>
+#include <util/itrie.h>
+#end
+
+#src
+#include <util/itrie.tpl>
+#end

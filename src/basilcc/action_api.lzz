@@ -1,0 +1,32 @@
+namespace basilcc
+{
+  class CC; 
+
+  // get shift and reduce actions
+  ActionPtr getShiftAction  (CC & cc, StatePtr state)
+  {
+    return getTable <ActionTable> (cc).getShiftAction (state);
+  }
+  ActionPtr getReduceAction (CC & cc, RulePtr rule, SymbolPtr shortcut, bool accept)
+  {
+    return getTable <ActionTable> (cc).getReduceAction (rule, shortcut, accept);
+  }
+
+  // get all actions
+  ActionPtrVector const & getActions (CC & cc)
+  {
+    return getTable <ActionTable> (cc).getActions ();
+  }
+}
+
+#hdr
+#include <basilcc/action_ptr_vector.h>
+#include <basilcc/rule_ptr.h>
+#include <basilcc/state_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#end
+
+#src
+#include <basilcc/cc.h>
+#include <basilcc/action_table.h>
+#end

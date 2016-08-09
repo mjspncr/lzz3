@@ -1,0 +1,12 @@
+class File;
+typedef Ptr <File> FilePtr;
+template class Ptr <File>;
+
+#hdr
+#include <util/ptr.h>
+#end
+
+#src
+#include <output/file.h>
+#include <util/ptr.tpl>
+#end

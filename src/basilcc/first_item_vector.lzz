@@ -1,0 +1,12 @@
+namespace basilcc
+{
+  typedef std::vector <FirstItem> FirstItemVector;
+  typedef std::vector <FirstItem>::iterator FirstItemVectorIter;
+  typedef std::vector <FirstItem>::const_iterator FirstItemVectorConstIter;
+}
+
+#hdr
+#include <basilcc/first_item.h>
+#include <vector>
+#end
+

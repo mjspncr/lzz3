@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <ShiftRulePtr> ShiftRulePtrVector;
+  typedef std::vector <ShiftRulePtr>::iterator ShiftRulePtrVectorIter;
+  typedef std::vector <ShiftRulePtr>::const_iterator ShiftRulePtrVectorConstIter;
+}
+
+#hdr
+#include <basilcc/shift_rule_ptr.h>
+#include <vector>
+#end

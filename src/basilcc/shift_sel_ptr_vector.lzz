@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <ShiftSelPtr> ShiftSelPtrVector;
+  typedef std::vector <ShiftSelPtr>::iterator ShiftSelPtrVectorIter;
+  typedef std::vector <ShiftSelPtr>::const_iterator ShiftSelPtrVectorConstIter;
+}
+
+#hdr
+#include <basilcc/shift_sel_ptr.h>
+#include <vector>
+#end

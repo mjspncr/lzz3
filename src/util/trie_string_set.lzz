@@ -1,0 +1,330 @@
+// trie_string_set.lzz
+//
+
+// string set using trie data structure
+template <class T>
+class TrieStringSet
+{
+public:
+  // key
+  class Key
+  {
+  public:
+    // constructor
+    inline Key (T const * data, int len)
+      : m_data (data), m_len (len)
+    {
+    }
+    // true if bit i is set
+    inline int isBitSet (int i)
+    {
+      return ((i / NUM_BITS) < m_len) && ((m_data [i / NUM_BITS] & (1 << (i % NUM_BITS))) != 0);
+    }
+    // get first different bit
+    int getDiffBit (T const * data, int len)
+    {
+      unsigned int i, j, x;
+      // get first diff int
+      for (i = 0; m_data [i] == data [i]; i ++);
+      // get first diff bit
+      for (x = m_data [i] ^ data [i], j = 0; ! (x & (1 << j)); j ++);
+      return (i * NUM_BITS) + j;
+    }
+    // compare data, return true if same
+    bool compare (T const * data, int len)
+    {
+      return (m_len == len) && (memcmp (m_data, data, sizeof (T) * len) == 0);
+    }
+    // get length
+    inline int getLength () const
+    {
+      return m_len;
+    }
+    // get data
+    inline T const * getData () const
+    {
+      return m_data;
+    }
+    // true if key is equal
+    inline bool operator == (Key const & key)
+    {
+      return m_data == key.m_data;
+    }
+  private:
+    // data
+    T const * m_data;
+    // length of data
+    int m_len;
+    // number of bits in T
+    enum { NUM_BITS = sizeof (T) * 8 }
+  };
+
+public:
+  // constructor
+  TrieStringSet ()
+  {
+    // create null key
+    Key key = m_key_stor.getKey ();
+    m_key_stor.commit ();
+    // create root node with max bit
+    m_root = new KeyNode (key, 0x7FFFFFFF);
+    m_root->left = m_root;
+    m_root->right = m_root;
+  }
+  // destructor
+  ~ TrieStringSet ()
+  {
+    delete m_root;
+  }
+  // push item
+  void push (T item)
+  {
+    m_key_stor.push (item);
+  }
+  // discard items
+  void discard ()
+  {
+    m_key_stor.discard ();
+  }
+  // get key
+  typename TrieStringSet <T>::Key const * getKey ()
+  {
+    KeyNode * n, * m, ** p;
+    int bit, dif;
+    Key key = m_key_stor.getKey ();
+    // find closest match
+    n = m_root;
+    do
+    {
+      bit = n->bit;
+      if (key.isBitSet (bit))
+      {
+        n = n->right;
+      }
+      else
+      {
+        n = n->left;
+      }
+    }
+    while (bit < n->bit);
+    // is equal
+    if (key.compare (n->key.getData (), n->key.getLength ()))
+    {
+      // discard data
+      m_key_stor.discard ();
+      // save node
+      m = n;
+    }
+    else
+    {
+      // commit data
+      m_key_stor.commit ();
+      // get first different bit
+      dif = key.getDiffBit (n->key.getData (), n->key.getLength ());
+      // where to insert it?
+      p = & m_root;
+      for (bit = -1; dif > (n = * p)->bit && bit < n->bit;)
+      {
+        bit = n->bit;
+        if (key.isBitSet (bit))
+        {
+          p = & n->right;
+        }
+        else
+        {
+          p = & n->left;
+        }
+      }
+      // create new node
+      m = new KeyNode (key, dif);
+      if (key.isBitSet (dif))
+      {
+        m->right = m;
+        m->left = n;
+      }
+      else
+      {
+        m->left = m;
+        m->right = n;
+      }
+      * p = m;
+    }
+    // return pointer to new key
+    return & m->key;
+  }
+  // get handle
+  size_t getHandle ()
+  {
+    return (size_t) getKey ();
+  }
+
+private:
+  // key block
+  class KeyBlock
+  {
+  public:
+    // default constructor
+    KeyBlock ()
+    {
+      int size = BLOCKSIZE;
+      m_data = new T [size];
+      m_cur = m_data;
+      m_end = m_data + size;
+      m_beg = m_data;
+    }
+    // constructor with initial key
+    KeyBlock (T const * beg, int len)
+    {
+      int size = (len >= BLOCKSIZE) ? (len + BLOCKSIZE / 2) : (BLOCKSIZE);
+      m_data = new T [size];
+      memcpy (m_data, beg, len * sizeof (T));
+      m_cur = m_data + len;
+      m_end = m_data + size;
+      m_beg = m_data;
+    }
+    // destructor
+    ~ KeyBlock ()
+    {
+      delete [] m_data;
+    }
+    // push item, return true if successful
+    inline bool push (T t)
+    {
+      if (m_cur != m_end)
+      {
+        * m_cur ++ = t;
+        return true;
+      }
+      return false;
+    }
+    // discard key
+    inline void discard ()
+    {
+      m_cur = m_beg;
+    }
+    // commit
+    inline void commit ()
+    {
+      m_beg = m_cur;
+    }
+    // get address of current key and set length
+    inline T const * getBeg (int & len) const
+    {
+      len = int (m_cur - m_beg);
+      return m_beg;
+    }
+  private:
+    // data
+    T * m_data;
+    // current index
+    T * m_cur;
+    // one past last index
+    T * m_end;
+    // start of key
+    T * m_beg;
+    // size of default block size
+    enum { BLOCKSIZE = 512 };
+  };
+
+  // key storage
+  class KeyStorage
+  {
+  public:
+    // constructor
+    KeyStorage ()
+    {
+      m_key_block_list.push_back (new KeyBlock ());
+    }
+    // destructor
+    ~ KeyStorage ()
+    {
+      // delete blocks
+      for (typename std::list <KeyBlock *>::iterator i = m_key_block_list.begin (); i != m_key_block_list.end (); ++ i)
+      {
+        delete * i;
+      }
+    }
+    // push item
+    void push (T t)
+    {
+      KeyBlock & key_block = * m_key_block_list.back ();
+      if (! key_block.push (t))
+      {
+        int len = 0;
+        T const * beg = key_block.getBeg (len);
+        m_key_block_list.push_back (new KeyBlock (beg, len));
+        m_key_block_list.back ()->push (t);
+      }
+    }
+    // discard
+    inline void discard ()
+    {
+      m_key_block_list.back ()->discard ();
+    }
+    // commit
+    inline void commit ()
+    {
+      m_key_block_list.back ()->commit ();
+    }
+    // get key
+    typename TrieStringSet <T>::Key getKey ()
+    {
+      // terminate key with 0
+      push (0);
+      int len = 0;
+      T const * beg = m_key_block_list.back ()->getBeg (len);
+      return Key (beg, len);
+    }
+  private:
+    // no copying
+    KeyStorage (KeyStorage const & ks);
+  private:
+    // key block list
+    std::list <KeyBlock *> m_key_block_list;
+  };
+
+  // key node
+  struct KeyNode
+  {
+    // key
+    Key key;
+    // bit
+    int bit;
+    // left node
+    KeyNode * left;
+    // right node
+    KeyNode * right;
+    // constructor
+    KeyNode (Key const & key, int bit)
+      : key (key), bit (bit)
+    {}
+    // destructor
+    ~ KeyNode ()
+    {
+      if (left->bit > bit)
+      {
+        delete left;
+      }
+      if (right->bit > bit)
+      {
+        delete right;
+      }
+    }
+  };
+
+private:
+  // root key node
+  KeyNode * m_root;
+  // key storage
+  KeyStorage m_key_stor;
+};
+
+// use tpl file
+#pragma lzz tpl
+
+#hdr
+#include <cstddef>
+#include <cstring>
+#include <list>
+#end
+

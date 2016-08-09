@@ -1,0 +1,33 @@
+namespace basilcc
+{
+  class CC;
+
+  // get state from follow kernel
+  StatePtr getState (CC & cc, FollowKernelPtr follow_kernel)
+  {
+    return getTable <StateTable> (cc).getState (cc, follow_kernel);
+  }
+
+  // get states
+  StatePtrVector const & getStates (CC const & cc)
+  {
+    return getTable <StateTable> (cc).getStates ();
+  }
+
+  // get start state
+  StatePtr getStartState (CC & cc, int num)
+  {
+    // start states always first
+    return getStates (cc) [num];
+  }
+}
+
+#hdr
+#include <basilcc/follow_kernel_ptr.h>
+#include <basilcc/state_ptr_vector.h>
+#end
+
+#src
+#include <basilcc/cc.h>
+#include <basilcc/state_table.h>
+#end

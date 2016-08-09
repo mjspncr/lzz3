@@ -1,0 +1,12 @@
+namespace cpp
+{
+  typedef std::map <std::string, MacroPtr> StringMacroPtrMap;
+  typedef StringMacroPtrMap::iterator StringMacroPtrMapIter;
+  typedef StringMacroPtrMap::const_iterator StringMacroPtrMapConstIter;
+}
+
+#hdr
+#include <cpp/macro_ptr.h>
+#include <string>
+#include <map>
+#end

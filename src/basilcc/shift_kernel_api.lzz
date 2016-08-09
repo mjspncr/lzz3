@@ -1,0 +1,25 @@
+namespace basilcc
+{
+  class CC;
+  
+  // get shift kernel from follow rules
+  ShiftKernelPtr getShiftKernel (CC & cc, FollowRulePtrVector const & follow_rules)
+  {
+    ShiftRulePtrVector shift_rules;
+    shift_rules.reserve (follow_rules.size ());
+    transform (follow_rules.begin (), follow_rules.end (), back_inserter (shift_rules), getFollowShiftRule);
+    return getTable <ShiftKernelTable> (cc).getShiftKernel (shift_rules);
+  }
+}
+
+#hdr
+#include <basilcc/follow_rule_ptr_vector.h>
+#include <basilcc/shift_kernel_ptr.h>
+#end
+
+#src
+#include <basilcc/cc.h>
+#include <basilcc/follow_rule.h>
+#include <basilcc/shift_kernel_table.h>
+#include <algorithm>
+#end

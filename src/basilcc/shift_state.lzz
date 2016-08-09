@@ -1,0 +1,55 @@
+namespace basilcc
+{
+  class ShiftState
+  {
+  public:
+    inline ShiftState (int shift_num, StatePtr state)
+      : m_shift_num (shift_num), m_state (state)
+    {}
+    inline ~ ShiftState ()
+    {}
+
+    // get shift number
+    inline int getNumber () const
+    {
+      return m_shift_num;
+    }
+
+    // get state
+    inline StatePtr getState () const
+    {
+      return m_state;
+    }
+
+  private:
+    // (shift sel) number
+    int m_shift_num;
+    StatePtr m_state;
+  }
+
+  // a.getNumber () < b.getNumber ()
+  bool shiftStateLessNumber (ShiftState const & a, ShiftState const & b)
+  {
+    return a.getNumber () < b.getNumber ();
+  }
+
+  // a.getState () < b.getState ()
+  bool shiftStateLessState (ShiftState const & a, ShiftState const & b)
+  {
+    return a.getState ()->getNumber () < b.getState ()->getNumber ();
+  }
+
+  // true if state is equal in shift index
+  bool shiftStateSameState (ShiftState const & a, ShiftState const & b)
+  {
+    return a.getState () == b.getState ();
+  }
+}
+
+#hdr
+#include <basilcc/state_ptr.h>
+#end
+
+#src
+#include <basilcc/state.h>
+#end

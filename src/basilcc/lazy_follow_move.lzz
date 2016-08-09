@@ -1,0 +1,52 @@
+namespace basilcc
+{
+  class CC;
+
+  class LazyFollowMove
+  {
+  public:
+    LazyFollowMove (LazyMoveSelPtr lazy_move_sel, LazyActionSeqPtr def_lazy_action_seq)
+      : m_lazy_move_sel (lazy_move_sel), m_def_lazy_action_seq (def_lazy_action_seq)
+    {}
+    ~ LazyFollowMove ()
+    {}
+
+    // get lazy move selection
+    inline LazyMoveSelPtr getLazyMoveSel () const
+    {
+      return m_lazy_move_sel;
+    }
+
+    // get default lazy action sequence
+    inline LazyActionSeqPtr getDefaultLazyActionSeq () const
+    {
+      return m_def_lazy_action_seq;
+    }
+
+    // get state move
+    StateMovePtr getStateMove (CC & cc, ShiftPtrVector const & token_shifts)
+    {
+      MoveSelPtr move_sel = m_lazy_move_sel->getMoveSel (cc, token_shifts);
+      ActionSeqPtr def_action_seq = m_def_lazy_action_seq->getActionSeq (cc, token_shifts, SymbolPtr ()); 
+      return basilcc::getStateMove (cc, move_sel, def_action_seq);
+    }
+    
+  private:
+    LazyMoveSelPtr m_lazy_move_sel;
+    LazyActionSeqPtr m_def_lazy_action_seq;
+  }
+}
+
+#hdr
+#include <basilcc/lazy_action_seq_ptr.h>
+#include <basilcc/lazy_follow_move_ptr.h>
+#include <basilcc/lazy_move_sel_ptr.h>
+#include <basilcc/shift_ptr_vector.h>
+#include <basilcc/state_move_ptr.h>
+#end
+
+#src
+#include <basilcc/lazy_action_seq.h>
+#include <basilcc/lazy_move_sel.h>
+#include <basilcc/state_move_api.h>
+#end

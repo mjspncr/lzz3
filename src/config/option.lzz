@@ -1,0 +1,194 @@
+namespace config
+{
+  // option kind
+  enum OptionKind
+  {
+    // string
+    OPTION_STRING,
+    // int
+    OPTION_INT,
+    // boolean
+    OPTION_BOOL,
+    // string vector
+    OPTION_STRINGS,
+  }
+
+  class Option
+  {
+  public:
+    Option ()
+    {}
+    virtual ~ Option ()
+    {}
+    virtual OptionKind getKind () const = 0;
+    virtual void setValue (std::string const & value) = 0;
+    virtual std::string getValueAsString () const = 0;
+    bool isBoolOption () const
+    {
+      return getKind () == OPTION_BOOL;
+    }
+  }
+
+  class StringOption : public Option
+  {
+  public:
+    StringOption (std::string const & default_value = std::string ())
+      : m_value (default_value)
+    {}
+    ~ StringOption ()
+    {}
+    // get kind
+    OptionKind getKind () const
+    {
+      return OPTION_STRING;
+    }
+    // set value
+    void setValue (std::string const & value)
+    {
+      m_value = value;
+    }
+    // get value as string
+    std::string getValueAsString () const
+    {
+      return m_value;
+    }
+    // get value
+    inline std::string const & getValue () const
+    {
+      return m_value;
+    }
+  private:
+    std::string m_value;
+  }
+
+  class BoolOption : public Option
+  {
+  public:
+    BoolOption (bool default_value = false)
+      : m_value (default_value)
+    {}
+    ~ BoolOption ()
+    {}
+
+    // get kind
+    OptionKind getKind () const
+    {
+      return OPTION_BOOL;
+    }
+
+    // set value: "yes" or "no"
+    void setValue (std::string const & value)
+    {
+      m_value = (value == "yes" || value == "on");
+    }
+
+    // get value as string
+    std::string getValueAsString () const
+    {
+      return m_value ? "on" : "off";
+    }
+
+    // set value using bool
+    void setValue (bool value)
+    {
+      m_value = value;
+    }
+
+    // get value
+    inline bool getValue () const
+    {
+      return m_value;
+    }
+  private:
+    // value
+    bool m_value;
+  }
+
+  class IntOption : public Option
+  {
+  public:
+    IntOption (int default_value)
+      : m_value (default_value)
+    {}
+    ~ IntOption ()
+    {}
+
+    // get kind
+    OptionKind getKind () const
+    {
+      return OPTION_INT;
+    }
+
+    // set value
+    void setValue (std::string const & value)
+    {
+      m_value = atoi (value.c_str ());
+    }
+
+    // get value as string
+    std::string getValueAsString () const
+    {
+      return intToString (m_value);
+    }
+
+    // set value using int
+    void setValue (int value)
+    {
+      m_value = value;
+    }
+
+    // get value
+    inline int getValue () const
+    {
+      return m_value;
+    }
+
+  private:
+    int m_value;
+  }
+
+  class StringsOption : public Option
+  {
+  public:
+    StringsOption ()
+    {}
+    ~ StringsOption ()
+    {}
+
+    // get kind
+    OptionKind getKind () const
+    {
+      return OPTION_STRINGS;
+    }
+
+    // set value
+    void setValue (std::string const & value)
+    {
+      m_values.push_back (value);
+    }
+
+    // get value as string
+    std::string getValueAsString () const
+    {
+      return std::string ();
+    }
+
+    // get value
+    inline StringVector const & getValue () const
+    {
+      return m_values;
+    }
+
+  private:
+    StringVector m_values;
+  }
+}
+
+#hdr
+#include <util/string_vector.h>
+#end
+
+#src
+#include <cstdlib>
+#include <util/int_to_string.h>
+#end

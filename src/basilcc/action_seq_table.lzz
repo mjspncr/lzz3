@@ -1,0 +1,59 @@
+namespace basilcc
+{
+  class ActionSeqTable : public Table
+  {
+  public:
+    ActionSeqTable ()
+    {
+    }
+    ~ ActionSeqTable ()
+    {
+      deleteObjects (m_action_seqs.begin (), m_action_seqs.end ());
+    }
+
+    // get shared action seq from actions
+    ActionSeqPtr getActionSeq (ActionPtrVector & actions)
+    {
+      for_each (actions.begin (), actions.end (), PlugAction (m_action_seq_trie));
+      ActionSeqPtr & action_seq = m_action_seq_trie.commit (0);
+      if (! action_seq)
+      {
+        action_seq = * m_action_seqs.insert (m_action_seqs.end (), new ActionSeq (m_action_seqs.size (), actions));
+      }
+      return action_seq;
+    }
+
+    // get all action seqs
+    inline ActionSeqPtrVector const & getActionSeqs () const
+    {
+      return m_action_seqs;
+    }
+
+    enum { TABLE = TABLE_ACTION_SEQ }
+  private:
+    ActionSeqPtrTrie m_action_seq_trie;
+    ActionSeqPtrVector m_action_seqs;
+  }
+}
+
+using namespace basilcc;
+
+namespace
+{
+  inline void PlugAction (ActionSeqPtrTrie & trie; ActionPtr action) const
+  {
+    trie.plug (unsigned (action));
+  }
+}
+
+#hdr
+#include <basilcc/action_ptr_vector.h>
+#include <basilcc/action_seq_ptr_trie.h>
+#include <basilcc/action_seq_ptr_vector.h>
+#include <basilcc/table.h>
+#end
+
+#src
+#include <basilcc/action_seq.h>
+#include <basilcc/util.h>
+#end

@@ -1,0 +1,99 @@
+namespace basilcc
+{
+  class BaseRule
+  {
+  public:
+    BaseRule (int num, RulePtr rule, int pos)
+      : m_num (num), m_rule (rule), m_pos (pos)
+    {}
+    ~ BaseRule () {}
+
+    // get base rule number
+    inline int getNumber () const
+    {
+      return m_num;
+    }
+
+    // get rule  
+    inline RulePtr getRule () const
+    {
+      return m_rule;
+    }
+
+    // get position in rule
+    inline int getPos () const
+    {
+      return m_pos;
+    }
+
+    // true if reduction
+    bool isReduction () const
+    {
+      return m_pos == m_rule->getSize ();
+    }
+
+    // get next rule symbol (rule symbol at position)
+    RuleSymbolPtr getNextRuleSymbol () const
+    {
+      return m_rule->getRightRuleSymbol (m_pos);
+    }
+
+    // get next symbol
+    SymbolPtr getNextSymbol () const
+    {
+      return getNextRuleSymbol ()->getSymbol ();
+    }
+
+    // get first priority, called in first closure when all symbols to the left of dot have null in first set
+    Priority getFirstPriority () const
+    {
+      RuleSymbolPtr left_rule_symbol = m_rule->getLeftRuleSymbol ();
+      RuleSymbolPtr next_rule_symbol = m_rule->getRightRuleSymbol (m_pos);
+      return left_rule_symbol->getFirstPriority () + next_rule_symbol->getFirstPriority ();
+    }
+    
+    // get shift priority
+    Priority getShiftPriority () const
+    {
+      // sum of shift priority on left rule symbol and next symbol
+      RuleSymbolPtr left_rule_symbol = m_rule->getLeftRuleSymbol ();
+      RuleSymbolPtr next_rule_symbol = m_rule->getRightRuleSymbol (m_pos);
+      return left_rule_symbol->getShiftPriority () + next_rule_symbol->getShiftPriority ();
+    }
+
+    // to string
+    std::string toString () const
+    {
+      return m_rule->toString (m_pos);
+    }
+
+  private:
+    int m_num;
+    RulePtr m_rule;
+    int m_pos;
+  }
+
+  // true if a < b
+  bool operator < (BaseRule const & a, BaseRule const & b)
+  {
+    return a.getPos () > b.getPos () || (a.getPos () == b.getPos () && ruleLess (a.getRule (), b.getRule ()));
+  }
+  inline bool baseRuleLess (BaseRulePtr a, BaseRulePtr b)
+  {
+    return * a < * b;
+  }
+}
+
+#hdr
+#include <basilcc/base_rule_ptr.h>
+#include <basilcc/priority.h>
+#include <basilcc/rule_ptr.h>
+#include <basilcc/rule_symbol_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#include <string>
+#end
+
+#src
+#include <basilcc/rule.h>
+#include <basilcc/rule_symbol.h>
+#end

@@ -1,0 +1,30 @@
+namespace basilcc
+{
+  class ActionSeq
+  {
+  public:
+    // steals actions
+    ActionSeq (size_t num, ActionPtrVector & actions)
+      : m_num (num)
+    {
+      m_actions.swap (actions);
+    }
+    ~ ActionSeq ()
+    {}
+    inline size_t getNumber () const
+    {
+      return m_num;
+    }
+    inline ActionPtrVector const & getActions () const
+    {
+      return m_actions;
+    }
+  private:
+    size_t m_num;
+    ActionPtrVector m_actions;
+  }
+}
+
+#hdr
+#include <basilcc/action_ptr_vector.h>
+#end

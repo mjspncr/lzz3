@@ -1,0 +1,53 @@
+namespace basilcc
+{
+  class FollowKernelTable : public Table
+  {
+  public:
+    FollowKernelTable ()
+    {}
+    ~ FollowKernelTable ()
+    {
+      deleteObjects (m_follow_kernels.begin (), m_follow_kernels.end ());
+    }
+
+    // get follow kernel from rules
+    FollowKernelPtr getFollowKernel (FollowRulePtrVector & follow_rules)
+    {
+      for_each (follow_rules.begin (), follow_rules.end (), PlugFollowRule (m_follow_kernel_trie));
+      FollowKernelPtr & follow_kernel = m_follow_kernel_trie.commit (0);
+      if (! follow_kernel)
+      {
+        follow_kernel = * m_follow_kernels.insert (m_follow_kernels.end (), new FollowKernel (m_follow_kernels.size (), follow_rules));
+      }
+      return follow_kernel;
+    }
+
+    enum { TABLE = TABLE_FOLLOW_KERNEL }
+  private:
+    FollowKernelPtrTrie m_follow_kernel_trie;
+    FollowKernelPtrVector m_follow_kernels;
+  }
+}
+
+using namespace std;
+using namespace basilcc;
+
+namespace
+{
+  inline void PlugFollowRule (FollowKernelPtrTrie & trie; FollowRulePtr follow_rule) const
+  {
+    trie.plug (unsigned (follow_rule));
+  }
+}
+
+#hdr
+#include <basilcc/follow_kernel_ptr_trie.h>
+#include <basilcc/follow_kernel_ptr_vector.h>
+#include <basilcc/follow_rule_ptr_vector.h>
+#include <basilcc/table.h>
+#end
+
+#src
+#include <basilcc/follow_kernel.h>
+#include <basilcc/util.h>
+#end

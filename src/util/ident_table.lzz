@@ -1,0 +1,53 @@
+// ident_table.lzz
+//
+
+class IdentTable
+{
+public:
+  IdentTable ()
+  {}
+  ~ IdentTable ()
+  {}
+  // discard any pushed chars
+  inline void discard ()
+  {
+    table_.discard ();
+  }
+  // push character
+  inline void push (char ch)
+  {
+    table_.push (ch);
+  }
+  // push string
+  void push (char const * str)
+  {
+    for (char ch = * str; ch != '\0'; ch = * ++ str)
+    {
+      push (ch);
+    }
+  }
+  // get identifier
+  Ident getIdent ()
+  {
+    return table_.getKey ()->getData ();
+  }
+  // get identifier from c string
+  Ident getIdent (char const * str)
+  {
+    push (str);
+    return getIdent ();
+  }
+private:
+  // no copying
+  IdentTable (const IdentTable & id_table);
+  // char trie set
+  CharTrieStringSet table_;
+};
+
+#hdr
+#include <util/ident.h>
+#include <util/char_trie_string_set.h>
+#end
+
+#src
+#end

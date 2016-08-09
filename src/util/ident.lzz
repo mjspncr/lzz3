@@ -1,0 +1,10 @@
+// ident.lzz
+//
+
+typedef char const * Ident;
+
+#hdr
+#end
+
+#src
+#end

@@ -1,0 +1,15 @@
+namespace cpp
+{
+  class Macro;
+  typedef Ptr <Macro> MacroPtr;
+}
+template class Ptr <cpp::Macro>;
+
+#hdr
+#include <util/ptr.h>
+#end
+
+#src
+#include <cpp/macro.h>
+#include <util/ptr.tpl>
+#end

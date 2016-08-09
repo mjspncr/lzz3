@@ -1,0 +1,28 @@
+namespace cpp
+{
+  // read no more than max_num octal digits into buffer
+  // set next char
+  // return number of digits read
+  // output string is terminated with '\0'
+  int readOctalDigits (char const * str, int max_num, char * out, char const ** next_char)
+  {
+    int cnt = 0;
+    for (; cnt < max_num; ++ cnt)
+    {
+      char ch = * str;
+      if (ch == 0 || ! isOctalDigit (ch))
+      {
+        break;
+      }
+      * out ++ = ch;
+      ++ str;
+    }
+    * out = '\0';
+    * next_char = str;
+    return cnt;
+  }
+}
+
+#src
+#include <cpp/is_octal_digit.h>
+#end

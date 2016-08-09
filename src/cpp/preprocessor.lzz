@@ -1,0 +1,917 @@
+class File;
+
+namespace cpp
+{
+  class Lexer;
+
+  class Preprocessor : public basil::Lexer
+  {
+  public:
+    Preprocessor (Session & session, std::string const & filename, bool insert_all = false)
+      : session (session), macro_filter (session, out_tokens), insert_all (insert_all), lexing_line (false),
+        from_file (true), real_mode (false)
+    {
+      // push main file on file stack
+      fs_stack.push_back (new FileStat (session, session.intern (filename), session.intern (file_op::realPath (filename)), true));
+      // auto includes
+      StringVector const & auto_includes = config::getOptionValue (config::opt_auto_includes);
+      if (! auto_includes.empty ())
+      {
+        string dir_name ("include");
+        Loc dir_loc = fs_stack.back ()->lexer.getLoc ();
+        for (StringVectorConstIter i = auto_includes.begin (), endi = auto_includes.end (); i != endi; ++ i)
+        {
+          openIncludeFile (dir_name, dir_loc, false, * i, false);
+        }
+      }
+    }
+    Preprocessor (Session & session, std::string const & str, Loc const & loc)
+      : session (session), macro_filter (session, out_tokens), insert_all (false), lexing_line (false),
+        from_file (false), real_mode (false)
+    {
+      fs_stack.push_back (new FileStat (session, str, loc, true));
+    }
+    // true if lexing from file
+    inline bool fromFile () const
+    {
+      return from_file;
+    }
+    // set real mode
+    void setRealMode (bool mode)
+    {
+      real_mode = mode;
+    }
+    // get next token with lex state
+    int getNextToken (int lex_state, Loc & loc, std::string & lexeme)
+    {
+      int number;
+      if (lex_state != 0 && lexBlock (session, lex_state, fs_stack.back ()->lexer, out_tokens, loc, lexeme))
+      {
+        number = TOKEN_BLOCK;
+      }
+      else
+      {
+        number = getNextToken (loc, lexeme);
+      }
+      return number;
+    }
+    int getNextToken (Loc & loc, std::string & lexeme)
+    {
+      TokenPtr token = getNextToken ();
+      loc = token->getLocation ();
+      lexeme = token->getLexeme ();
+      return token->getNumber ();
+    }
+    TokenPtr getNextToken ()
+    {
+      TokenPtr token;
+      while (out_tokens.empty ())
+      {
+        if (lexing_line && fs_stack.back ()->lexer.getNextToken (token))
+        {
+          macro_filter.next (token);
+        }
+        else
+        {
+          // not lexing line
+          lexing_line = false;
+          // current file stat and if stat
+          FileStat & fs = * fs_stack.back ();
+          IfStat & is = fs.is_stack.back ();
+          // advance to next non blank line
+          while (! fs.lexer.getNextToken (token)) {}
+          // check end of file
+          int number = token->getNumber ();
+          if (number == EOT)
+          {
+            // should be outside any #if blocks
+            if (is.ss != IFS_NONE)
+            {
+              throw ParseException (is.loc, "end of file before matching #endif");
+            }
+            fs_stack.pop_back ();
+            if (fs_stack.empty ())
+            {
+              // no more tokens 
+              macro_filter.flush ();
+              out_tokens.push_back (token);
+            }
+          }
+          // if not hash then it's code
+          else if (number != TOKEN_HASH)
+          {
+            // if inserting file and live send token through macro filter and lex rest of line
+            if ((real_mode || fs.insert) && is.rs == IFR_ON)
+            {
+              macro_filter.next (token);
+              lexing_line = true;
+            }
+            // otherwise discard line
+            else
+            {
+              fs.lexer.discardRestOfLine ();
+            }
+          }
+          // found # on start of line
+          // if by itself then discard
+          else if (! fs.lexer.getNextToken (token))
+          {
+            // harmless, do nothing
+          }
+          // token must be an identifier
+          else if (token->getNumber () != TOKEN_IDENT)
+          {
+            // error but discard rest of line and continue
+            session.error (token->getLocation (), "invalid directive");
+            fs.lexer.discardRestOfLine ();
+          }
+          else
+          {
+            // directive name and location
+            Loc const & dir_loc = token->getLocation ();
+            string const & dir_name = token->getLexeme ();
+            DirKind dir_kind;
+            // must be real directive, in real mode don't accept lzz directives
+            if (! isDir (session, dir_name, dir_kind) || (real_mode && isLzzDir (dir_kind)))
+            {
+              session.error (dir_loc, Message ("#% is not a valid directive") << dir_name);
+              fs.lexer.discardRestOfLine ();
+            }
+            else
+            {
+              switch (dir_kind)
+              {
+                case DEFINE_DIR:
+                {
+                  prepDefine (dir_loc);
+                  break;
+                }
+                case INCLUDE_DIR:
+                case INSERT_DIR:
+                {
+                  prepInclude (dir_loc, dir_name, dir_kind == INSERT_DIR);
+                  break;
+                }
+                case IF_DIR:
+                {
+                  prepIf (dir_loc, dir_name);
+                  break;
+                }
+                case IFNDEF_DIR:
+                case IFDEF_DIR:
+                {
+                  prepIfdef (dir_loc, dir_name, dir_kind == IFNDEF_DIR);
+                  break;
+                }
+                case ELIF_DIR:
+                {
+                  prepElif (dir_loc, dir_name);
+                  break;
+                }
+                case ELSE_DIR:
+                {
+                  prepElse (dir_loc, dir_name);
+                  break;
+                }
+                case ENDIF_DIR:
+                {
+                  prepEndif (dir_loc, dir_name);
+                  break;
+                }
+                case UNDEF_DIR:
+                {
+                  prepUndef (dir_loc, dir_name);
+                  break;
+                }
+                case LINE_DIR:
+                {
+                  prepLine (dir_loc);
+                  break;
+                }
+                case ERROR_DIR:
+                {
+                  prepError (dir_loc);
+                  break;
+                }
+                case PRAGMA_DIR:
+                {
+                  prepPragma (dir_loc);
+                  break;
+                }
+                case WARNING_DIR:
+                {
+                  prepWarning (dir_loc);
+                  break;
+                }
+                case HDR_DIR:
+                {
+                  prepFileBlock (dir_loc, dir_name, session.getOutput ().getHdrFile ());
+                  break;
+                }
+                case SRC_DIR:
+                {
+                  prepFileBlock (dir_loc, dir_name, session.getOutput ().getSrcFile ());
+                  break;
+                }
+                case INL_DIR:
+                {
+                  prepFileBlock (dir_loc, dir_name, session.getOutput ().getInlFile ());
+                  break;
+                }
+                case TPL_DIR:
+                {
+                  prepFileBlock (dir_loc, dir_name, session.getOutput ().getTplFile ());
+                  break;
+                }
+                case TNL_DIR:
+                {
+                  prepFileBlock (dir_loc, dir_name, session.getOutput ().getTnlFile ());
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+      token = out_tokens.front ();
+      out_tokens.pop_front ();
+      int number = token->getNumber ();
+      if (number == TOKEN_IDENT && session.isKeyword (token->getLexeme (), number))
+      {
+        token->setNumber (number);
+      }
+      else if (number == TOKEN_PP_NUMBER)
+      {
+        lexPPNumber (token);
+      }
+      return token;
+    }
+
+  private:
+    // preprocess #define line, dir_loc is location of directive
+    void prepDefine (Loc const & dir_loc)
+    {
+      // get current file stat and if state
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      // lex line if not successful remaining tokens on line discarded
+      Loc loc;
+      string name;
+      bool is_func = false;
+      StringVector params;
+      bool var = false;
+      TokenPtrVector rep_tokens;
+      if (lexDefineLine (session, fs.lexer, false, dir_loc, loc, name, is_func, params, var, rep_tokens))
+      {
+        // add macro (and check replacement set) only if in true #if
+        if (is.rs == IFR_ON && checkMacroTokens (session, is_func, params, var, rep_tokens))
+        {
+          // check if already defined
+          MacroPtr macro;
+          if (isMacro (session, name, macro))
+          {
+            if (! isMacroSame (macro, is_func, params, var, rep_tokens))
+            {
+              // warn and ignore this definition
+              session.warning (loc, Message ("macro % redefined") << name);
+            }
+          }
+          else
+          {
+            if (is_func)
+            {
+              macro = MacroPtr (new FuncMacro (loc, name, params, var, rep_tokens));
+            }
+            else
+            {
+              macro = MacroPtr (new ObjMacro  (loc, name, rep_tokens));
+            }
+            addMacro (session, macro);
+          }
+        }
+      }
+    }
+
+    // true if file has pragma once
+    bool hasPragmaOnce (char const * realname)
+    {
+      return pragma_once.count (realname) == 1;
+    }
+
+    // open file
+    void openIncludeFile (std::string const & dir_name, Loc const & name_loc, bool insert, std::string const & name, bool is_system)
+    {
+      string filename;
+      if (! findIncludeFile (name_loc.getFullname (), name, is_system, filename))
+      {
+        throw ParseException (name_loc, Message ("file not found: %") << name);
+      }
+      char const * fullname = session.intern (file_op::realPath (filename));
+      if (! (hasPragmaOnce (fullname)))
+      {
+        // pause current lexer and push new file stat
+        fs_stack.back ()->lexer.pause ();
+        fs_stack.push_back (new FileStat (session, session.intern (filename), fullname, insert || insert_all));
+      }
+    }
+
+    // preprocess #include directive, dir_loc is location of directive
+    void prepInclude (Loc const & dir_loc, std::string const & dir_name, bool insert)
+    {
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      Loc name_loc;
+      string name;
+      if (lexIncludeLine (session, fs.lexer, dir_loc, dir_name, is.rs == IFR_ON, name_loc, name))
+      {
+        bool is_system = false;
+        name = removeIncludeFileDelimiters (name, is_system);
+        openIncludeFile (dir_name, name_loc, insert, name, is_system);
+      }
+    }
+
+    // preprocess #if line, dir_loc is location of directive
+    void prepIf (Loc const & dir_loc, std::string const & dir_name)
+    {
+      // get current file stat and if state
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      // get next read state
+      IfRead rs = IFR_OFF;
+      bool live = is.rs == IFR_ON;
+      if (lexIfLine (session, fs.lexer, dir_loc, dir_name, live))
+      {
+        rs = IFR_ON;
+      }
+      else if (live)
+      {
+        rs = IFR_WAIT;
+      }
+      // push next if state
+      fs.is_stack.push_back (IfStat (dir_loc, IFS_IF, rs));
+    }
+
+    // prep #ifdef (or #ifndef) line, dir_loc is location of directive
+    void prepIfdef (Loc const & dir_loc, std::string const & dir_name, bool is_ifndef)
+    {
+      // get current file stat and if state
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      IfRead rs = IFR_OFF;
+      std::string macro_name;
+      if (lexIfdefLine (session, fs.lexer, dir_loc, is_ifndef ? "ifndef" : "ifdef", macro_name) && is.rs == IFR_ON)
+      {
+        bool is_macro = isMacro (session, macro_name);
+        if (is_ifndef)
+        {
+          rs = is_macro ? IFR_WAIT : IFR_ON;
+        }
+        else
+        {
+          rs = is_macro ? IFR_ON : IFR_WAIT;
+        }
+      }
+      fs.is_stack.push_back (IfStat (dir_loc, IFS_IF, rs));
+    }
+
+    // preprocess #elif line, dir_loc is location of directive
+    void prepElif (Loc const & dir_loc, std::string const & dir_name)
+    {
+      // get current file stat and if state
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      // ignore line if out of order
+      if (is.ss != IFS_IF)
+      {
+        session.error (dir_loc, Message ("#% without preceeding #if") << dir_name);
+        discardRestOfLine (fs.lexer);
+        return;
+      }
+      // get next read state
+      if (lexIfLine (session, fs.lexer, dir_loc, dir_name, is.rs == IFR_WAIT))
+      {
+        is.rs = IFR_ON;
+      }
+    }
+
+    // preprocess #else line, dir_loc is location of directive
+    void prepElse (Loc const & dir_loc, std::string const & dir_name)
+    {
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      TokenPtr token;
+      if (fs.lexer.getNextToken (token))
+      {
+        session.warning (token->getLoc (), Message ("extra characters after #%") << dir_name);
+        discardRestOfLine (fs.lexer);
+      }
+      if (is.ss != IFS_IF)
+      {
+        session.error (dir_loc, "#else without preceeding #if");
+        return;
+      }
+      // if waiting then if state is live, otherwise off
+      is.rs = is.rs == IFR_WAIT ? IFR_ON : IFR_OFF;
+      is.ss = IFS_ELSE;
+    }
+
+    // preprocess #endif line, dir_loc is location of directive
+    void prepEndif (Loc const & dir_loc, std::string const & dir_name)
+    {
+      // get current file stat and if state
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      // no characters should be remaining on line
+      TokenPtr token;
+      if (fs.lexer.getNextToken (token))
+      {
+        session.warning (token->getLocation (), Message ("extra characters after #%") << dir_name);
+        discardRestOfLine (fs.lexer);
+      }
+      // skip line if directive is out of order
+      if (is.ss == IFS_NONE)
+      {
+        session.error (dir_loc, "#endif without preceeding #if");
+        return;
+      }
+      // pop if state
+      fs.is_stack.pop_back ();
+    }
+
+    // prep #undef line, dir_loc is location of directive
+    void prepUndef (Loc const & dir_loc, std::string const & dir_name)
+    {
+      // get current file stat and if state
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      string macro_name;
+      if (lexIfdefLine (session, fs.lexer, dir_loc, "undef", macro_name) && is.rs == IFR_ON)
+      {
+        if (isMacro (session, macro_name))
+        {
+          delMacro (session, macro_name);
+        }
+      }
+    }
+
+    // preprocess #line line, dir_loc is location of directive
+    void prepLine (Loc const & dir_loc)
+    {
+      // get current file stat and if state
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      int line_num;
+      string filename;
+      if (lexLineLine (session, fs.lexer, dir_loc, is.rs == IFR_ON, line_num, filename))
+      {
+        if (! filename.empty ())
+        {
+          // if not absolute use path of current file 
+          if (! file_op::isAbsolute (filename))
+          {
+            filename = file_op::join (file_op::getPath (fs.lexer.getFilename ()), filename);
+          }
+          fs.lexer.setLine (line_num, session.intern (filename));
+        }
+        else
+        {
+          fs.lexer.setLine (line_num);
+        }
+      }
+    }
+
+    // preprocess #error line, dir_loc is location of directive
+    void prepError (Loc const & dir_loc)
+    {
+      // get current file stat and if state
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      // get rest of line
+      string str;
+      fs.lexer.discardWs ();
+      fs.lexer.readRestOfLine (str);
+      if (is.rs == IFR_ON)
+      {
+        throw ParseException (dir_loc, str);
+      }
+    }
+
+    // preprocess #pragma line, dir_loc is location of directive
+    void prepPragma (Loc const & dir_loc)
+    {
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      TokenPtrVector tokens;
+      lexRestOfLine (fs.lexer, tokens);
+      // act on it only if live
+      if (is.rs == IFR_ON && ! tokens.empty ())
+      {
+        TokenPtrVectorConstIter beg = tokens.begin (), end = tokens.end ();
+        bool has_lzz = false;
+        if ((* beg)->getLexeme () == "lzz")
+        {
+          has_lzz = true;
+          if (++ beg == end)
+          {
+            throw ParseException (dir_loc, "missing lzz pragma");
+          }
+        }
+        string const & name = (* beg ++)->getLexeme ();
+        if (name == "once")
+        {
+          pragma_once.insert (fs.realname);
+        }
+        else if (name == "tpl")
+        {
+          // "#pragma tpl" alone means yes
+          if (beg == end || isYes ((* beg ++)->getLexeme ()))
+          {
+            session.getOutput ().useTpl ();
+          }
+        }
+        else if (has_lzz)
+        {
+          throw ParseException (dir_loc, Message ("pragma % not supported") << name);
+        }
+        if (beg != end)
+        {
+          session.warning (dir_loc, "extra characters after #pragma");
+        }
+      }
+    }
+
+    // preprocess #warning line, dir_loc is location of directive
+    void prepWarning (Loc const & dir_loc)
+    {
+      FileStat & fs = * fs_stack.back ();
+      IfStat & is = fs.is_stack.back ();
+      string str;
+      fs.lexer.discardWs ();
+      fs.lexer.readRestOfLine (str);
+      if (is.rs == IFR_ON)
+      {
+        session.warning (dir_loc, str);
+      }
+    }
+
+    // #hdr, #src, #inl, #tpl and #tnl blocks
+    void prepFileBlock (Loc const & dir_loc, std::string const & dir_name, File & file)
+    {
+      // get current file stat and if state
+      FileStat & fs = * fs_stack.back ();
+      // read rest of line and warn if extra chars
+      {
+        string line;
+        fs.lexer.readRestOfLine (line);
+        line = trim (line);
+        if (! line.empty ())
+        {
+          session.warning (dir_loc, Message ("extra characters after #%") << dir_name);
+        }
+      }
+      Loc loc;
+      string str;
+      readFileBlock (session, fs.lexer, dir_loc, dir_name, loc, str);
+      IfStat & is = fs.is_stack.back ();
+      // print if live and block not empty
+      if (is.rs == IFR_ON && ! str.empty ())
+      {
+        printBlock (file, loc, str);
+      }
+    }
+
+  private:
+    // cpp state
+    Session & session;
+    // tokens passed through macro filter
+    TokenPtrDeque out_tokens;
+    // file stat stack
+    FileStatPtrVector fs_stack;
+    // macro filter
+    MacroFilter macro_filter;
+    // true if #insert'ing #include files
+    bool insert_all;
+    // true if lexing current line
+    bool lexing_line;
+
+    // true if lexing from file -- really needed?
+    bool from_file;
+    // true if real mode (need for -e option, to really preprocess function bodies and other BLOCKS)
+    bool real_mode;
+
+    // included filenames with pragma once
+    std::set <char const *> pragma_once;
+  }
+}
+
+using namespace cpp;
+using namespace std;
+
+namespace
+{
+  // lex #include line, return true if found name and live
+  bool lexIncludeLine (Session & session, Lexer & lexer, Loc const & dir_loc, string const & dir_name,
+      bool live, Loc & name_loc, string & name)
+  {
+    Loc loc;
+    TokenPtr token;
+    if (! lexer.getNextToken (INCLUDE_LEX_STATE, loc, token))
+    {
+      session.error (dir_loc, Message ("missing filename after #%") << dir_name);
+      return false;
+    }
+    // find filename string, line should be either a string or some number of tokens (not starting with a string)
+    if (token->getNumber () == TOKEN_LITERAL_STRING)
+    {
+      TokenPtr next_token;
+      if (lexer.getNextToken (next_token))
+      {
+        session.error (dir_loc, Message ("extra characters after #%") << dir_name);
+        discardRestOfLine (lexer);
+      }
+      if (live)
+      {
+        name_loc = token->getLoc ();
+        name = token->getLexeme ().c_str ();
+      }
+      else
+      {
+        return false;
+      }
+    }
+    // if not live discard remaining tokens
+    else if (! live)
+    {
+      discardRestOfLine (lexer);
+      return false;
+    }
+    // otherwise replace macros in token set
+    else
+    {
+      TokenPtrDeque out_tokens;
+      MacroFilter filter (session, out_tokens);
+      TokenPtrVector tokens;
+      tokens.push_back (token);
+      lexRestOfLine (lexer, tokens);
+      filter.next (tokens);
+      // could be either a literal string or a '<' followed by some number of tokens then '>'
+      // a system file must have at least three tokens
+      if (out_tokens.size () >= 3 && out_tokens.front ()->getNumber () == TOKEN_LT && out_tokens.back ()->getNumber () == TOKEN_GT)
+      {
+        name_loc = token->getLoc ();
+        // concat all tokens to get file string
+        for (TokenPtrDequeConstIter beg = out_tokens.begin (), end = out_tokens.end (); beg != end; ++ beg)
+        {
+          name += (* beg)->getLexeme ();
+        }
+      }
+      // a user file cannot be a wide string literal
+      else if (out_tokens.size () == 1 && out_tokens.front ()->getNumber () == TOKEN_LITERAL_STRING)
+      {
+        name_loc = token->getLoc ();
+        name = out_tokens.front ()->getLexeme ();
+      }
+      // otherwise invalid file after macro expansion
+      else
+      {
+        session.error (loc, "not a filename after macro expansion");
+        return false;
+      }
+    }
+    return true;
+  }
+
+  // lex #if line return true if live and expr is true
+  bool lexIfLine (Session & session, Lexer & lexer, Loc const & dir_loc, string const & dir_name, bool live)
+  {
+    // read all tokens on line
+    bool result = false;
+    Loc eol_loc;
+    TokenPtrVector tokens;
+    lexRestOfLine (lexer, eol_loc, tokens);
+    if (tokens.empty ())
+    {
+      if (live)
+      {
+        session.error   (dir_loc, "missing characters after #if");
+      }
+      else
+      {
+        session.warning (dir_loc, "missing characters after #if");
+      }
+    }
+    // evaluate expr only if live
+    else if (live)
+    {
+      // translate macros
+      TokenPtrDeque out_tokens;
+      MacroFilter filter (session, out_tokens);
+      filter.if_context = true;
+      filter.next (tokens);
+      filter.flush ();
+      // warn if empty after macro translation 
+      if (out_tokens.empty ())
+      {
+        session.error (tokens.front ()->getLocation (), "no tokens after macro expansion");
+      }
+      else
+      {
+        TokenPtrVector temp (out_tokens.begin (), out_tokens.end ());
+        result = evalHashIfExpr (session, dir_name, eol_loc, temp);
+      }
+    }
+    return result;
+  }
+
+  // lex #ifdef (or #ifndef or #unde) line, return true if syntax OK
+  bool lexIfdefLine (Session & session, Lexer & lexer, Loc const & dir_loc, string const & dir_name, string & macro_name)
+  {
+    Loc loc;
+    TokenPtr token;
+    if (! lexer.getNextToken (loc, token) || token->getNumber () != TOKEN_IDENT)
+    {
+      session.warning (dir_loc, Message ("expect identifier after #%") << dir_name);
+      if (token)
+      {
+        discardRestOfLine (lexer);
+      }
+      return false;
+    }
+    else
+    {
+      macro_name = token->getLexeme ();
+      // no tokens should be remaining on line
+      if (lexer.getNextToken (loc, token))
+      {
+        session.warning (loc, Message ("extra characters after #%") << dir_name);
+        discardRestOfLine (lexer);
+      }
+    }
+    return true;
+  }
+
+  // true if token_set is a line number, if so set line_num
+  bool isLineNum (TokenPtr const & token, int & line_num)
+  {
+    bool result = false;
+    lexPPNumber (token);
+    if (token->getNumber () == TOKEN_LITERAL_INT)
+    {
+      line_num = atoi (token->getLexeme ().c_str ());
+      result = true;
+    }
+    return result;
+  }
+
+  // true if token_set is a line number and filename, if so set line_num and filename
+  bool isLineNumAndFilename (TokenPtr const & token1, TokenPtr const & token2, int & line_num, string & filename)
+  {
+    bool result = false;
+    lexPPNumber (token1);
+    if (token1->getNumber () == TOKEN_LITERAL_INT && token2->getNumber () == TOKEN_LITERAL_STRING)
+    {
+      line_num = atoi (token1->getLexeme ().c_str ());
+      filename = removeDelimiters (token2->getLexeme ());
+      result = true;
+    }
+    return result;
+  }
+
+  // lex #line line, return true if live and syntax is valid and set line number and filename (filename optional)
+  bool lexLineLine (Session & session, Lexer & lexer, Loc const & dir_loc, bool live, int & line_num, string & filename)
+  {
+    bool result = false;
+    TokenPtrVector tokens;
+    lexRestOfLine (lexer, tokens);
+    if (tokens.empty ())
+    {
+      session.warning (dir_loc, "missing #line arguments");
+    }
+    else if (live)
+    {
+      if ((tokens.size () == 1 && isLineNum (tokens [0], line_num)) ||
+          (tokens.size () == 2 && isLineNumAndFilename (tokens [0], tokens [1], line_num, filename)))
+      {
+        result = true;
+      }
+      else
+      {
+        TokenPtrDeque out_tokens;
+        MacroFilter filter (session, out_tokens);
+        filter.next (tokens);
+        filter.flush ();
+        if ((out_tokens.size () == 1 && isLineNum (out_tokens [0], line_num)) ||
+            (out_tokens.size () == 2 && isLineNumAndFilename (out_tokens [0], out_tokens [1], line_num, filename)))
+        {
+          result = true;
+        }
+        else
+        {
+          session.error (tokens.front ()->getLoc (), "unsupported #line syntax");
+        }
+      }
+    }
+    return result;
+  }
+
+  // read (#hdr, #src, etc) block
+  void readFileBlock (Session & session, Lexer & lexer, Loc const & dir_loc, string const & dir_name, Loc & loc, string & str)
+  {
+    loc = lexer.getLoc ();
+    char ws [] = " \t";
+    ostringstream os;
+    for (;;)
+    {
+      Loc line_loc = lexer.getLoc ();
+      string line; 
+      if (! lexer.readLine (line))
+      {
+        session.error (dir_loc, Message ("end of file before end of #%") << dir_name);
+        break;
+      }
+      // check for terminating '#end' ('%:' is a digraph for '#')
+      string::size_type p = line.find_first_not_of (ws);
+      if (p != string::npos && (line [p] == '#' || (line [p] == '%' && p + 1 < line.length () && line [++ p] == ':')))
+      {
+        p = line.find_first_not_of (ws, p + 1);
+        if (p != string::npos)
+        {
+          string::size_type q = line.find_first_of (ws, p);
+          if (q == string::npos)
+          {
+            q = line.length ();
+          }
+          if (q - p == 3 && line.compare (p, 3, "end") == 0)
+          {
+            if (! trim (line.substr (q, string::npos)).empty ())
+            {
+              session.warning (loc, "extra characters after #end");
+            }
+            break;
+          }
+        }
+      }
+      os << line << '\n';
+    }
+    str = os.str ();
+    trimBack (str);
+  }
+
+  // return header file name without delimiters, set is_system true if delimited by < and >
+  string removeIncludeFileDelimiters (string const & str, bool & is_system)
+  {
+    is_system = str [0] == '<';
+    return removeDelimiters (str);
+  }
+
+  // remove first and last chars from string
+  string removeDelimiters (string const & str)
+  {
+    return str.substr (1, str.length () - 2);
+  }
+}
+
+#hdr
+#include <basil/lexer.h>
+#include <cpp/file_stat_ptr_vector.h>
+#include <cpp/file_type.h>
+#include <cpp/macro_filter.h>
+#include <cpp/session_fwd.h>
+#include <cpp/token_ptr_deque.h>
+#include <util/int_int_map.h>
+#include <util/int_vector.h>
+#include <util/string_int_map.h>
+#include <util/string_int_vector.h>
+#include <stdlib.h>
+#include <map>
+#include <set>
+#end
+
+#src
+#include <config/options.h>
+#include <cpp/check_macro_tokens.h>
+#include <cpp/dir_table.h>
+#include <cpp/eval_if_expr.h>
+#include <cpp/file_stat.h>
+#include <cpp/find_include_file.h>
+#include <cpp/is_macro_same.h>
+#include <cpp/lex_block.h>
+#include <cpp/lex_define_line.h>
+#include <cpp/lex_pp_number.h>
+#include <cpp/macro.h>
+#include <cpp/macro_table.h>
+#include <cpp/session.h>
+#include <cpp/token.h>
+#include <cpp/token_numbers.h>
+#include <output/file.h>
+#include <output/output.h>
+#include <util/file_op.h>
+#include <util/message.h>
+#include <util/parse_exception.h>
+#include <util/parse_yes_no.h>
+#include <util/string_icompare.h>
+#include <util/trim.h>
+#include <algorithm>
+#include <iostream>
+#include <sstream>
+#end

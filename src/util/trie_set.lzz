@@ -1,0 +1,137 @@
+// trie_set
+
+template <class T, T TERM, unsigned int BLOCKSIZE>
+class TrieSet
+{
+public:
+  TrieSet ()
+  {
+    // create null key
+    TrieKey <T, TERM> key = m_key_manager.freeze ();
+    m_key_manager.commit ();
+    m_root = new Node (key, 0xFFFFFFFF);
+    m_root->left = m_root;
+    m_root->right = m_root;
+  }
+  ~ TrieSet ()
+  {
+    delete m_root;
+  } 
+  // append to current key
+  void plug (T t)
+  {
+    m_key_manager.plug (t);
+  }
+  // commit string, return interned key
+  TrieKey <T, TERM> const & commit ()
+  {
+    Node * n, * m, ** p;
+    unsigned int bit, dif;
+    TrieKey <T, TERM> key = m_key_manager.freeze ();
+    // find closest match
+    n = m_root;
+    do
+    {
+      bit = n->bit;
+      if (key.isBitSet (bit))
+      {
+        n = n->right;
+      }
+      else
+      {
+        n = n->left;
+      }
+    }
+    while (bit < n->bit);
+    if (key.compare (n->key))
+    {
+      // discard data
+      m_key_manager.discard ();
+      // save node
+      m = n;
+    }
+    else
+    {
+      // commit data
+      m_key_manager.commit ();
+      // get first different bit
+      dif = key.getDiffBit (n->key.getData ());
+      // where to insert it?
+      p = & m_root;
+      n = * p;
+      bit = n->bit;
+      while (dif > bit)
+      {
+        if (key.isBitSet (bit))
+        {
+          p = & n->right;
+        }
+        else
+        {
+          p = & n->left;
+        }
+        n = * p;
+        if (bit >= n->bit)
+        {
+          break;
+        }
+        bit = n->bit;
+      }
+      // create new node
+      m = new Node (key, dif);
+      if (key.isBitSet (dif))
+      {
+        m->right = m;
+        m->left = n;
+      }
+      else
+      {
+        m->left = m;
+        m->right = n;
+      }
+      * p = m;
+    }
+    // return pointer to new key
+    return m->key;
+  }
+private:
+  struct Node
+  {
+    TrieKey <T, TERM> key;
+    unsigned int bit;
+    Node * left;
+    Node * right;
+    Node (TrieKey <T, TERM> const & key, unsigned int bit)
+      : key (key), bit (bit)
+    {}
+    ~ Node ()
+    {
+      if (left->bit > bit)
+      {
+        delete left;
+      }
+      if (right->bit > bit)
+      {
+        delete right;
+      }
+    }
+  };
+  TrieKeyStore <T, TERM, BLOCKSIZE> m_key_manager;
+  Node * m_root;
+};
+
+template class TrieSet <char, 0, 128>;
+
+// use tpl file
+#pragma tpl
+
+#hdr
+#include <util/trie_key_store.h>
+#include <assert.h>
+#include <stddef.h>
+#include <string.h>
+#end
+
+#src
+#include <util/trie_set.tpl>
+#end

@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <SymbolPtr> SymbolPtrVector;
+  typedef SymbolPtrVector::const_iterator SymbolPtrVectorConstIter;
+  typedef SymbolPtrVector::iterator SymbolPtrVectorIter;
+}
+
+#hdr
+#include <basilcc/symbol_ptr.h>
+#include <vector>
+#end

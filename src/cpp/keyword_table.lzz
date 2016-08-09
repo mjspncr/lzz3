@@ -1,0 +1,67 @@
+namespace cpp
+{
+  // if name is keyword set kind and return true
+  bool isKeyword (Session & session, std::string const & name, int & kind)
+  {
+    return session.getKeywordTable ().isKeyword (name, kind);
+  }
+
+  // preprocessor keywords
+  struct KeywordTable
+  {
+    KeywordTable ()
+    {
+      struct
+      {
+        char const * name;
+        int kind;
+      }
+      tbl [] =
+      {
+        { "and",              TOKEN_AND },
+        { "bitor",            TOKEN_BITOR },
+        { "or",               TOKEN_OR },
+        { "xor",              TOKEN_XOR },
+        { "compl",            TOKEN_BITNOT },
+        { "bitand",           TOKEN_BITAND },
+        { "not",              TOKEN_NOT },
+        { "not_eq",           TOKEN_NOTEQ },
+        /* are these real keywords?
+        { "and_eq",           TOKEN_BITAND_ASSIGN },
+        { "or_eq",            TOKEN_BITOR_ASSIGN },
+        { "xor_eq",           TOKEN_XOR_ASSIGN },
+        */
+      };
+      for (int i = 0, n = ARRAY_SIZE (tbl); i < n; ++ i)
+      {
+        kwds.insert (StringIntMap::value_type (tbl [i].name, tbl [i].kind));
+      }
+    }
+    ~ KeywordTable ()
+    {}
+    // if name is keyword set kind and return true
+    bool isKeyword (std::string const & name, int & kind) const
+    {
+      StringIntMapConstIter p = kwds.find (name);
+      if (p == kwds.end ())
+      {
+        return false;
+      }
+      kind = p->second;
+      return true;
+    }
+  private:
+    StringIntMap kwds;
+  }
+}
+
+#hdr
+#include <cpp/session_fwd.h>
+#include <util/string_int_map.h>
+#end
+
+#src
+#include <cpp/session.h>
+#include <cpp/token_numbers.h>
+#include <util/array_size.h>
+#end

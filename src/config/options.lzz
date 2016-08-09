@@ -1,0 +1,195 @@
+namespace config
+{
+  // lzz runtime dir
+  StringOption opt_lzz_dir;
+
+  // bootstrap basil parser
+  BoolOption opt_bootstrap_basil;
+  // compile basil parser from rules, regenerate basil.fsm
+  BoolOption opt_compile_basil;
+  // compile lzz parser from rules, generate lzz.fsm
+  BoolOption opt_compile_lzz;
+
+  // -inl, create inline file
+  BoolOption opt_inl _dinit (false);
+
+  // -tpl, create template file
+  BoolOption opt_tpl _dinit (false);
+
+  // -tnl, create template inline file
+  BoolOption opt_tnl _dinit (false);
+
+  // -inl-inl (-ii), create inline file, but inline it 
+  BoolOption opt_inl_inl _dinit (false);
+
+  // extensions
+
+  // -hdr-ext, header file extension
+  StringOption opt_hdr_ext _dinit ("h");
+
+  // -src-ext, source file extension
+  StringOption opt_src_ext _dinit ("cpp");
+
+  // -inl-ext, inline file extension
+  StringOption opt_inl_ext _dinit ("inl");
+
+  // -tpl-ext, tempalte file extension
+  StringOption opt_tpl_ext _dinit ("tpl");
+
+  // -tnl-ext, template inline file extension
+  StringOption opt_tnl_ext _dinit ("tnl");
+
+  // has hash lines
+
+  // -hdr-line
+  BoolOption opt_hdr_line _dinit (false);
+
+  // -src-line
+  BoolOption opt_src_line _dinit (false);
+
+  // -inl-line
+  BoolOption opt_inl_line _dinit (false);
+
+  // -tpl-line
+  BoolOption opt_tpl_line _dinit (false);
+
+  // -tnl-line
+  BoolOption opt_tnl_line _dinit (false);
+
+  // smart write
+
+  // -hdr-smart-write
+  BoolOption opt_hdr_smart_write _dinit (false);
+
+  // -src-smart-write
+  BoolOption opt_src_smart_write _dinit (false);
+
+  // -inl-smart-write
+  BoolOption opt_inl_smart_write _dinit (false);
+
+  // -tpl-smart-write
+  BoolOption opt_tpl_smart_write _dinit (false);
+
+  // -tnl-smart-write
+  BoolOption opt_tnl_smart_write _dinit (false);
+
+
+  // -src-if-hdr
+  BoolOption opt_src_if_hdr _dinit (false);
+
+  // -x, expand filename
+  BoolOption opt_expand_filename _dinit (false);
+
+  // -out-dir
+  StringOption opt_out_dir _dinit ("");
+
+  // -dll-api
+  StringOption opt_dll_api _dinit ("");
+  
+  // -dll-exports
+  StringOption opt_dll_exports _dinit ("");
+
+  // -delete-old
+  BoolOption opt_delete_old _dinit (false);
+
+  // -I
+  StringsOption opt_incl_path_set;
+
+  // -D
+  StringsOption opt_macro_set;
+
+  // auto include filename (-ai)
+  StringsOption opt_auto_includes;
+
+  // -P, preprocess file with no regard to context (no BLOCK tokens)
+  BoolOption opt_pp_all _dinit (false);
+
+  // -p, preprocess file using parse context
+  BoolOption opt_pp _dinit (false);
+
+  // -E, preprocess file and include files (no BLOCK tokens), just like complier 
+  BoolOption opt_pp_incl _dinit (false);
+
+  // -r, syntax error recover commands
+  StringOption opt_rec _dinit ("r:DCOLON:COLON,i:IDENT,i:SEMI,r:SEMI:COMMA,d:30");
+
+  // -ts
+  // output template code to source file instead of header file or template file
+  BoolOption opt_tpl_src _dinit (false);
+
+  // -e
+  // preprocess function bodies (and all blocks) as they are scanned
+  BoolOption opt_prep_block _dinit (false);
+
+  // -b
+  // tab_stop
+  IntOption opt_tab_stop _dinit (8);
+
+  // -trace, trace grammar rules
+  BoolOption opt_trace _dinit (false);
+
+  // -macro, for backward compatibility
+  StringsOption opt_persistent_macro_set;
+
+  // -T, print recover tokens
+  BoolOption opt_print_rec_tokens _dinit (false);
+
+  // -v, print option values
+  BoolOption opt_print_options _dinit (false);
+
+  // -rh, print recover help
+  BoolOption opt_rec_help _dinit (false);
+
+  // -ver, print version
+  BoolOption opt_version _dinit (false);
+
+  // -help or -h, print version and usage
+  BoolOption opt_help _dinit (false);
+
+  // -k, package
+  StringOption opt_package _dinit ("");
+
+  // WORKING OPTIONS  
+
+  // generator options
+  BoolOption opt_gen_parser _dinit (false);
+
+  // get option value
+  std::string const & getOptionValue (StringOption const & opt)
+  {
+    return opt.getValue ();
+  }
+
+  // is option set, for string options only
+  bool isOptionSet (StringOption const & opt)
+  {
+    return ! opt.getValue ().empty ();
+  }
+
+  // get option value
+  int getOptionValue (IntOption const & opt)
+  {
+    return opt.getValue ();
+  }
+
+  // get option value
+  bool getOptionValue (BoolOption const & opt)
+  {
+    return opt.getValue ();
+  }
+
+  // get option value
+  StringVector const & getOptionValue (StringsOption const & opt)
+  {
+    return opt.getValue ();
+  }
+}
+
+#hdr
+#include <config/option_fwd.h>
+#include <util/string_vector.h>
+#end
+
+#src
+#include <config/option.h>
+#end

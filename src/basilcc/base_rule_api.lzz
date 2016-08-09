@@ -1,0 +1,27 @@
+namespace basilcc
+{
+  class CC;
+
+  // get base rule from rule and position
+  BaseRulePtr getBaseRule (CC & cc, RulePtr rule, int pos = 0)
+  {
+    return getTable <BaseRuleTable> (cc).getBaseRule (rule, pos);
+  }
+
+  // get base rule at next position
+  BaseRulePtr getNextBaseRule (CC & cc, BaseRulePtr base_rule)
+  {
+    return getTable <BaseRuleTable> (cc).getBaseRule (base_rule->getRule (), base_rule->getPos () + 1);
+  }
+}
+
+#hdr
+#include <basilcc/base_rule_ptr.h>
+#include <basilcc/rule_ptr.h>
+#end
+
+#src
+#include <basilcc/base_rule.h>
+#include <basilcc/base_rule_table.h>
+#include <basilcc/cc.h>
+#end

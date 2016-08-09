@@ -1,0 +1,21 @@
+namespace basilcc
+{
+  class CC;
+
+  // get shift from symbol and state
+  ShiftPtr getShift (CC & cc, SymbolPtr symbol, StatePtr state)
+  {
+    return getTable <ShiftTable> (cc).getShift (symbol, state);
+  }
+}
+
+#hdr
+#include <basilcc/shift_ptr.h>
+#include <basilcc/state_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#end
+
+#src
+#include <basilcc/cc.h>
+#include <basilcc/shift_table.h>
+#end

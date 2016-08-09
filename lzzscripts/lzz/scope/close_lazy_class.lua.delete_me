@@ -1,0 +1,45 @@
+-----------------------------------------------------------------------------
+-- close lazy class definition
+-----------------------------------------------------------------------------
+local FtorSpecSel         = require 'lzz/misc/ftor_spec_sel'
+local append              = require 'framework/append'
+local appendArray         = require 'framework/append_array'
+local DtorName            = require 'lzz/name/dtor_name'
+local defineFunc          = require 'lzz/scope/define_func'
+local getNameLoc          = require 'lzz/name/get_name_loc'
+local setAccess           = require 'lzz/scope/set_access'
+-----------------------------------------------------------------------------
+
+-- define ctor
+local function defineCtor (scope, loc, name, params, ctor_init)
+   local fun_def = {}
+   fun_def.name = name
+   fun_def.params = params
+   fun_def.ctor_init = ctor_init
+   fun_def.body = {loc=loc, lexeme=''}
+   fun_def.specs = FtorSpecSel ():add {loc=loc, lexeme='inline'}
+   defineFunc (scope, fun_def)
+end
+
+-- define dtor
+local function defineDtor (scope, loc, name)
+   local fun_def = {}
+   fun_def.name = DtorName (name.loc, name.ident)
+   fun_def.params = {}
+   fun_def.specs = FtorSpecSel ()
+   fun_def.body = {loc=loc, lexeme=''}
+   defineFunc (scope, fun_def)
+end
+
+local function closeLazyClass (scope)
+   local cls_def = scope.cls_defn
+   local name = cls_def.name
+   local loc = getNameLoc (name)
+   -- public
+   setAccess (scope, loc, 'public')
+   -- ctor and dtor
+   defineCtor (scope, loc, name, cls_def.params, cls_def.ctor_init)
+   --defineDtor (scope, loc, name)
+end
+
+return closeLazyClass

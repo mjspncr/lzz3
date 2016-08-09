@@ -1,0 +1,141 @@
+namespace basilcc
+{
+  class CC;
+
+  // flags
+  enum
+  {
+    // print kernel rules only
+    PRINT_KERNEL_ONLY = 1 << 0,
+    // print shift rules
+    PRINT_SHIFT       = 1 << 1,
+    // print follow rules
+    PRINT_FOLLOW      = 1 << 2,
+  };
+  
+  // print state
+  void printState (CC & cc, StatePtr state, int flags, std::ostream & os)
+  {
+    // state number followed by lex state if non-zero
+    os << state->getNumber ();
+    int lex_state = state->getLexState ().getState ();
+    if (lex_state > 0)
+    {
+      os << " (" << lex_state << ')';
+    }
+    os << "\n-----\n";
+    // conflicts
+    FollowBasePtr follow_base = state->getFollowKernel ()->getFollowBase ();
+    ConflictPtrVector const & conflicts = follow_base->getConflicts ();
+    if (! conflicts.empty ())
+    {
+      for_each (conflicts.begin (), conflicts.end (), PrintConflict (os));
+      os << '\n';
+    }
+    // rules
+    bool kernel_only = flags & PRINT_KERNEL_ONLY;
+    if (flags & PRINT_FOLLOW)
+    {
+      printFollowBase (follow_base, kernel_only, os);
+    }
+    else
+    {
+      ShiftBasePtr shift_base = follow_base->getShiftBase (); 
+      printShiftBase (shift_base, ! (flags & PRINT_SHIFT), kernel_only, os);
+    }
+    // shifts
+    os << '\n';
+    StateMovePtr state_move = state->getStateMove ();
+    MovePtrVector moves = state_move->getMoveSel ()->getMoves ();
+    ActionPtrVector const & def_actions = state_move->getDefaultActionSeq ()->getActions ();
+    if (! (moves.empty () && def_actions.empty ()))
+    {
+      for_each (moves.begin (), moves.end (), PrintMove (os));
+      if (! def_actions.empty ()) 
+      {
+        string str = "* - ";
+        appendActions (str, def_actions);
+        os << str << '\n';
+      }
+      os << '\n';
+    }
+    // gotos
+    ShiftSelPtr nonterm_shift_sel = state->getNontermShiftSel ();
+    if (nonterm_shift_sel)
+    {
+      ShiftPtrVector const & shifts = nonterm_shift_sel->getShifts ();
+      for_each (shifts.begin (), shifts.end (), PrintGoto (os));
+      os << '\n';
+    }
+  }
+
+  // print all states
+  void printStates (CC & cc, int flags, std::ostream & os)
+  {
+    StatePtrVector const & states = getStates (cc);
+    for (int i = 0; i < int (states.size ()); ++ i)
+    {
+      printState (cc, states [i], flags, os);
+    }
+  }
+  void printStates (CC & cc, int flags, std::string const & filename)
+  {
+    ofstream os (filename.c_str ());
+    if (! os)
+    {
+      ThrowException () << "not able to open file for writing: " << filename;
+    }
+    printStates (cc, flags, os);
+  }
+}
+
+using namespace basilcc;
+using namespace std;
+
+namespace
+{
+  // print conflict
+  void PrintConflict (ostream & os; ConflictPtr conflict) const
+  {
+    os << conflict->toString () << '\n';
+  }
+
+  // print move
+  void PrintMove (ostream & os; MovePtr move)
+  {
+    os << move->toString () << '\n';
+  }
+
+  // print goto
+  void PrintGoto (std::ostream & os; ShiftPtr shift)
+  {
+    os << shift->getSymbol ()->getName () << " - GOTO " << shift->getState ()->getNumber () << '\n';
+  }
+}
+
+#hdr
+#include <basilcc/state_ptr.h>
+#include <iosfwd>
+#include <string>
+#end
+
+#src
+#include <basilcc/action.h>
+#include <basilcc/action_seq.h>
+#include <basilcc/conflict.h>
+#include <basilcc/follow_base.h>
+#include <basilcc/follow_kernel.h>
+#include <basilcc/move.h>
+#include <basilcc/move_sel.h>
+#include <basilcc/print_base.h>
+#include <basilcc/shift.h>
+#include <basilcc/shift_sel.h>
+#include <basilcc/state.h>
+#include <basilcc/state_api.h>
+#include <basilcc/state_move.h>
+#include <basilcc/symbol.h>
+#include <util/throw_exception.h>
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#end

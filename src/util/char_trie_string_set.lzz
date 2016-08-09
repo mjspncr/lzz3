@@ -1,0 +1,13 @@
+// char_trie_string_set.lzz
+//
+
+typedef TrieStringSet <char> CharTrieStringSet;
+template class TrieStringSet <char>;
+
+#hdr
+#include <util/trie_string_set.h>
+#end
+
+#src
+#include <util/trie_string_set.tpl>
+#end

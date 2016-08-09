@@ -1,0 +1,61 @@
+namespace basilcc
+{
+  class FollowRuleTable : public Table
+  {
+  public:
+    FollowRuleTable ()
+    {}
+    ~ FollowRuleTable ()
+    {
+      deleteObjects (m_follow_rules.begin (), m_follow_rules.end ());
+    }
+
+    // freeze follow rule, reuse follow_rule or delete it
+    FollowRulePtr freeze (FollowRulePtr & follow_rule)
+    {
+      m_follow_rule_trie.plug (unsigned (follow_rule->getShiftRule ()));
+      m_follow_rule_trie.plug (unsigned (follow_rule->getFollow ()));
+      FollowRulePtr shared_follow_rule = m_follow_rule_trie.commit (follow_rule);
+      if (shared_follow_rule == follow_rule)
+      {
+        m_follow_rules.push_back (shared_follow_rule);
+      }
+      else
+      {
+        deleteObject (follow_rule);
+      }
+      return shared_follow_rule;
+    }
+
+    // get follow rule from shift rule and follow
+    FollowRulePtr getFollowRule (ShiftRulePtr shift_rule, FollowPtr follow)
+    {
+      m_follow_rule_trie.plug (unsigned (shift_rule));
+      m_follow_rule_trie.plug (unsigned (follow));
+      FollowRulePtr & follow_rule = m_follow_rule_trie.commit (0);
+      if (! follow_rule)
+      {
+        follow_rule = new FollowRule (shift_rule, follow);
+      }
+      return follow_rule;
+    }
+
+    enum { TABLE = TABLE_FOLLOW_RULE }
+  private:
+    FollowRulePtrTrie m_follow_rule_trie;
+    FollowRulePtrVector m_follow_rules;
+  }
+}
+
+#hdr
+#include <basilcc/follow_ptr.h>
+#include <basilcc/follow_rule_ptr_trie.h>
+#include <basilcc/follow_rule_ptr_vector.h>
+#include <basilcc/shift_rule_ptr.h>
+#include <basilcc/table.h>
+#end
+
+#src
+#include <basilcc/follow_rule.h>
+#include <basilcc/util.h>
+#end

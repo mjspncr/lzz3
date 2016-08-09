@@ -1,0 +1,4 @@
+namespace cpp
+{
+  class Session;
+}

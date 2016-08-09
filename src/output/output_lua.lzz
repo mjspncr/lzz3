@@ -1,0 +1,167 @@
+// output_lua.lzz
+//
+
+class Logger;
+class Output;
+
+// register output and logger functions in new table, return ref to table
+int registerOutput (lua_State * L, Output & output, Logger & logger)
+{
+  // metatable for FileSection
+  luaL_newmetatable (L, META_FILE_SECTION);
+  luaL_setfuncs (L, file_section_fns, 0);
+  lua_setfield (L, -1, "__index");
+  // lzz functions
+  lua_newtable (L);
+  lua_pushlightuserdata (L, & logger);
+  luaL_setfuncs (L, logger_fns, 1);
+  lua_pushlightuserdata (L, & output);
+  luaL_setfuncs (L, output_fns, 1);
+  return luaL_ref (L, LUA_REGISTRYINDEX);
+}
+
+namespace
+{
+  // warning
+  int lzz_warning (lua_State * L)
+  {
+    Logger & logger = * static_cast <Logger *> (lua_touserdata (L, lua_upvalueindex (1)));
+    Loc const & loc = checkLoc (L, 1);
+    char const * msg = luaL_checkstring (L, 2);
+    logger.warning (loc) << msg << '\n';
+    return 0;
+  }
+
+  // error
+  int lzz_error (lua_State * L)
+  {
+    Logger & logger = * static_cast <Logger *> (lua_touserdata (L, lua_upvalueindex (1)));
+    Loc const & loc = checkLoc (L, 1);
+    char const * msg = luaL_checkstring (L, 2);
+    logger.error (loc) <<  msg << '\n';
+    return 0;
+  }
+
+  // hdr file
+  int lzz_hdr_file (lua_State * L)
+  {
+    Output & output = * static_cast <Output *> (lua_touserdata (L, lua_upvalueindex (1)));
+    bool inl = lua_toboolean (L, 1) != 0;
+    bool tpl = lua_toboolean (L, 2) != 0;
+    // section only BODY or DECL 
+    SectionKind section = SECTION_BODY;
+    if (char const * section_str = luaL_optstring (L, 3, 0))
+    {
+      if (strcmp (section_str, "DECL") == 0)
+      {
+        section = SECTION_DECLARATION;
+      }
+    }
+    File & file = output.getHdrFile (inl, tpl);
+    new (lua_newuserdata (L, sizeof (FileSection))) FileSection (file, section);
+    luaL_setmetatable (L, META_FILE_SECTION);
+    return 1;
+  }
+
+  // src file
+  int lzz_src_file (lua_State * L)
+  {
+    Output & output = * static_cast <Output *> (lua_touserdata (L, lua_upvalueindex (1)));
+    SectionKind section = SECTION_BODY;
+    if (char const * section_str = luaL_optstring (L, 1, 0))
+    {
+      if (strcmp (section_str, "DECL") == 0)
+      {
+        section = SECTION_DECLARATION;
+      }
+    }
+    File & file = output.getSrcFile ();
+    new (lua_newuserdata (L, sizeof (FileSection))) FileSection (file, section);
+    luaL_setmetatable (L, META_FILE_SECTION);
+    return 1;
+  }
+
+  char const META_FILE_SECTION [] = "LZZ_FILE_SECTION";
+  struct FileSection (File & file, SectionKind section) {}
+
+  // print open brace and indent
+  int lzz_print_open_brace (lua_State * L)
+  {
+    FileSection const & fs = * static_cast <FileSection const *> (luaL_checkudata (L, 1, META_FILE_SECTION));
+    printOpenBrace (fs.file, fs.section);
+    return 0;
+  }
+
+  // print close brace and unindent
+  int lzz_print_close_brace (lua_State * L)
+  {
+    FileSection const & fs = * static_cast <FileSection const *> (luaL_checkudata (L, 1, META_FILE_SECTION));
+    bool semi = lua_toboolean (L, 2) != 0;
+    printCloseBrace (fs.file, fs.section, semi);
+    return 0; 
+  }
+
+  // print line
+  int lzz_print (lua_State * L)
+  {
+    FileSection const & fs = * static_cast <FileSection const *> (luaL_checkudata (L, 1, META_FILE_SECTION));
+    Loc const & loc = checkLoc (L, 2);
+    char const * line = luaL_checkstring (L, 3);
+    int offset = (int) luaL_optinteger (L, 4, 0); 
+    printLine (fs.file, fs.section, loc, line, offset);
+    return 0;
+  }
+
+  // print brace enclosed block
+  int lzz_print_enclosed_block (lua_State * L)  
+  {
+    FileSection const & fs = * static_cast <FileSection const *> (luaL_checkudata (L, 1, META_FILE_SECTION));
+    File & file = fs.file;
+    SectionKind skind = fs.section;
+    Loc const & loc = checkLoc (L, 2);
+    char const * code = luaL_checkstring (L, 3);
+    file.indent (skind) << '{' << '\n';
+    printHashLine (file, skind, loc);
+    if (code [0] != '\0')
+    {
+      file.indentExactly (skind, loc.getColumn () - 1) << code << '\n';
+    }
+    file.indent (skind) << '}' << '\n';
+    return 0;
+  }
+
+  luaL_Reg const logger_fns [] =
+  {
+    { "warning",  lzz_warning },
+    { "error",    lzz_error },
+    { 0, 0 },
+  };
+
+  luaL_Reg const output_fns [] =
+  {
+    { "hdrFile",  lzz_hdr_file },
+    { "srcFile",  lzz_src_file },
+    { 0, 0 },
+  };
+
+  luaL_Reg const file_section_fns [] =
+  {
+    { "printOpenBrace",     lzz_print_open_brace },
+    { "printCloseBrace",    lzz_print_close_brace },
+    { "printEnclosedBlock", lzz_print_enclosed_block },
+    { "print",              lzz_print },
+    { 0, 0 },
+  };
+}
+
+#hdr
+#include <lua.hpp>
+#end
+
+#src
+#include <output/file.h>
+#include <output/output.h>
+#include <util/loc_lua.h>
+#include <util/logger.h>
+#include <cstring>
+#end

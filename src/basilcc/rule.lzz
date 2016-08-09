@@ -1,0 +1,152 @@
+namespace basilcc
+{
+  class Rule
+  {
+  public:
+    // constructor
+    Rule (size_t num, RuleNamePtr rule_name, bool is_start, RuleSymbolPtr left_rule_symbol, RuleSymbolPtrVector const & right_rule_symbols,
+        RuleSymbolPtrVector const & explicit_follow, bool can_bypass)
+      : m_num (num), m_rule_name (rule_name), m_is_start (is_start), m_left_rule_symbol (left_rule_symbol),
+        m_right_rule_symbols (right_rule_symbols), m_explicit_follow (explicit_follow), m_can_bypass (can_bypass)
+    {}
+    ~ Rule ()
+    {}
+    
+    // get rule number
+    inline size_t getNumber () const
+    {
+      return m_num;
+    }
+    
+    // get node by index, null if no name
+    RuleNamePtr getRuleName () const
+    {
+      return m_rule_name;
+    }
+
+    // true if start rule
+    inline bool isStart () const
+    {
+      return m_is_start;
+    }
+
+    // get left rule symbol
+    inline RuleSymbolPtr getLeftRuleSymbol () const
+    {
+      return m_left_rule_symbol;
+    }
+
+    // get left symbol
+    inline SymbolPtr getLeftSymbol () const
+    {
+      return m_left_rule_symbol->getSymbol ();
+    }
+
+    // get right rule symbol set
+    inline RuleSymbolPtrVector const & getRightRuleSymbols () const
+    {
+      return m_right_rule_symbols;
+    }
+
+    // get right rule symbol
+    inline RuleSymbolPtr getRightRuleSymbol (int num) const
+    {
+      return m_right_rule_symbols [num];
+    }
+
+    // get right symbol
+    inline SymbolPtr getRightSymbol (int num) const
+    {
+      return getRightRuleSymbol (num)->getSymbol ();
+    }
+
+    // true if rule has nonempty explicit follow
+    inline bool hasExplicitFollow () const
+    {
+      return ! m_explicit_follow.empty ();
+    }
+
+    // get explicit follow set
+    inline RuleSymbolPtrVector const & getExplicitFollow () const
+    {
+      return m_explicit_follow;
+    }
+
+    // get size, number of right hand side symbols
+    int getSize () const
+    {
+      return m_right_rule_symbols.size ();
+    }
+
+    // true if can bypass
+    inline bool canBypass () const
+    {
+      return m_can_bypass;
+    }
+
+    // to string with dot pos
+    std::string toString (int pos = -1) const
+    {
+      string str = m_left_rule_symbol->toString ();
+      str += " ->";
+      for (RuleSymbolPtrVectorConstIter i = m_right_rule_symbols.begin (), endi = m_right_rule_symbols.end (); i != endi; ++ i)
+      {
+        if (i - m_right_rule_symbols.begin () == pos)
+        {
+          str += '.';
+        }
+        else
+        {
+          str += ' ';
+        }
+        str += (* i)->toString ();
+      }
+      // if reduction append number
+      if (size_t (pos) == m_right_rule_symbols.size ())
+      {
+        str += ". (";
+        str += intToString (m_num);
+        str += ')';
+      }
+      return str;
+    }
+  private:
+    size_t m_num;
+    //  rule name, 0 if none
+    RuleNamePtr m_rule_name;
+    bool m_is_start;
+    RuleSymbolPtr m_left_rule_symbol;
+    RuleSymbolPtrVector m_right_rule_symbols;
+    RuleSymbolPtrVector m_explicit_follow;
+    bool m_can_bypass;
+  }
+
+  // a < b
+  inline bool operator < (Rule const & a, Rule const & b)
+  {
+    return a.getNumber () < b.getNumber ();
+  }
+  inline bool ruleLess (RulePtr a, RulePtr b)
+  {
+    return * a < * b;
+  }
+}
+
+using namespace std;
+
+#hdr
+#include <basilcc/priority.h>
+#include <basilcc/rule_symbol_ptr_vector.h>
+#include <basilcc/symbol_ptr.h>
+#include <basilcc/rule_name_ptr.h>
+#include <basilcc/rule_ptr.h>
+#include <string>
+#end
+
+#inl
+#include <basilcc/rule_symbol.h>
+#end
+
+#src
+#include <util/int_to_string.h>
+#end

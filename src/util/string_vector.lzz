@@ -1,0 +1,13 @@
+// string_vector.lzz
+//
+
+typedef std::vector <std::string> StringVector;
+typedef StringVector::iterator StringVectorIter;
+typedef StringVector::const_iterator StringVectorConstIter;
+typedef StringVector::reverse_iterator StringVectorReverseIter;
+typedef StringVector::const_reverse_iterator StringVectorConstReverseIter;
+
+#hdr
+#include <string>
+#include <vector>
+#end

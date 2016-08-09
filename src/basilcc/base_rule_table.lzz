@@ -1,0 +1,44 @@
+namespace basilcc
+{
+  class BaseRuleTable : public Table
+  {
+  public:
+    BaseRuleTable ()
+    {}
+    ~ BaseRuleTable ()
+    {
+      deleteObjects (m_base_rules.begin (), m_base_rules.end ());
+    }
+    
+    // get base rule
+    BaseRulePtr getBaseRule (RulePtr rule, int pos)
+    {
+      m_base_rule_trie.plug ((unsigned int) rule);
+      m_base_rule_trie.plug (pos);
+      BaseRulePtr & base_rule = m_base_rule_trie.commit (0);
+      if (! base_rule)
+      {
+        base_rule = * m_base_rules.insert (m_base_rules.end (), new BaseRule (m_base_rules.size (), rule, pos));
+      }
+      return base_rule;
+    }
+
+    enum { TABLE = TABLE_BASE_RULE }
+  private:
+    BaseRulePtrTrie m_base_rule_trie;
+    BaseRulePtrVector m_base_rules;
+  }
+}
+
+#hdr
+#include <basilcc/base_rule_ptr_trie.h>
+#include <basilcc/base_rule_ptr_vector.h>
+#include <basilcc/rule_ptr.h>
+#include <basilcc/table.h>
+#end
+
+#src
+#include <basilcc/base_rule.h>
+#include <basilcc/util.h>
+#include <algorithm>
+#end

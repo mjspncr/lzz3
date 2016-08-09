@@ -1,0 +1,60 @@
+namespace basilcc
+{
+  class CC;
+
+  class ShiftKernel
+  {
+  public:
+    // steals kernel shift rules
+    ShiftKernel (ShiftRulePtrVector & shift_rules)
+      : m_base_kernel (0), m_shift_base (0)
+    {
+      m_shift_rules.swap (shift_rules);
+    }
+    ~ ShiftKernel ()
+    {
+      // kernel owns shift base object
+      deleteObject (m_shift_base);
+    }
+    
+    // get base kernel, assume always called before getShiftBase?
+    BaseKernelPtr getBaseKernel (CC & cc)
+    {
+      if (! m_base_kernel)
+      {
+        m_base_kernel = basilcc::getBaseKernel (cc, m_shift_rules);
+      }
+      return m_base_kernel;
+    }   
+
+    // get shift base
+    ShiftBasePtr getShiftBase (CC & cc)
+    {
+      if (! m_shift_base)
+      {
+        m_shift_base = new ShiftBase (getBaseKernel (cc), m_shift_rules);
+        m_shift_base->closure (cc);
+      }
+      return m_shift_base;
+    }
+  private:
+    // kernel shift rules passed to shift base on demand
+    ShiftRulePtrVector m_shift_rules;
+    // cached base kernel
+    BaseKernelPtr m_base_kernel;
+    // shift base created on demand, shift kernel owns ptr
+    ShiftBasePtr m_shift_base;
+  }
+}
+
+#hdr
+#include <basilcc/base_kernel_ptr.h>
+#include <basilcc/shift_base_ptr.h>
+#include <basilcc/shift_rule_ptr_vector.h>
+#end
+
+#src
+#include <basilcc/base_kernel_api.h>
+#include <basilcc/shift_base.h>
+#include <basilcc/util.h>
+#end

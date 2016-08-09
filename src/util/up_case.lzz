@@ -1,0 +1,31 @@
+// up_case.lzz
+//
+
+// convert string to upper case
+std::string upCase (std::string const & str)
+{
+  string res;
+  res.reserve (str.size ());
+  for (string::const_iterator i = str.begin (), end = str.end (); i != end; ++ i)
+  {
+    char ch = toupper (* i);
+    res += ch;
+  }
+  return res;
+}
+
+// functor version
+inline std::string UpCase (; std::string const & str) const
+{
+  return upCase (str);
+}
+
+using namespace std;
+
+#hdr
+#include <string>
+#end
+
+#src
+#include <ctype.h>
+#end

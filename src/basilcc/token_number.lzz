@@ -1,0 +1,10 @@
+namespace basilcc
+{
+  // token name number pair, just for adding token symbols
+  struct TokenNumber
+  {
+    char const * name;
+    int num;
+  };
+  typedef TokenNumber const * TokenNumberPtr;
+}

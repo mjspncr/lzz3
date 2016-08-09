@@ -1,0 +1,62 @@
+namespace basilcc
+{
+  class FollowTable : public Table
+  {
+  public:
+    FollowTable ()
+    {}
+    ~ FollowTable ()
+    {
+      deleteObjects (m_follows.begin (), m_follows.end ());
+    }
+    
+    // freeze follow and return shared follow, reuse follow or delete it  
+    FollowPtr freeze (FollowPtr follow)
+    {
+      FollowItemPtrList const & follow_items = follow->getFollowItems ();
+      for_each (follow_items.begin (), follow_items.end (), PlugFollowItem (m_follow_trie));
+      m_follow_trie.plug (follow->getLexState ().getHandle ());
+      FollowPtr shared_follow = m_follow_trie.commit (follow);
+      if (shared_follow == follow)
+      {
+        m_follows.push_back (shared_follow);
+      }
+      else
+      {
+        deleteObject (follow);
+      }
+      return shared_follow;
+    }
+
+    enum { TABLE = TABLE_FOLLOW }
+  private:
+    FollowPtrTrie m_follow_trie;
+    FollowPtrVector m_follows;
+  }
+}
+
+using namespace basilcc;
+using namespace std;
+
+namespace
+{
+  // push follow item on key table
+  inline void PlugFollowItem (FollowPtrTrie & trie; FollowItemPtr follow_item) const
+  {
+    trie.plug (unsigned (follow_item));
+  }
+}
+
+#hdr
+#include <basilcc/follow_item_ptr_list.h>
+#include <basilcc/follow_ptr_trie.h>
+#include <basilcc/follow_ptr_vector.h>
+#include <basilcc/lex_state.h>
+#include <basilcc/table.h>
+#end
+
+#src
+#include <basilcc/follow.h>
+#include <basilcc/util.h>
+#include <algorithm>
+#end

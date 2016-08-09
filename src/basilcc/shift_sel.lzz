@@ -1,0 +1,63 @@
+namespace basilcc
+{
+  class ShiftSel
+  {
+  public:
+    // steals shifts
+    ShiftSel (size_t num, ShiftPtrVector & shifts)
+      : m_num (num)
+    {
+      m_shifts.swap (shifts);
+    }
+    ~ ShiftSel ()
+    {}
+    
+    // get number
+    inline size_t getNumber () const
+    {
+      return m_num;
+    }
+
+    // get state shift set
+    inline ShiftPtrVector const & getShifts () const
+    {
+      return m_shifts;
+    }
+
+    /*
+    // true if has shift, set state if true
+    bool hasShift (SymbolPtr symbol, StatePtr & state)
+    {
+      bool found = false;
+      ShiftPtrVectorConstIter i = find_if (m_shifts.begin (), m_shifts.end (), IsShiftSymbol (symbol));
+      if (i != m_shifts.end ())
+      {
+        state = (* i)->getState ();
+        found = true;
+      }
+      return found;
+    }
+    */
+
+    // get shift state from symbol number
+    StatePtr getShiftState (int symbol_num) const
+    {
+      return basilcc::getShiftState (m_shifts, symbol_num);
+    }
+
+  private:
+    size_t m_num;
+    ShiftPtrVector m_shifts;
+  }
+}
+
+#hdr
+#include <basilcc/shift_ptr_vector.h>
+#include <basilcc/shift_sel_ptr.h>
+#include <basilcc/state_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#end
+
+#src
+#include <basilcc/shift.h>
+#end

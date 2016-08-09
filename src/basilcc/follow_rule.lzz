@@ -1,0 +1,176 @@
+namespace basilcc
+{
+  class CC;
+
+  class FollowRule
+  {
+  public:
+    FollowRule (ShiftRulePtr shift_rule)
+      : m_shift_rule (shift_rule), m_follow (new Follow), m_frozen (false)
+    {}
+    // construct with follow, when dot > 0, will be no changes to rule
+    FollowRule (ShiftRulePtr shift_rule, FollowPtr follow)
+      : m_shift_rule (shift_rule), m_follow (follow), m_frozen (true)
+    {}
+    ~ FollowRule ()
+    {
+      // delete if not frozen
+      if (! m_frozen)
+      {
+        deleteObject (m_follow);
+      }
+    }
+    
+    // get shift rule
+    inline ShiftRulePtr getShiftRule () const
+    {
+      return m_shift_rule;
+    }
+
+    // get follow
+    inline FollowPtr getFollow () const
+    {
+      return m_follow;
+    }
+
+    // update follow
+    bool update (FollowPtr follow)
+    {
+      return m_follow->update (follow);
+    }
+
+    // get next follow
+    FollowPtr getNextFollow () const
+    {
+      std::auto_ptr <Follow> follow (new Follow);
+      BaseRulePtr base_rule = m_shift_rule->getBaseRule ();
+      RulePtr rule = base_rule->getRule ();
+      RuleSymbolPtr next_rule_symbol = base_rule->getNextRuleSymbol ();
+      RuleSymbolPtr left_rule_symbol = rule->getLeftRuleSymbol ();
+      SymbolPtr shortcut = next_rule_symbol->getSymbol ();
+      Priority rp = m_shift_rule->getShiftPriority () + left_rule_symbol->getShiftPriority () + next_rule_symbol->getReducePriority ();
+      bool sticky = next_rule_symbol->hasSticky ();
+      bool accept = next_rule_symbol->hasAccept ();
+      // add first of next symbols while null
+      bool null = true;
+      RuleSymbolPtrVector const & rule_symbol_set = rule->getRightRuleSymbols ();
+      int pos = base_rule->getPos ();
+      for (RuleSymbolPtrVectorConstIter i = rule_symbol_set.begin () + pos + 1, endi = rule_symbol_set.end (); null && i != endi; ++ i)
+      {
+        RuleSymbolPtr rule_symbol = * i;
+        SymbolPtr symbol = rule_symbol->getSymbol ();
+        First const & first = symbol->getFirst ();
+        Priority tmp_rp = rp + rule_symbol->getFirstPriority (); 
+        follow->addFirst (first, rule_symbol->getLexState (), shortcut, tmp_rp, sticky, accept);
+        null = first.hasNull ();
+      }
+      if (null)
+      {
+        // why not also next_rule_symbol shift priority?
+        rp = left_rule_symbol->getReducePriority () + next_rule_symbol->getReducePriority ();
+        if (rule->canBypass ())
+        {
+          sticky = sticky || left_rule_symbol->hasSticky ();
+          accept = accept || left_rule_symbol->hasAccept ();
+          follow->addFollow (m_follow, rp, sticky, accept);
+        }
+        else
+        {
+          follow->addFollow (m_follow, shortcut, rp, sticky, accept);
+        }
+      }
+      return follow.release ();
+    }
+
+    // get lex state
+    LexState getLexState ()
+    {
+      LexState lex_state;
+      BaseRulePtr base_rule = m_shift_rule->getBaseRule ();
+      RulePtr rule = base_rule->getRule ();
+      bool null = true;
+      RuleSymbolPtrVector const & rule_symbol_set = rule->getRightRuleSymbols ();
+      int pos = base_rule->getPos ();
+      for (RuleSymbolPtrVectorConstIter i = rule_symbol_set.begin () + pos; null && i != rule_symbol_set.end (); ++ i)
+      {
+        RuleSymbolPtr rule_symbol = * i;
+        lex_state.update (rule_symbol->getLexState ());
+        First const & first = rule_symbol->getSymbol ()->getFirst ();
+        lex_state.update (first.getLexState ());
+        null = first.hasNull ();
+      }
+      if (null)
+      {
+        lex_state.update (m_follow->getLexState ());
+      }
+      return lex_state;
+    }
+
+    // freeze rule, no more changes
+    void freeze (CC & cc)
+    {
+      m_follow = freezeFollow (cc, m_follow);
+      m_frozen = true; 
+    }
+
+    // to string
+    std::string toString () const
+    {
+      string str = m_shift_rule->toString ();
+      appendWithSpace (str, m_follow->toString ());
+      return str;
+    }
+
+  private:
+    ShiftRulePtr m_shift_rule;
+    FollowPtr m_follow;
+    // true if rule is frozen
+    bool m_frozen;
+  }
+
+  // a < b
+  bool operator < (FollowRule const & a, FollowRule const & b)
+  {
+    return shiftRuleLess (a.getShiftRule (), b.getShiftRule ());
+  }
+  bool followRuleLess (FollowRulePtr a, FollowRulePtr b)
+  {
+    return * a < * b;
+  }
+
+  // create follow rule
+  inline FollowRulePtr newFollowRule (ShiftRulePtr shift_rule)
+  {
+    return new FollowRule (shift_rule);
+  }
+
+  // get shift rule from follow rule
+  inline ShiftRulePtr getFollowShiftRule (FollowRulePtr follow_rule)
+  {
+    return follow_rule->getShiftRule ();
+  }
+}
+
+using namespace std;
+
+#hdr
+#include <basilcc/follow_ptr.h>
+#include <basilcc/follow_rule_ptr.h>
+#include <basilcc/lex_state.h>
+#include <basilcc/shift_rule_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#end
+
+#src
+#include <basilcc/base_rule.h>
+#include <basilcc/first.h>
+#include <basilcc/follow.h>
+#include <basilcc/follow_api.h>
+#include <basilcc/rule.h>
+#include <basilcc/rule_symbol.h>
+#include <basilcc/shift_rule.h>
+#include <basilcc/symbol.h>
+#include <basilcc/util.h>
+#include <util/append.h>
+#include <memory>
+#end

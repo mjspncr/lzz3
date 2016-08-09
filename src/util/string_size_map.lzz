@@ -1,0 +1,8 @@
+typedef std::map <std::string, size_t> StringSizeMap;
+typedef StringSizeMap::const_iterator StringSizeMapConstIter;
+typedef StringSizeMap::iterator StringSizeMapIter;
+
+#hdr
+#include <string>
+#include <map>
+#end

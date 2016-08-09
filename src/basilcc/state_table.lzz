@@ -1,0 +1,130 @@
+namespace basilcc
+{
+  class CC;
+
+  class StateTable : public Table
+  {
+  public:
+    StateTable ()
+    {}
+    ~ StateTable ()
+    {
+      deleteObjects (m_states.begin (), m_states.end ());
+    }
+
+    // get state
+    StatePtr getState (CC & cc, FollowKernelPtr follow_kernel)
+    {
+      StatePtr state = 0; 
+      // get state set with same base kernel then match follow kernel
+      StatePtrVector & base_states = getBaseStates (cc, follow_kernel);
+      for (StatePtrVectorConstIter i = base_states.begin (), endi = base_states.end (); i != endi; ++ i)
+      {
+        StatePtr test_state = * i;
+        FollowKernelPtr test_follow_kernel = test_state->getFollowKernel ();
+        if (test_follow_kernel == follow_kernel || kernelsEquiv (cc, test_follow_kernel, follow_kernel))
+        {
+          state = test_state;
+          break;
+        }
+      }
+      if (! state)
+      {
+        state = * m_states.insert (m_states.end (), new State (m_states.size (), follow_kernel));
+        base_states.push_back (state);
+      }
+      return state;
+    }
+
+    // get all states
+    StatePtrVector const & getStates () const
+    {
+      return m_states;
+    }
+    
+    enum { TABLE = TABLE_STATE }
+  private:
+    // get states with same base
+    StatePtrVector & getBaseStates (CC & cc, FollowKernelPtr follow_kernel)
+    {
+      BaseKernelPtr base_kernel = follow_kernel->getShiftKernel (cc)->getBaseKernel (cc);
+      return m_state_trie.insert (unsigned (base_kernel), StatePtrVector ());
+    }
+
+  private:
+    StatePtrVectorTrie m_state_trie;
+    StatePtrVector m_states;
+  }
+}
+
+using namespace std;
+using namespace basilcc;
+
+namespace
+{
+  // true if follow kernels are equivalent, all future moves are same
+  bool kernelsEquiv (CC & cc, FollowKernelPtr kernel_a, FollowKernelPtr kernel_b)
+  {
+    // to avoid infinite loop
+    set <void *> history;
+    // initialize pending
+    FollowKernelPtrPairDeque pending;
+    pending.push_back (FollowKernelPtrPair (kernel_a, kernel_b));
+    while (pending.size () > 0)
+    {
+      FollowKernelPtrPair const & next_pair = pending.front ();
+      FollowBasePtr follow_base_a = next_pair.first ->getFollowBase (cc);
+      FollowBasePtr follow_base_b = next_pair.second->getFollowBase (cc);
+      pending.pop_front ();
+      // compare
+      LazyFollowMovePtr lazy_follow_move_a = follow_base_a->getLazyFollowMove ();
+      LazyFollowMovePtr lazy_follow_move_b = follow_base_b->getLazyFollowMove ();
+      if (! (lazy_follow_move_a == lazy_follow_move_b && follow_base_a->getLexState () == follow_base_b->getLexState ()
+              && follow_base_a->hasConflicts () == follow_base_b->hasConflicts ()))
+      {
+        // easy, not same
+        return false;
+      }
+      // otherwise might be same check if seen base before
+      if (history.insert (follow_base_a->getShiftBase ()->getBaseKernel ()).second)
+      {
+        // get follow base shift sets
+        FollowShiftList const & shift_set_a = follow_base_a->getFollowShifts ();
+        FollowShiftList const & shift_set_b = follow_base_b->getFollowShifts ();
+        for (FollowShiftListConstIter i = shift_set_a.begin (), endi = shift_set_a.end (), j = shift_set_b.begin (); i != endi; ++ i, ++ j)
+        {
+          FollowShift const & shift_a = * i;
+          FollowShift const & shift_b = * j;
+          FollowKernelPtr kernel_a = shift_a.getFollowKernel ();
+          FollowKernelPtr kernel_b = shift_b.getFollowKernel ();
+          if (kernel_a != kernel_b)
+          {
+            pending.push_back (FollowKernelPtrPair (kernel_a, kernel_b));
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  typedef pair  <FollowKernelPtr, FollowKernelPtr> FollowKernelPtrPair;
+  typedef deque <FollowKernelPtrPair> FollowKernelPtrPairDeque;
+}
+
+#hdr
+#include <basilcc/base_kernel_ptr.h>
+#include <basilcc/follow_kernel_ptr.h>
+#include <basilcc/table.h>
+#include <basilcc/state_ptr_vector_trie.h>
+#end
+
+#src
+#include <basilcc/follow_base.h>
+#include <basilcc/follow_kernel.h>
+#include <basilcc/shift_base.h>
+#include <basilcc/shift_kernel.h>
+#include <basilcc/state.h>
+#include <basilcc/util.h>
+#include <deque>
+#include <set>
+#end

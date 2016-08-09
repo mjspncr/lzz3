@@ -1,0 +1,21 @@
+namespace basilcc
+{
+  class CC;
+
+  // get lazy move from token and lazy action seq
+  LazyMovePtr getLazyMove (CC & cc, SymbolPtr token, LazyActionSeqPtr lazy_action_seq)
+  {
+    return getTable <LazyMoveTable> (cc).getLazyMove (token, lazy_action_seq);
+  }
+}
+
+#hdr
+#include <basilcc/lazy_action_seq_ptr.h>
+#include <basilcc/lazy_move_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#end
+
+#src
+#include <basilcc/cc.h>
+#include <basilcc/lazy_move_table.h>
+#end

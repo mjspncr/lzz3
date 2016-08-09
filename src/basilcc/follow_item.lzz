@@ -1,0 +1,139 @@
+namespace basilcc
+{
+  // item in follow set
+  class FollowItem
+  {
+  public:
+    FollowItem (SymbolPtr token, SymbolPtr shortcut)
+      : m_token (token), m_shortcut (shortcut), m_sticky (false), m_accept (false)
+    {}
+    FollowItem (SymbolPtr token, SymbolPtr shortcut, Priority const & rp, bool sticky, bool accept)
+      : m_token (token), m_shortcut (shortcut), m_rp (rp), m_sticky (sticky), m_accept (accept)
+    {}
+    ~ FollowItem ()
+    {}
+    
+    // get token
+    inline SymbolPtr getToken () const
+    {
+      return m_token;
+    }
+
+    // get shortcut
+    inline SymbolPtr getShortcut () const
+    {
+      return m_shortcut;
+    }
+
+    // get reduce priority
+    inline Priority const & getReducePriority () const
+    {
+      return m_rp;
+    }
+
+    // true if has sticky
+    inline bool hasSticky () const
+    {
+      return m_sticky;
+    }
+
+    // true if has accept
+    inline bool hasAccept () const
+    {
+      return m_accept;
+    }
+
+    // update, return true if item changed
+    bool update (Priority const & rp, bool sticky, bool accept)
+    {
+      bool changed = false;
+      Priority max_rp = maxPriority (m_rp, rp);
+      if (max_rp != m_rp)
+      {
+        m_rp = max_rp;
+        changed = true;
+      }
+      if (sticky && ! m_sticky)
+      {
+        m_sticky = true;
+        changed = true;
+      }
+      if (accept && ! m_accept)
+      {
+        m_accept = true;
+        changed = true;
+      }
+      return changed;
+    }
+
+    // to string
+    std::string toString () const
+    {
+      string str = m_token->getName ();
+      str += '.';
+      str += m_shortcut->getName ();
+      str += firstPriorityToString (m_rp);
+      if (m_sticky)
+      {
+        str += '<';
+      }
+      if (m_accept)
+      {
+        str += '*';
+      }
+      return str;
+    }
+
+  private:
+    SymbolPtr m_token;
+    // symbol to follow on reduction, possibly a shortcut
+    SymbolPtr m_shortcut;
+    // reduce priority (in a way the first priority)
+    Priority m_rp;
+    bool m_sticky;
+    bool m_accept;
+  }
+
+  // a < b
+  bool operator < (FollowItem const & a, FollowItem const & b) 
+  {
+    return (a.getToken () < b.getToken ()) || (a.getToken () == b.getToken () && a.getShortcut () < b.getShortcut ());
+  }
+  inline bool followItemLess (FollowItemPtr a, FollowItemPtr b) 
+  {
+    return * a < * b;
+  }
+
+  // a < token and shortcut
+  bool followItemLess (FollowItemPtr a, SymbolPtr token, SymbolPtr shortcut)
+  {
+    return symbolLess (a->getToken (), token) || (a->getToken () == token && symbolLess (a->getShortcut (), shortcut));
+  }
+  // token and shortcut < a
+  bool followItemLess (SymbolPtr token, SymbolPtr shortcut, FollowItemPtr a)
+  {
+    return symbolLess (token, a->getToken ()) || (token == a->getToken () && symbolLess (shortcut, a->getShortcut ()));
+  }
+
+  // append follow item to string with space
+  void AppendFollowItem (std::string & str; FollowItemPtr follow_item) const
+  {
+    appendWithSpace (str, follow_item->toString ());
+  }
+}
+
+using namespace std;
+
+#hdr
+#include <basilcc/follow_item_ptr.h>
+#include <basilcc/priority.h>
+#include <basilcc/symbol_ptr.h>
+#include <string>
+#end
+
+#src
+#include <basilcc/follow_item_table.h>
+#include <basilcc/symbol.h>
+#include <util/append.h>
+#include <algorithm>
+#end

@@ -1,0 +1,6 @@
+ifeq ($(BUILD),OPT)
+DEBUGFLAG := -O3
+OPTSUFFIX := _opt
+else
+DEBUGFLAG := -g
+endif

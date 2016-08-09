@@ -1,0 +1,26 @@
+namespace cpp
+{
+  // argument to function macro, one or more tokens
+  class MacroArg
+  {
+  public:
+    MacroArg (TokenPtrVector const & tokens)
+      : tokens_ (tokens)
+    {}
+    ~ MacroArg ()
+    {}
+
+    // get tokens
+    inline TokenPtrVector const & getTokens () const
+    {
+      return tokens_;
+    }
+  private:
+    // token set
+    TokenPtrVector tokens_;
+  }
+}
+
+#hdr
+#include <cpp/token_ptr_vector.h>
+#end
