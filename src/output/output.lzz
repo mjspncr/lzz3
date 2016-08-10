@@ -220,7 +220,7 @@ private:
       m_hdr_file->body () << "#undef LZZ_INLINE" << '\n';
 
       // inline file
-      if (getOptionValue (opt_inl_inl) &&
+      if (/*getOptionValue (opt_inl_inl) &&*/
           (m_hdr_file->hasSection (SECTION_INLINE_USER) || m_hdr_file->hasSection (SECTION_INLINE_BODY)))
       {
         assert (! m_inl_file.isSet ());
@@ -289,7 +289,7 @@ private:
     if (save && m_src_file.isSet ())
     {
       // inline file
-      if (getOptionValue (opt_inl_inl) &&
+      if (/*getOptionValue (opt_inl_inl) &&*/
           (m_hdr_file->hasSection (SECTION_INLINE_USER) || m_hdr_file->hasSection (SECTION_INLINE_BODY)))
       {
         assert (! m_inl_file.isSet ());
@@ -326,7 +326,7 @@ private:
   {
     if (! m_inl_file.isSet ())
     {
-      assert (! getOptionValue (opt_inl_inl));
+      /*assert (! getOptionValue (opt_inl_inl));*/
 
       // create file
       m_inl_file = createFile (opt_inl_ext, opt_inl_line, opt_inl_smart_write);
@@ -359,7 +359,7 @@ private:
     }
     else if (getOptionValue (opt_delete_old))
     {
-      if (! getOptionValue (opt_inl_inl))
+      /*if (! getOptionValue (opt_inl_inl))*/
       {
         deleteFile (opt_inl_ext);
       }
