@@ -112,7 +112,7 @@ depend:
 $(OUTDIRS):
 	mkdir -p $@
 # lzz
-LZZFLAGS := -i -c -sl -hl -il -tl -nl -hd -d -x $(DEFFLAGS) -Ddll_api= $(INCFLAGS) -o $(SRCDIR)
+LZZFLAGS := -i -c -sl -hl -il -tl -nl -hd -d $(DEFFLAGS) -Ddll_api= $(INCFLAGS) -o $(SRCDIR)
 ifneq ($(strip $(INCFILE)),)
 LZZFLAGS += -a $(INCFILE)
 endif

@@ -4,17 +4,28 @@ int main (int argc, char ** argv)
   {
     StringVector filenames;
     parseOptions (argc, argv, filenames);
-    string scripts_dir = getOptionValue (opt_lzz_dir);
+    // scripts dir must be set using env var
+    string scripts_dir;
+    if (const char * env = getenv ("LZZSCRIPTS"))
+    {
+      scripts_dir = env;
+    }
     if (scripts_dir.empty ())
     {
-      if (const char * env = getenv ("LZZSCRIPTS"))
-      {
-        scripts_dir = env;
-      }
+      throw Exception ("path to lzzscripts must be set using using LZZSCRIPTS");
     }
     if (! file_op::exists (scripts_dir))
     {
       throw Exception (Message ("% does not exist") << scripts_dir);
+    }
+    if (getOptionValue (opt_help))
+    {
+      printHelp (cout);
+      return 0;
+    }
+    if (getOptionValue (opt_version))
+    {
+      printVersion (cout);
     }
     if (getOptionValue (opt_bootstrap_basil))
     {      
@@ -54,6 +65,7 @@ using namespace config;
 #include <app/run_lzz.h>
 #include <config/config.h>
 #include <config/options.h>
+#include <config/print_help.h>
 #include <util/exception.h>
 #include <util/file_op.h>
 #include <util/message.h>

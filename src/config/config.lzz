@@ -1,71 +1,11 @@
 namespace config
 {
-  // parse options, return true if no errors
+  // parse options and set files to parse
   void parseOptions (int argc, char ** argv, StringVector & files)
   {
-    // parse LZZ_OPTIONS and cmd line
+    // env options then cmd line
     parseEnvOptions ();
     parseCmdLine (argc, argv, files);
-    // do this at a higher level
-    /*
-    // must have files if not asking for help
-    if (files.empty () &&
-        ! (opt_help.getValue () || opt_version.getValue () || opt_rec_help.getValue () ||
-           opt_print_options.getValue () || opt_print_rec_tokens.getValue ()))
-    {
-      ThrowException () << NoFiles ();
-    }
-    // option validation checks
-    // if dll-api is set then dll-exports must be set too
-    if (! getOptionValue (opt_dll_api).empty () && getOptionValue (opt_dll_exports).empty ())
-    {
-      ThrowException () << DllExportsNotSet ();
-    }
-    */
-  }
-
-  // print option values to os
-  void printOptionValues (std::ostream & os)
-  {
-    os << "Option values:" << '\n';
-    OptionRec const * beg = option_rec_set;
-    OptionRec const * end = option_rec_set + num_options;
-    for (; beg != end; ++ beg)
-    {
-      if (! (beg->flags & NO_VALUE_OPTION))
-      {
-        os << " -";
-        os.setf (std::ios::left, std::ios::adjustfield);
-        os.width (8);
-        os << beg->name;
-        Option const * option = beg->option;
-        if (option->getKind () == OPTION_STRINGS)
-        {
-          bool first = true;
-          StringVector const & str_set = static_cast <StringsOption const &> (* option).getValue ();
-          for (StringVectorConstIter set_beg = str_set.begin (), set_end = str_set.end (); set_beg != set_end; ++ set_beg)
-          {
-            if (first)
-            {
-              first = false;
-            }
-            else
-            {
-              os << "          ";
-            }
-            os << * set_beg << '\n';
-          }
-          if (first)
-          {
-            os << '\n';
-          }
-        }
-        else
-        {
-          os << option->getValueAsString () << '\n';
-        }
-      }
-    }
   }
 }
 
@@ -74,13 +14,6 @@ using namespace config;
 
 namespace
 {
-  // option flags
-  enum
-  {
-    // do not display option in -v
-    NO_VALUE_OPTION = 1 << 0,
-  };
-
   // option record
   struct OptionRec
   {
@@ -90,77 +23,61 @@ namespace
     char const * old_name;
     // option
     Option * option;
-    // flags
-    int flags;
   }
 
   // option records
   OptionRec option_rec_set [] =
   {
-    // bootstrap basil parser with lua rules filename 
-    { "s",  0, & opt_lzz_dir, 0 },
-    { "bb", 0, & opt_bootstrap_basil, 0 },
-    { "cb", 0, & opt_compile_basil, 0 },
-    { "cl", 0, & opt_compile_lzz, 0 },
+    { "z", 0, & opt_bootstrap_basil },
+    { "y", 0, & opt_compile_basil },
+    { "g", 0, & opt_compile_lzz },
+    { "i", "inl", & opt_inl },
+    { "t", "tpl", & opt_tpl },
+    { "n", "tnl", & opt_tnl },
+    { "hx", "hdr-ext", & opt_hdr_ext },
+    { "sx", "src-ext", & opt_src_ext },
+    { "ix", "inl-ext", & opt_inl_ext },
+    { "tx", "tpl-ext", & opt_tpl_ext },
+    { "nx", "tnl-ext", & opt_tnl_ext },
+    { "hl", "hdr-line", & opt_hdr_line },
+    { "sl", "src-line", & opt_src_line },
+    { "il", "inl-line", & opt_inl_line },
+    { "tl", "tpl-line", & opt_tpl_line },
+    { "nl", "tnl-line", & opt_tnl_line },
+    { "hd", "hdr-smart-write", & opt_hdr_smart_write },
+    { "sd", "src-smart-write", & opt_src_smart_write },
+    { "id", "inl-smart-write", & opt_inl_smart_write },
+    { "td", "tpl-smart-write", & opt_tpl_smart_write },
+    { "nd", "tnl-smart-write", & opt_tnl_smart_write },
+    { "c", "src-if-hdr", & opt_src_if_hdr },
+    { "o", "out-dir", & opt_out_dir },
+    { "d", "delete-old", & opt_delete_old },
+    { "I", 0, & opt_incl_path_set },
+    { "D", 0, & opt_macro_set },
+    { "a", 0, & opt_auto_includes },
+    { "b",  0, & opt_tab_stop },
+    { "k", 0, & opt_package },
+    { "da", "dll-api", & opt_dll_api },
+    { "dx", "dll-exports", & opt_dll_exports },
+    { "v", 0,  & opt_version },
+    { "h", "help", & opt_help },
 
-    { "i", "inl", & opt_inl, 0 },
-    { "t", "tpl", & opt_tpl, 0 },
-    { "n", "tnl", & opt_tnl, 0 },
-
-    { "hx", "hdr-ext", & opt_hdr_ext, 0 },
-    { "sx", "src-ext", & opt_src_ext, 0 },
-    { "ix", "inl-ext", & opt_inl_ext, 0 },
-    { "tx", "tpl-ext", & opt_tpl_ext, 0 },
-    { "nx", "tnl-ext", & opt_tnl_ext, 0 },
-    
-    { "hl", "hdr-line", & opt_hdr_line, 0 },
-    { "sl", "src-line", & opt_src_line, 0 },
-    { "il", "inl-line", & opt_inl_line, 0 },
-    { "tl", "tpl-line", & opt_tpl_line, 0 },
-    { "nl", "tnl-line", & opt_tnl_line, 0 },
-
-    { "hd", "hdr-smart-write", & opt_hdr_smart_write, 0 },
-    { "sd", "src-smart-write", & opt_src_smart_write, 0 },
-    { "id", "inl-smart-write", & opt_inl_smart_write, 0 },
-    { "td", "tpl-smart-write", & opt_tpl_smart_write, 0 },
-    { "nd", "tnl-smart-write", & opt_tnl_smart_write, 0 },
-
-    { "c", "src-if-hdr", & opt_src_if_hdr, 0 },
-    { "o", "out-dir", & opt_out_dir, 0 },
-    { "da", "dll-api", & opt_dll_api, 0 },
-    { "dx", "dll-exports", & opt_dll_exports, 0 },
-    { "x", 0, & opt_expand_filename, 0 },
-    { "d", "delete-old", & opt_delete_old, 0 },
-    { "I", 0, & opt_incl_path_set, 0 },
-    { "D", 0, & opt_macro_set, 0 },
-    { "a", 0, & opt_auto_includes, 0 },
-    { "p", 0, & opt_pp, 0 },
-    { "P", 0, & opt_pp_all, 0 },
-    { "E", 0, & opt_pp_incl, 0 },
-    { "r", 0, & opt_rec, 0 },
-
-    { "e",  0, & opt_prep_block, 0 },
-    { "b",  0, & opt_tab_stop, 0 },
-
-    { "k", 0, & opt_package, 0 },
-    { "tr", 0, & opt_trace, 0 },
-
-    { "v", 0, & opt_print_options, NO_VALUE_OPTION },
-    { "hr", 0, & opt_rec_help, NO_VALUE_OPTION },
-    { "T", 0, & opt_print_rec_tokens, NO_VALUE_OPTION },
-    { "ver", 0,  & opt_version, NO_VALUE_OPTION },
-    { "h", 0, & opt_help, NO_VALUE_OPTION },
-    { "help", 0, & opt_help, NO_VALUE_OPTION },
-
-    // working options
-    { "g", 0, & opt_gen_parser, 0 },
+    /* to do or deprecate
+    { "e",  0, & opt_prep_block },
+    { "tr", 0, & opt_trace },
+    { "x", 0, & opt_expand_filename },
+    { "p", 0, & opt_pp },
+    { "P", 0, & opt_pp_all },
+    { "E", 0, & opt_pp_incl },
+    { "r", 0, & opt_rec },
+    */
   };
 
   // number of options
-  const int num_options = sizeof (option_rec_set) / sizeof (option_rec_set [0]);
+  const int num_options = ARRAY_SIZE (option_rec_set);
 
   // get option, return 0 if not found
-  Option * getOption (char const * name, int & flags)
+  Option * getOption (char const * name)
   {
     Option * option = 0;
     OptionRec const * beg = option_rec_set;
@@ -170,7 +87,6 @@ namespace
       if ((beg->name != 0 && strcmp (beg->name, name) == 0) || (beg->old_name != 0 && strcmp (beg->old_name, name) == 0))
       {
         option = beg->option;
-        flags = beg->flags;
         break;
       }
     }
@@ -207,8 +123,7 @@ namespace
         char opt1 [2];
         opt1 [0] = opt [0];
         opt1 [1] = '\0';
-        int flags;
-        Option * option = getOption (opt1, flags);
+        Option * option = getOption (opt1);
         if (! option)
         {
           ThrowException () << "invalid option: " << opt1;
@@ -225,8 +140,7 @@ namespace
           opt += 3;
         }
         // get option
-        int flags;
-        Option * option = getOption (opt, flags);
+        Option * option = getOption (opt);
         if (! option)
         {
           ThrowException () << "invalid option: " << opt;
@@ -290,8 +204,7 @@ namespace
           char opt1 [2];
           opt1 [0] = opt [0];
           opt1 [1] = '\0';
-          int flags;
-          Option * option = getOption (opt1, flags);
+          Option * option = getOption (opt1);
           if (! option)
           {
             ThrowException () << opt1 << " is not a valid option";
@@ -308,8 +221,7 @@ namespace
             opt += 3;
           }
           // search for option
-          int flags;
-          Option * option = getOption (opt, flags);
+          Option * option = getOption (opt);
           if (! option)
           {
             ThrowException () << opt << " is not a valid option";
@@ -347,13 +259,11 @@ namespace
 #src
 #include <config/option.h>
 #include <config/options.h>
+#include <util/array_size.h>
+#include <util/file_op.h>
 #include <util/get_env.h>
 #include <util/get_next_word.h>
 #include <util/skip_ws.h>
-#include <util/file_op.h>
 #include <util/throw_exception.h>
-#include <algorithm>
-#include <cctype>
-#include <cstring>
-#include <iostream>
+#include <string.h>
 #end
