@@ -1,0 +1,15 @@
+// int_pair.lzz
+//
+
+typedef std::pair <int, int> IntPair;
+inline bool IntPairFirstLess (; IntPair const & a, IntPair const & b) const
+{
+  return a.first < b.first;
+}
+
+#hdr
+#include <utility>
+#end
+
+#src
+#end

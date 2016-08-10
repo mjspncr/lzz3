@@ -1,0 +1,15 @@
+// double_vector.lzz
+//
+
+typedef std::vector <double> DoubleVector;
+typedef DoubleVector::const_iterator DoubleVectorConstIter;
+typedef DoubleVector::iterator DoubleVectorIter;
+typedef DoubleVector::const_reverse_iterator DoubleVectorConstRevIter;
+typedef DoubleVector::reverse_iterator DoubleVectorRevIter;
+
+#hdr
+#include <vector>
+#end
+
+#src
+#end

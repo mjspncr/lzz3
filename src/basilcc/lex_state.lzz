@@ -1,0 +1,102 @@
+namespace basilcc
+{
+  // special states
+  enum
+  {
+    // not set
+    LEX_STATE_UNSET    = INT_MAX,
+    // conflict
+    LEX_STATE_CONFLICT = INT_MAX - 1,
+  }
+
+  class LexState
+  {
+  public:
+    inline LexState (int state = LEX_STATE_UNSET)
+      : m_state (state)
+    {}
+
+    // true if not null
+    inline bool isSet () const
+    {
+      return m_state != LEX_STATE_UNSET;
+    }
+
+    // true if conflict
+    inline bool isConflict () const
+    {
+      return m_state == LEX_STATE_CONFLICT;
+    }
+
+    // update lex state, return true if changed
+    bool update (LexState s)
+    {
+      bool changed = false;
+      if (s.m_state != LEX_STATE_UNSET)
+      {
+        if (m_state != LEX_STATE_UNSET)
+        {
+          if (s.m_state != m_state)
+          {
+            m_state = LEX_STATE_CONFLICT;
+            changed = true; 
+          }
+        }
+        else
+        {
+          m_state = s.m_state;
+          changed = true;
+        }
+      }
+      return changed;
+    }
+
+    // get state, 0 if not set
+    int getState () const
+    {
+      return m_state == LEX_STATE_UNSET ? 0 : m_state;
+    }
+
+    // get handle
+    inline unsigned int getHandle () const
+    {
+      return m_state;
+    }
+
+    // to string, empty string if not set
+    std::string toString () const
+    {
+      string str;
+      if (m_state != LEX_STATE_UNSET)
+      {
+        str = intToString (m_state); 
+      }
+      return str;
+    }
+  private:
+    // state
+    int m_state;
+  }
+
+  // true if lex states are equal
+  inline bool operator == (LexState a, LexState b)
+  {
+    return a.getState () == b.getState ();
+  }
+
+  inline bool operator != (LexState a, LexState b)
+  {
+    return ! (a == b);
+  }
+}
+
+using namespace std;
+
+#hdr
+#include <string>
+#include <climits>
+#end
+
+#src
+#include <util/int_to_string.h>
+#end

@@ -1,0 +1,50 @@
+namespace basilcc
+{
+  class CC;
+
+  class ShiftBase
+  {
+  public:
+    // steals shift rules
+    ShiftBase (BaseKernelPtr base_kernel, ShiftRulePtrVector & shift_rules)
+      : m_base_kernel (base_kernel)
+    {
+      m_shift_rules.swap (shift_rules);
+    }
+    ~ ShiftBase ()
+    {}
+
+    // get base kernel
+    inline BaseKernelPtr getBaseKernel () const
+    {
+      return m_base_kernel;
+    }
+
+    // get shift rules
+    inline ShiftRulePtrVector const & getShiftRules () const
+    {
+      return m_shift_rules;
+    }
+
+    // closure on shift base
+    void closure (CC & cc)
+    {
+      // will add non kernel rules
+      shiftClosure (cc, m_shift_rules);
+    }
+
+  private:
+    BaseKernelPtr m_base_kernel;
+    ShiftRulePtrVector m_shift_rules;
+  }
+}
+
+#hdr
+#include <basilcc/base_kernel_ptr.h>
+#include <basilcc/shift_rule_ptr_vector.h>
+#end
+
+#src
+#include <basilcc/shift_closure.h>
+#end
+

@@ -1,0 +1,61 @@
+namespace basilcc
+{
+  class CC;
+
+  // lazy or delayed move
+  class LazyMove
+  {
+  public:
+    LazyMove (SymbolPtr term, LazyActionSeqPtr lazy_action_seq)
+      : m_token (term), m_lazy_action_seq (lazy_action_seq)
+    {}
+    ~ LazyMove () {}
+
+    // get token
+    inline SymbolPtr getToken () const
+    {
+      return m_token;
+    }
+
+    // get lazy action seq
+    inline LazyActionSeqPtr getLazyActionSeq () const
+    {
+      return m_lazy_action_seq;
+    }
+
+    // get move
+    MovePtr getMove (CC & cc, ShiftPtrVector const & token_shifts) const
+    {
+      ActionSeqPtr action_seq = m_lazy_action_seq->getActionSeq (cc, token_shifts, m_token);
+      return basilcc::getMove (cc, m_token, action_seq);
+    } 
+  private:
+    SymbolPtr m_token;
+    LazyActionSeqPtr m_lazy_action_seq;
+  };
+
+  // a < b
+  bool operator < (LazyMove const & a, LazyMove const & b)
+  {
+    return symbolLess (a.getToken (), b.getToken ());
+  }
+  // a < b
+  bool lazyMoveLess (LazyMovePtr a, LazyMovePtr  b)
+  {
+    return * a < * b;
+  }
+}
+
+#hdr
+#include <basilcc/lazy_action_seq_ptr.h>
+#include <basilcc/lazy_move_ptr.h>
+#include <basilcc/move_ptr.h>
+#include <basilcc/shift_ptr_vector.h>
+#include <basilcc/symbol_ptr.h>
+#end
+
+#src
+#include <basilcc/lazy_action_seq.h>
+#include <basilcc/move_api.h>
+#include <basilcc/symbol.h>
+#end

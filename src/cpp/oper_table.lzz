@@ -1,0 +1,105 @@
+namespace cpp
+{
+  struct OperTable
+  {
+    OperTable ()
+    {
+      struct
+      {
+        char const * name;
+        int number;
+      }
+      tbl [] =
+      {
+        { "!",      TOKEN_NOT },
+        { "!=",     TOKEN_NOTEQ }, 
+        { "#",      TOKEN_HASH },
+        { "##",     TOKEN_DBLHASH },
+        { "%",      TOKEN_MOD },
+        { "%=",     TOKEN_MOD_ASSIGN },
+        { "&",      TOKEN_BITAND }, 
+        { "&&",     TOKEN_AND }, 
+        { "&=",     TOKEN_BITAND_ASSIGN }, 
+        { "(",      TOKEN_LPAREN },
+        { ")",      TOKEN_RPAREN },
+        { "*",      TOKEN_TIMES },
+        { "*=",     TOKEN_TIMES_ASSIGN },
+        { "+",      TOKEN_PLUS },
+        { "++",     TOKEN_INC },
+        { "+=",     TOKEN_PLUS_ASSIGN },
+        { ",",      TOKEN_COMMA },
+        { "-",      TOKEN_MINUS },
+        { "--",     TOKEN_DEC },
+        { "-=",     TOKEN_MINUS_ASSIGN },
+        { "->",     TOKEN_PTR },
+        { "->*",    TOKEN_PTR_TIMES },
+        { ".",      TOKEN_DOT },
+        { ".*",     TOKEN_DOT_TIMES },
+        { "...",    TOKEN_ELLIPSE },
+        { "/",      TOKEN_DIVIDE },
+        { "/=",     TOKEN_DIVIDE_ASSIGN },
+        { ":",      TOKEN_COLON },
+        { "::",     TOKEN_DCOLON },
+        { ";",      TOKEN_SEMI }, 
+        { "<",      TOKEN_LT }, 
+        { "<<",     TOKEN_LSHIFT },
+        { "<<=",    TOKEN_LSHIFT_ASSIGN },
+        { "<=",     TOKEN_LTEQ },
+        { "=",      TOKEN_ASSIGN },
+        { "==",     TOKEN_EQ }, 
+        { ">",      TOKEN_GT }, 
+        { ">=",     TOKEN_GTEQ },
+        { ">>",     TOKEN_RSHIFT },
+        { ">>=",    TOKEN_RSHIFT_ASSIGN },
+        { "?",      TOKEN_QMARK },
+        { "[",      TOKEN_LBRACK },
+        { "]",      TOKEN_RBRACK },
+        { "^",      TOKEN_XOR },
+        { "^=",     TOKEN_XOR_ASSIGN },
+        { "{",      TOKEN_LBRACE },
+        { "|",      TOKEN_BITOR }, 
+        { "|=",     TOKEN_BITOR_ASSIGN }, 
+        { "||",     TOKEN_OR }, 
+        { "}",      TOKEN_RBRACE },
+        { "~",      TOKEN_BITNOT },
+        // digraphs
+        { "<%",     TOKEN_LBRACE },
+        { "%>",     TOKEN_RBRACE },
+        { "<:",     TOKEN_LBRACK },
+        { ":>",     TOKEN_RBRACK },
+        { "%:",     TOKEN_HASH },
+        { "%:%:",   TOKEN_DBLHASH },
+      };
+      for (size_t i = 0; i < ARRAY_SIZE (tbl); ++ i)
+      {
+        opers.insert (StringIntMap::value_type (tbl [i].name, tbl [i].number));
+      }
+    }
+    // get operator kind, exception if not operator lexeme
+    int getOperKind (std::string const & name)
+    {
+      StringIntMap::const_iterator p = opers.find (name);
+      if (p == opers.end ())
+      {
+        // this shouldn't happen
+        throw ParseException (Message ("unexpected operator: %") << name); 
+      }
+      return p->second;
+    }
+  private:
+    StringIntMap opers;
+  }
+}
+
+using namespace std;
+
+#hdr
+#include <util/string_int_map.h>
+#end
+
+#src
+#include <cpp/token_numbers.h>
+#include <util/array_size.h>
+#include <util/message.h>
+#include <util/parse_exception.h>
+#end

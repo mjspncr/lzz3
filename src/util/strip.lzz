@@ -1,0 +1,41 @@
+// strip.lzz
+//
+
+// strip commas
+std::string stripCommas (std::string const & str)
+{
+  return stripChars (str, ",");
+}
+
+// strip whitespace
+// spaces, tabs, newlines and crs
+std::string stripWs (std::string const & str)
+{
+  return stripChars (str, " \t\n\r");
+}
+
+// strip all chs from str
+std::string stripChars (std::string const & str, char const * chs)
+{
+  string res;
+  for (string::size_type p = 0;;)
+  {
+    string::size_type q (str.find_first_not_of (chs, p));
+    if (q == string::npos)
+    {
+      break;
+    }
+    p = str.find_first_of (chs, q + 1);
+    res += str.substr (q, p - q);
+  }
+  return res;
+}
+
+using namespace std;
+
+#hdr
+#include <string>
+#end
+
+#src
+#end

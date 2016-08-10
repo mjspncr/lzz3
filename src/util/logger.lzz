@@ -1,0 +1,71 @@
+// logger.lzz
+
+class Logger
+{
+public:
+  Logger (std::ostream & os)
+    : m_os (os), m_has_error (false) 
+  {}
+
+  std::ostream & error ()
+  {
+    m_has_error = true;
+    return m_os;
+  }
+  std::ostream & error (Loc const & loc)
+  {
+    std::ostream & os = error ();
+    if (loc.isSet ())
+    {
+      os << loc << ' ';
+    }
+    return os;
+  }
+  void error (Loc const & loc, std::string const & msg)
+  {
+    error (loc) << msg << '\n';
+  }
+  void error (std::string const & msg)
+  {
+    error () << msg << '\n';
+  }
+  bool hasError () const
+  {
+    return m_has_error;
+  }
+
+  std::ostream & warning ()
+  {
+    return m_os;
+  }
+  std::ostream & warning (Loc const & loc)
+  {
+    std::ostream & os = warning ();
+    if (loc.isSet ())
+    {
+      os << loc << ' ';
+    }
+    return os;
+  }
+  void warning (Loc const & loc, std::string const & msg)
+  {
+    warning (loc) << msg << '\n';
+  }
+  void warning (std::string const & msg)
+  {
+    warning () << msg << '\n';
+  }
+private:
+  std::ostream & m_os;
+  bool m_has_error;
+}
+
+#hdr
+#include <util/loc.h>
+#include <iosfwd>
+#end
+
+#src
+#include <util/loc_to_string.h>
+#include <iostream>
+#end

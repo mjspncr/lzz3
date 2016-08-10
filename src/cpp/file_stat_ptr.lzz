@@ -1,0 +1,16 @@
+namespace cpp
+{
+  struct FileStat;
+  typedef Ptr <FileStat> FileStatPtr;
+}
+template class Ptr <cpp::FileStat>;
+
+#hdr
+#include <util/ptr.h>
+#end
+
+#src
+#include <cpp/file_stat.h>
+#include <util/ptr.tpl>
+#end
+

@@ -1,0 +1,12 @@
+// string
+
+typedef std::string String;
+typedef String::const_iterator StringConstIter;
+typedef String::iterator StringIter;
+
+#hdr
+#include <string>
+#end
+
+#src
+#end

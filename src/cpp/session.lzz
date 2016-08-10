@@ -1,0 +1,108 @@
+class Logger;
+class Output;
+
+namespace cpp
+{
+  class Session
+  {
+  public:
+    Session (StringTable & string_table, StringIntVector const & keywords, Output & output, Logger & logger)
+      : m_string_table (string_table), m_keywords (keywords), m_output (output), m_logger (logger) 
+    {}
+    ~ Session ()
+    {}
+
+    // intern string
+    char const * intern (std::string const & str)
+    {
+      return m_string_table.intern (str.c_str ());
+    }
+
+    // if lexeme is a keyword set token number and return true
+    bool isKeyword (std::string const & lexeme, int & number)
+    {
+      bool res = false;
+      // keywords sorted by name 
+      StringIntVectorConstIter p = lower_bound (m_keywords.begin (), m_keywords.end (), lexeme, StringIntFirstLess ());
+      if (p != m_keywords.end () && p->first == lexeme)
+      {
+        number = p->second;
+        res = true;
+      }
+      return res;
+    }
+
+    // log warning and error messages
+    std::ostream & warning (Loc const & loc) const
+    {
+      return m_logger.warning (loc);
+    }
+    void warning (Loc const & loc, std::string const & msg) const
+    {
+      m_logger.warning (loc, msg);
+    }
+    std::ostream & error (Loc const & loc) const
+    {
+      return m_logger.error (loc);
+    }
+    void error (Loc const & loc, std::string const & msg) const
+    {
+      m_logger.error (loc, msg);
+    }
+
+    // print (#hdr, #src, etc) block to file
+    inline Output & getOutput () const
+    {
+      return m_output;
+    }
+
+    // get dir table
+    inline DirTable & getDirTable ()
+    {
+      return m_dir_table;
+    }
+
+    // get macro table
+    inline MacroTable & getMacroTable ()
+    {
+      return m_macro_table;
+    }
+
+    // get keyword table
+    inline KeywordTable & getKeywordTable ()
+    {
+      return m_keyword_table;
+    }
+
+  private:
+    StringTable & m_string_table;
+    // keyword token numbers
+    StringIntVector const & m_keywords;
+    DirTable m_dir_table;
+    MacroTable m_macro_table;
+    // preprocessor keywords
+    KeywordTable m_keyword_table;
+    Output & m_output;
+    Logger & m_logger;
+  };
+}
+
+using namespace std;
+
+#hdr
+#include <cpp/dir_table.h>
+#include <cpp/file_type.h>
+#include <cpp/keyword_table.h>
+#include <cpp/macro_table.h>
+#include <util/loc.h>
+#include <util/string_int_vector.h>
+#include <util/string_table.h>
+#include <iosfwd>
+#end
+
+#src
+#include <util/logger.h>
+#include <output/output.h>
+#include <algorithm>
+#include <iostream>
+#end

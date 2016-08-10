@@ -1,0 +1,13 @@
+// int_string_vector.lzz
+
+typedef std::vector <IntStringPair> IntStringVector;
+typedef IntStringVector::iterator IntStringVectorIter;
+typedef IntStringVector::const_iterator IntStringVectorConstIter;
+
+#hdr
+#include <util/int_string_pair.h>
+#include <vector>
+#end
+
+#src
+#end

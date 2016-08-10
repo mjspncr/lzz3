@@ -1,0 +1,139 @@
+namespace cpp
+{
+  // check macro replacement tokens, true if checks out
+  inline bool checkMacroTokens (Session & session, bool is_func, StringVector const & params, bool var, TokenPtrVector const & tokens)
+  {
+    return is_func ? checkFuncMacroTokens (session, params, var, tokens) : checkObjMacroTokens (session, tokens);
+  }
+
+  // check object macro replacment tokens
+  bool checkObjMacroTokens (Session & session, TokenPtrVector const & tokens)
+  {
+    bool t = ! tokens.empty ();
+    for (TokenPtrVectorConstIter i = tokens.begin (), endi = tokens.end (); i != endi; ++ i)
+    {
+      TokenPtr const & token = * i;
+      if (token->getNumber () == TOKEN_DBLHASH)
+      {
+        if (t)
+        {
+          session.error (token->getLoc (), "unexpected ##");
+          return false;
+        }
+        t = true;
+      }
+      else
+      {
+        t = false;
+      }
+    }
+    if (t)
+    {
+      session.error (tokens.back ()->getLoc (), "unexpected ##");
+      return false;
+    }
+    return true;
+  }
+
+  // check function macro replacement tokens
+  bool checkFuncMacroTokens (Session & session, StringVector const & params, bool var, TokenPtrVector const & tokens)
+  {
+    bool t = ! tokens.empty (), p = false;
+    for (TokenPtrVectorConstIter i = tokens.begin (), endi = tokens.end (); i != endi; ++ i)
+    {
+      TokenPtr const & token = * i;
+      int number = token->getNumber ();
+      Loc const & loc = token->getLoc ();
+      if (number == TOKEN_DBLHASH)
+      {
+        if (p)
+        {
+          session.error (loc, "expect parameter after #");
+          return false;
+        }
+        else if (t)
+        {
+          session.error (loc, "unexpected ##");
+          return false;
+        }
+        t = true;
+        p = false;
+      }
+      else if (number == TOKEN_HASH)
+      {
+        if (p)
+        {
+          session.error (loc, "expect parameter after #");
+          return false;
+        }
+        p = true;
+      }
+      else if (number == TOKEN_IDENT)
+      {
+        std::string const & lexeme = token->getLexeme ();
+        StringVectorConstIter j = std::find (params.begin (), params.end (), lexeme);
+        if (j != params.end ())
+        {
+          token->setNumber (TOKEN_IDENT_PARAM_START + (j - params.begin ()));
+        }
+        else if (p)
+        {
+          session.error (loc, "expect parameter after #");
+          return false;
+        }
+        else if (lexeme == "__VA_ARGS__")
+        {
+          // warn only, replacment list is still valid
+          if (var)
+          {
+            session.warning (loc, "__VA_ARGS__ used in replacement set of function macro with named variable parameter");
+          }
+          else
+          {
+            session.warning (loc, "__VA_ARGS__ used in replacement set of non-variadic function macro");
+          }
+        }
+        t = false;
+        p = false;
+      }
+      else
+      {
+        if (p)
+        {
+          session.error (loc, "expect parameter after #");
+          return false;
+        }
+        t = false;
+        p = false;
+      }
+    }
+    if (p)
+    {
+      session.error (tokens.back ()->getLoc (), "expect parameter after #");
+      return false;
+    }
+    else if (t)
+    {
+      session.error (tokens.back ()->getLoc (), "unexpected ##");
+      return false;
+    }
+    return true;
+  }
+}
+
+using namespace cpp;
+using namespace std;
+
+#hdr
+#include <cpp/token_ptr_vector.h>
+#include <cpp/session_fwd.h>
+#include <util/string_vector.h>
+#end
+
+#src
+#include <cpp/session.h>
+#include <cpp/token.h>
+#include <cpp/token_numbers.h>
+#include <algorithm>
+#end
+

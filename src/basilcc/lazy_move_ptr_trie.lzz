@@ -1,0 +1,14 @@
+namespace basilcc
+{
+  typedef Trie <unsigned int, 0xFFFFFFFF, 512, LazyMovePtr> LazyMovePtrTrie;
+}
+template class Trie <unsigned int, 0xFFFFFFFF, 512, basilcc::LazyMovePtr>;
+
+#hdr
+#include <basilcc/lazy_move_ptr.h>
+#include <util/trie.h>
+#end
+
+#src
+#include <util/trie.tpl>
+#end

@@ -1,0 +1,13 @@
+namespace cpp
+{
+  typedef std::vector <MacroArgPtr> MacroArgPtrVector;
+  typedef MacroArgPtrVector::iterator MacroArgPtrVectorIter;
+  typedef MacroArgPtrVector::const_iterator MacroArgPtrVectorConstIter;
+  typedef MacroArgPtrVector::reverse_iterator MacroArgPtrVectorRevIter;
+  typedef MacroArgPtrVector::const_reverse_iterator MacroArgPtrVectorConstRevIter;
+}
+
+#hdr
+#include <cpp/macro_arg_ptr.h>
+#include <vector>
+#end

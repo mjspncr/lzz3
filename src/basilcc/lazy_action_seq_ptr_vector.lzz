@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <LazyActionSeqPtr> LazyActionSeqPtrVector;
+  typedef std::vector <LazyActionSeqPtr>::iterator LazyActionSeqPtrVectorIter;
+  typedef std::vector <LazyActionSeqPtr>::const_iterator LazyActionSeqPtrVectorConstIter;
+}
+
+#hdr
+#include <basilcc/lazy_action_seq_ptr.h>
+#include <vector>
+#end

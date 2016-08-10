@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <BaseRulePtr> BaseRulePtrVector;
+  typedef std::vector <BaseRulePtr>::iterator BaseRulePtrVectorIter;
+  typedef std::vector <BaseRulePtr>::const_iterator BaseRulePtrVectorConstIter;
+}
+
+#hdr
+#include <basilcc/base_rule_ptr.h>
+#include <vector>
+#end

@@ -1,0 +1,199 @@
+namespace cpp
+{
+  // if name is a macro set macro and return true
+  bool isMacro (Session & session, std::string const & name, MacroPtr & macro)
+  {
+    return session.getMacroTable ().isMacro (name, macro);
+  }
+
+  // true if name is macro
+  bool isMacro (Session & session, std::string const & name)
+  {
+    return session.getMacroTable ().isMacro (name);
+  }
+
+  // add macro
+  void addMacro (Session & session, MacroPtr const & macro)
+  {
+    return session.getMacroTable ().addMacro (macro);
+  }
+
+  // delete macro
+  void delMacro (Session & session, std::string const & name)
+  {
+    return session.getMacroTable ().delMacro (name);
+  }
+
+  // macro table
+  class MacroTable
+  {
+  public:
+    MacroTable () {}
+    ~ MacroTable () {}
+    // initialize
+    void init ()
+    {
+      // clear all entries
+      macros_.clear ();
+      // get time
+      time_t t = time (0);
+      // get time string from time, format will be like:
+      //
+      // 012345678901234567890123
+      // Fri Feb  5 16:45:17 1999
+      // 
+      TokenPtrVector rep_tokens;
+      char * str = ctime (& t);
+      string lexeme_str;
+      // __DATE__
+      lexeme_str = '\"';
+      lexeme_str.append (str +  4, 6);
+      lexeme_str.append (str + 19, 5);
+      lexeme_str+= '\"';
+      rep_tokens.push_back (new Token (TOKEN_LITERAL_STRING, Loc (), lexeme_str));
+      addMacro (new ObjMacro (Loc (), "__DATE__", rep_tokens));
+      rep_tokens.clear ();
+
+      // __TIME__
+      lexeme_str = '\"';
+      lexeme_str.append (str + 11, 8);
+      lexeme_str+= '\"';
+      rep_tokens.push_back (new Token (TOKEN_LITERAL_STRING, Loc (), lexeme_str));
+      addMacro (new ObjMacro (Loc (), "__TIME__", rep_tokens));
+      rep_tokens.clear ();
+
+      // __FILE__
+      addMacro (new FileMacro (Loc (), "__FILE__"));
+
+      // __LINE__
+      addMacro (new LineMacro (Loc (), "__LINE__"));
+
+      // __cplusplus
+      rep_tokens.push_back (new Token (TOKEN_LITERAL_INT, Loc (), "199711L"));
+      addMacro (new ObjMacro (Loc (), "__cplusplus", rep_tokens));
+      rep_tokens.clear ();
+      /*
+      // add -D macros
+      addCmdMacroSet (conf::getOptionValue (conf::opt_macro_set));
+      */
+    }
+
+    // add macro
+    void addMacro (MacroPtr const & macro)
+    {
+      macros_.insert (StringMacroPtrMap::value_type (macro->getName (), macro));
+    }
+
+    // true if name is macro
+    bool isMacro (std::string const & name) const
+    {
+      MacroPtr macro;
+      return isMacro (name, macro);
+    }
+
+    // if name is macro set macro and return true
+    bool isMacro (std::string const & name, MacroPtr & macro) const
+    {
+      bool found = false;
+      StringMacroPtrMapConstIter p = macros_.find (name);
+      if (p != macros_.end ())
+      {
+        macro = p->second;
+        found = true; 
+      }
+      return found;
+    }
+
+    // delete macro
+    void delMacro (std::string const & name)
+    {
+      macros_.erase (name);
+    }
+
+    /*
+    // get data table 
+    MacroPtrDataTable const & getDataTable () const
+    {
+      return data_table;
+    }
+    */
+
+  private:
+#if 0
+    // add cmd macro
+    void addCmdMacro (util::String const & str)
+    {
+      // exceptions
+      try
+      {
+        // create lexer to lex string
+        util::Loc dir_loc;
+        Lexer lexer (str, dir_loc);
+        util::Loc name_loc;
+        util::Ident name;
+        bool is_func = false;
+        util::IdentVector param_set;
+        bool var = false;
+        basl::TokenVector rep_set;
+        if (lexDefineLine (lexer, true, dir_loc, name_loc, name, is_func, param_set, var, rep_set))
+        {
+          // remove macro with same name if exists
+          if (isMacro (name))
+          {
+            delMacro (name);
+          }
+          if (checkMacroRepSet (is_func, param_set, var, rep_set))
+          {
+            // use default location to signify that the macro is not from source
+            addMacro (buildMacro (dir_loc, name, is_func, param_set, var, rep_set));
+          }
+        }
+      }
+      catch (util::Exception const e)
+      {
+      }
+      catch (...)
+      {
+        throw;
+      }
+    }
+
+    // add cmd macro set
+    void addCmdMacroSet (util::StringVector const & str_set)
+    {
+      // add all macros in list
+      for (util::StringVectorConstIter beg = str_set.begin (), end = str_set.end (); beg != end; ++ beg)
+      {
+        addCmdMacro (* beg);
+      }
+    }
+#endif
+  private:
+    // data table
+    StringMacroPtrMap macros_;
+  };
+}
+
+using namespace cpp;
+using namespace std;
+
+namespace
+{
+}
+
+#hdr
+#include <cpp/session_fwd.h>
+#include <cpp/string_macro_ptr_map.h>
+#include <util/string.h>
+#end
+
+#src
+#include <cpp/session.h>
+#include <cpp/macro.h>
+#include <cpp/token.h>
+#include <cpp/token_numbers.h>
+#include <cpp/token_ptr_vector.h>
+#include <algorithm>
+#include <stdio.h>
+#include <time.h>
+#end

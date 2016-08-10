@@ -1,0 +1,554 @@
+class Output
+{
+public:
+  Output (std::string const & fullname)
+    : m_use_tpl (false) 
+  {
+    // get path and base name
+    file_op::getPathAndName (fullname, m_path, m_base);
+    string const & out_path = getOptionValue (opt_out_dir);
+    if (! out_path.empty ())
+    {
+      m_path = out_path;
+    }
+    m_base = file_op::remExt (m_base);
+  }
+  ~ Output ()
+  {}
+
+  // close all files
+  void close (bool save)
+  {
+    closeInlFile (save);
+    closeHdrFile (save);
+    closeSrcFile (save);
+    closeTplFile (save);
+    closeTnlFile (save);
+  }
+
+  // get header file
+  File & getHdrFile ()
+  {
+    openHdrFile ();
+    return * m_hdr_file;
+  }
+
+  // get source file
+  File & getSrcFile ()
+  {
+    openSrcFile ();
+    return * m_src_file;
+  }
+
+  // get header file with inline and template flags
+  inline File & getHdrFile (bool inl, bool tpl)
+  {
+    if (tpl)
+    {
+      return inl ? getTnlFile () : getTplFile ();
+    }
+    else
+    {
+      return inl ? getInlFile () : getHdrFile ();
+    }      
+  }
+
+  // get inline file
+  File & getInlFile ()
+  {
+    if (! config::getOptionValue (config::opt_inl))
+    {
+      return getHdrFile ();
+    }        
+    openInlFile ();
+    return * m_inl_file;
+  }
+
+  // get template file
+  File & getTplFile ()
+  {
+    if (! (m_use_tpl || config::getOptionValue (config::opt_tpl)))
+    {
+      return getHdrFile ();
+    }        
+    openTplFile ();
+    return * m_tpl_file;
+  }
+
+  // get template inline file
+  File & getTnlFile ()
+  {
+    if (! config::getOptionValue (config::opt_tnl))
+    {
+      return getHdrFile ();
+    }        
+    openTnlFile ();
+    return * m_tnl_file;
+  }
+
+  // use tpl file (tpl file can be enabled using #pragma)
+  void useTpl ()
+  {
+    m_use_tpl = true;
+  }
+
+  // where needed?
+#if 0
+  // true if has hdr file
+  bool hasHdrFile (FilePtr & file) const
+  {
+    bool result = false;
+    if (m_hdr_file.isSet ())
+    {
+      file = m_hdr_file;
+      result = true;
+    }
+    return result;
+  }
+
+  // true if has src file
+  bool hasSrcFile (FilePtr & file) const
+  {
+    bool result = false;
+    if (m_src_file.isSet ())
+    {
+      file = m_src_file;
+      result = true;
+    }
+    return result;
+  }
+
+  // true if has inl file
+  bool hasInlFile (FilePtr & file) const
+  {
+    bool result = false;
+    if (m_inl_file.isSet ())
+    {
+      file = m_inl_file;
+      result = true;
+    }
+    return result;
+  }
+
+  // true if has tpl file
+  bool hasTplFile (FilePtr & file) const
+  {
+    bool result = false;
+    if (m_tpl_file.isSet ())
+    {
+      file = m_tpl_file;
+      result = true;
+    }
+    return result;
+  }
+
+  // true if has tnl file
+  bool hasTnlFile (FilePtr & file) const
+  {
+    bool result = false;
+    if (m_tnl_file.isSet ())
+    {
+      file = m_tnl_file;
+      result = true;
+    }
+    return result;
+  }
+#endif
+
+private:
+  // create file
+  FilePtr createFile (config::StringOption const & opt_ext, config::BoolOption const & opt_line, config::BoolOption const & opt_smart_write)
+  {
+    string fullname, name;
+    string const & ext = getOptionValue (opt_ext);
+    getFullname (m_path, m_base, ext, fullname, name);
+    return new File (fullname, name, ext, getOptionValue (opt_line), getOptionValue (opt_smart_write));
+  }
+
+  // delete file with extension
+  void deleteFile (config::StringOption const & opt_ext)
+  {
+    string fullname, name;
+    string const & ext = getOptionValue (opt_ext);
+    getFullname (m_path, m_base, ext, fullname, name);
+    if (file_op::exists (fullname))
+    {
+      /*
+        _unlink (fullname.c_str ());
+      */
+      remove (fullname.c_str());
+    }
+  }
+
+  //
+  // header
+  //
+    
+  // open header file
+  void openHdrFile ()
+  {
+    if (! m_hdr_file.isSet ())
+    {
+      // create file
+      m_hdr_file = createFile (opt_hdr_ext, opt_hdr_line, opt_hdr_smart_write);
+
+      // info
+      printInfo (m_hdr_file);
+
+      // include guard
+      string guard_name = getIncludeGuardName (m_base, m_hdr_file->getExt ());
+      m_hdr_file->header () << "#ifndef " << guard_name << '\n';
+      m_hdr_file->header () << "#define " << guard_name << '\n';
+
+      // define inline macro for header inlines 
+      m_hdr_file->top () << "#define LZZ_INLINE inline" << '\n';
+
+      // open source too?
+      if (getOptionValue (opt_src_if_hdr))
+      {
+        openSrcFile ();
+      }
+    }
+  }
+
+  // close header file
+  void closeHdrFile (bool save)
+  {
+    if (save && m_hdr_file.isSet ())
+    {
+      // undef LZZ_INLINE before rest
+      m_hdr_file->body () << "#undef LZZ_INLINE" << '\n';
+
+      // inline file
+      if (getOptionValue (opt_inl_inl) &&
+          (m_hdr_file->hasSection (SECTION_INLINE_USER) || m_hdr_file->hasSection (SECTION_INLINE_BODY)))
+      {
+        assert (! m_inl_file.isSet ());
+        m_hdr_file->inlineHeader () << "#ifdef LZZ_ENABLE_INLINE" << '\n';
+        m_hdr_file->inlineTop ()    << "#define LZZ_INLINE inline" << '\n';
+        m_hdr_file->inlineBody ()   << "#undef LZZ_INLINE" << '\n';
+        m_hdr_file->inlineTail ()   << "#endif" << '\n';
+      }
+      else if (m_inl_file.isSet ())
+      {
+        m_hdr_file->tail () << "#ifdef LZZ_ENABLE_INLINE" << '\n';
+        m_hdr_file->tail () << "#include \"" << m_inl_file->getName () << '\"' << '\n';
+        m_hdr_file->tail () << "#endif" << '\n';
+      }
+
+      // include inline template file if created
+      if (m_tnl_file.isSet ())
+      {
+        if (m_tpl_file.isSet ())
+        {
+          m_hdr_file->tail () << "#ifdef LZZ_ENABLE_INLINE" << '\n';
+        }
+        m_hdr_file->tail () << "#include \"" << m_tnl_file->getName () << '\"' << '\n';
+        if (m_tpl_file.isSet ())
+        {
+          m_hdr_file->tail () << "#endif" << '\n';
+        }
+      }
+      // close include guard
+      m_hdr_file->tail () << "#endif" << '\n';
+      m_hdr_file->close (FILE_HEADER);
+    }
+    else if (getOptionValue (opt_delete_old))
+    {
+      deleteFile (opt_hdr_ext);
+    }
+  }
+
+  //
+  // source
+  //
+    
+  // open src file
+  void openSrcFile ()
+  {
+    if (! m_src_file.isSet ())
+    {
+      // create file
+      m_src_file = createFile (opt_src_ext, opt_src_line, opt_src_smart_write);
+
+      // info
+      printInfo (m_src_file);
+
+      // include header file as first line
+      openHdrFile ();
+      m_src_file->header () << "#include \"" << m_hdr_file->getName () << '\"' << '\n';
+
+      // define inline macro for static and unnamed namespace inlines 
+      m_src_file->top () << "#define LZZ_INLINE inline" << '\n';
+    }
+  }
+
+  // close src file
+  void closeSrcFile (bool save)
+  {
+    if (save && m_src_file.isSet ())
+    {
+      // inline file
+      if (getOptionValue (opt_inl_inl) &&
+          (m_hdr_file->hasSection (SECTION_INLINE_USER) || m_hdr_file->hasSection (SECTION_INLINE_BODY)))
+      {
+        assert (! m_inl_file.isSet ());
+        m_src_file->inlineHeader () << "#ifndef LZZ_ENABLE_INLINE" << '\n';
+        m_src_file->inlineTop () << "#define LZZ_INLINE" << '\n';
+        m_src_file->inlineBody () << "#undef LZZ_INLINE" << '\n';
+        m_src_file->inlineTail () << "#endif" << '\n';
+      }
+      else if (m_inl_file.isSet ())
+      {
+        m_src_file->header () << "#ifndef LZZ_ENABLE_INLINE" << '\n';
+        m_src_file->header () << "#include \"" << m_inl_file->getName () << '\"' << '\n';
+        m_src_file->header () << "#endif" << '\n';
+      }
+
+      // remove inline macro
+      m_src_file->body () << "#undef LZZ_INLINE" << '\n';
+        
+      // close file
+      m_src_file->close (FILE_SOURCE);
+    }
+    else if (getOptionValue (opt_delete_old))
+    {
+      deleteFile (opt_src_ext);
+    }
+  }
+
+  //
+  // inline
+  //
+
+  // open inl file
+  void openInlFile ()
+  {
+    if (! m_inl_file.isSet ())
+    {
+      assert (! getOptionValue (opt_inl_inl));
+
+      // create file
+      m_inl_file = createFile (opt_inl_ext, opt_inl_line, opt_inl_smart_write);
+
+      printInfo (m_inl_file);
+
+      // must open header and source
+      openHdrFile ();
+      openSrcFile ();
+
+      // inline macro
+      m_inl_file->top () << "#ifdef LZZ_ENABLE_INLINE" << '\n';
+      m_inl_file->top () << "#define LZZ_INLINE inline" << '\n';
+      m_inl_file->top () << "#else" << '\n';
+      m_inl_file->top () << "#define LZZ_INLINE" << '\n';
+      m_inl_file->top () << "#endif" << '\n';
+    }
+  }
+
+  // close inline file
+  void closeInlFile (bool save)
+  {
+    if (save && m_inl_file.isSet ())
+    {
+      // remove inline macro
+      m_inl_file->body () << "#undef LZZ_INLINE" << '\n';
+        
+      // close file
+      m_inl_file->close (FILE_INLINE);
+    }
+    else if (getOptionValue (opt_delete_old))
+    {
+      if (! getOptionValue (opt_inl_inl))
+      {
+        deleteFile (opt_inl_ext);
+      }
+    }
+  }
+
+  //
+  // template
+  //
+
+  //
+  // open tpl file
+  //
+  void openTplFile ()
+  {
+    if (! m_tpl_file.isSet ())
+    {
+      // create file
+      m_tpl_file = createFile (opt_tpl_ext, opt_tpl_line, opt_tpl_smart_write);
+
+      // info
+      printInfo (m_tpl_file);
+
+      // include header file
+      openHdrFile ();
+      m_tpl_file->header () << "#include \"" << m_hdr_file->getName () << '\"' << '\n';
+    }
+  }
+    
+  // close template file
+  void closeTplFile (bool save)
+  {
+    if (save && m_tpl_file.isSet ())
+    {
+      // include template inline file if exists
+      if (m_tnl_file.isSet ())
+      {
+        // write to header part of file
+        m_tpl_file->header () << "#ifndef LZZ_ENABLE_INLINE" << '\n';
+        m_tpl_file->header () << "#include \"" << m_tnl_file->getName () << '\"' << '\n';
+        m_tpl_file->header () << "#endif" << '\n';
+      }
+
+      // close file
+      m_tpl_file->close (FILE_TEMPLATE);
+    }
+    else if (getOptionValue (opt_delete_old))
+    {
+      deleteFile (opt_tpl_ext);
+    }
+  }
+
+  //
+  // template inline
+  //
+
+  // open template inline file
+  void openTnlFile ()
+  {
+    if (! m_tnl_file.isSet ())
+    {
+      // create file
+      m_tnl_file = createFile (opt_tnl_ext, opt_tnl_line, opt_tnl_smart_write);
+        
+      // info
+      printInfo (m_tnl_file);
+
+      // set inline macro after all include blocks
+      m_tnl_file->top () << "#ifdef LZZ_ENABLE_INLINE" << '\n';
+      m_tnl_file->top () << "#define LZZ_INLINE inline" << '\n'; 
+      m_tnl_file->top () << "#else" << '\n'; 
+      m_tnl_file->top () << "#define LZZ_INLINE" << '\n'; 
+      m_tnl_file->top () << "#endif" << '\n';
+
+      // requires header and template files
+      openHdrFile ();
+
+      // if writing to tnl file and using tpl file, make sure tpl file is open
+      if (getOptionValue (opt_tpl))
+      {
+        openTplFile ();
+      }
+    }
+  }
+
+  // close template inline file
+  void closeTnlFile (bool save)
+  {
+    if (save && m_tnl_file.isSet ())
+    {
+      // remove inline macro
+      m_tnl_file->body () << "#undef LZZ_INLINE" << '\n';
+
+      // close file
+      m_tnl_file->close (FILE_TEMPLATE_INLINE);
+    }
+    else if (getOptionValue (opt_delete_old))
+    {
+      deleteFile (opt_tnl_ext);
+    }
+  }
+
+private:
+  // path name
+  std::string m_path;
+
+  // base name, no path or ext
+  std::string m_base;
+
+  // header file
+  FilePtr m_hdr_file;
+
+  // source file
+  FilePtr m_src_file;
+
+  // inline file
+  FilePtr m_inl_file;
+
+  // template file
+  FilePtr m_tpl_file;
+
+  // inline template file
+  FilePtr m_tnl_file;
+
+  // create tpl file (set using #pragma)
+  bool m_use_tpl;
+}
+
+using namespace std;
+using namespace config;
+
+namespace
+{
+  // get fullname and name from path and ext
+  void getFullname (string const & path, string const & base, string const & ext, string & fullname, string & name)
+  {
+    name = file_op::addExt (base, ext);
+    fullname = file_op::join (path, name);
+  }
+
+  // get include guard name
+  string getIncludeGuardName (string const & name, string const & ext)
+  {
+    string result = "LZZ_";
+    string const & package = getOptionValue (opt_package);
+    if (! package.empty ())
+    {
+      result += package;
+      result += '_';
+    }
+    result += name;
+    result += '_';
+    result += ext;
+    // replace non identifier chars with underscore
+    for (string::iterator i = result.begin (); i != result.end (); ++ i)
+    {
+      char & ch = * i;
+      if (! isalnum (ch))
+      {
+        ch = '_';
+      }
+    }
+    return result;
+  }
+
+  // print file info
+  void printInfo (FilePtr const & file)
+  {
+    // info goes in header part of file
+    file->header () << "// " << file->getName () << '\n';
+    file->header () << "//" << '\n';
+    file->header () << '\n';
+  }
+}
+
+#hdr
+#include <config/option_fwd.h>
+#include <output/file_ptr.h>
+#include <util/loc.h>
+#include <string>
+#include <iostream>
+#end
+
+#src
+#include <config/options.h>
+#include <output/file.h>
+#include <util/file_op.h>
+#include <util/loc_to_string.h>
+#include <cstring>
+#include <cassert>
+#include <cctype>
+#end

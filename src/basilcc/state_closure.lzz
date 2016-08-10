@@ -1,0 +1,68 @@
+namespace basilcc
+{
+  class CC;
+
+  // state closure, return number of conflicts
+  int stateClosure (CC & cc, FollowKernelPtr follow_kernel, StateMovePtr & state_move, ShiftSelPtr & nonterm_shift_sel, LexState & lex_state)
+  {
+    FollowBasePtr follow_base = follow_kernel->getFollowBase (cc);
+    getStateShiftSel (cc, follow_base, state_move, nonterm_shift_sel);
+    lex_state = follow_base->getLexState ();
+    return follow_base->getConflicts ().size ();
+  }
+}
+
+using namespace basilcc;
+using namespace std;
+
+namespace
+{
+  // get state shift sel
+  void getStateShiftSel (CC & cc, FollowBasePtr follow_base, StateMovePtr & state_move, ShiftSelPtr & nonterm_shift_sel)
+  {
+    ShiftPtrVector token_shifts, nonterm_shifts;
+    FollowShiftList const & follow_shifts = follow_base->getFollowShifts ();
+    for_each (follow_shifts.begin (), follow_shifts.end (), GetShiftSet (cc, token_shifts, nonterm_shifts));
+    state_move = follow_base->getLazyFollowMove ()->getStateMove (cc, token_shifts);
+    // since follow shift is sorted (by symbol) nonterm shifts is sorted too
+    if (! nonterm_shifts.empty ())
+    {
+      nonterm_shift_sel = getShiftSel (cc, nonterm_shifts);
+    }
+  }
+
+  // get token and nonterm shifts
+  void GetShiftSet (CC & cc, ShiftPtrVector & token_shifts, ShiftPtrVector & nonterm_shifts; FollowShift const & follow_shift)
+  {
+    SymbolPtr symbol = follow_shift.getSymbol ();
+    StatePtr state = getState (cc, follow_shift.getFollowKernel ());
+    ShiftPtr shift = getShift (cc, symbol, state);
+    if (symbol->isToken ())
+    {
+      token_shifts.push_back (shift);
+    }
+    else
+    {
+      nonterm_shifts.push_back (shift);
+    }
+  }
+}
+
+#hdr
+#include <basilcc/follow_kernel_ptr.h>
+#include <basilcc/lex_state.h>
+#include <basilcc/shift_sel_ptr.h>
+#include <basilcc/state_move_ptr.h>
+#end
+
+#src
+#include <basilcc/follow_base.h>
+#include <basilcc/follow_kernel.h>
+#include <basilcc/lazy_follow_move.h>
+#include <basilcc/shift.h>
+#include <basilcc/shift_sel_api.h>
+#include <basilcc/shift_api.h>
+#include <basilcc/state_api.h>
+#include <basilcc/symbol.h>
+#include <algorithm>
+#end

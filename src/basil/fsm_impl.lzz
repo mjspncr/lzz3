@@ -1,0 +1,224 @@
+namespace basil
+{
+  // finite state machine data and loader
+  class FSMImpl
+  {
+  public:
+    FSMImpl (std::string const & filename)
+    {
+      ifstream is (filename.c_str (), ios_base::in | ios_base::binary);
+      if (! is)
+      {
+        ThrowException () << "failed to open parser FSM: " << filename;
+      }
+      BinaryReader r (is);
+      readKeywords (r);
+      readNodes (r);
+      readRules (r);
+      readActionSeqs (r);
+      readMoveSels (r);
+      readStates (r);
+      readShiftStateSels (r);
+      readGotos (r);
+    }
+
+    // types
+    struct Rule (int size, int node) {}
+    struct Move (int token, int action_seq) {}
+    struct Action (int kind, int arg1, int arg2) {}
+    struct State (int move_sel, int def_action_seq, int lex_state, int num) {}
+    struct ShiftState (int num, int state) {}
+    struct Goto (int shift_state_sel, int def_state) {}
+
+    typedef std::vector <Rule> RuleVector;
+    typedef Move const * MovePtr;
+    typedef MovePtr const * MoveSel;
+    typedef std::vector <Move> MoveVector;
+    typedef std::vector <MovePtr> MovePtrVector;
+    typedef Action const * ActionPtr;
+    typedef std::vector <Action> ActionVector;
+    typedef std::vector <ActionPtr> ActionPtrVector;
+    typedef std::vector <State> StateVector;
+    typedef ShiftState const * ShiftStatePtr;
+    typedef std::vector <ShiftState> ShiftStateVector;
+    typedef std::vector <ShiftStatePtr> ShiftStatePtrVector;
+    typedef std::vector <Goto> GotoVector;
+
+    // constants
+    enum { REDUCE = 1, ACCEPT, SHIFT, DONE }
+    enum { NOINDEX = -1 }
+
+  protected:
+    int m_num_start_rules;
+    StringIntVector m_keywords;
+    StringIntMap m_nodes;
+    RuleVector m_rules;
+    ActionVector m_action_seqs;
+    ActionPtrVector m_action_seqs_beg;
+    MoveVector m_move_sels;
+    MovePtrVector m_move_sels_beg;
+    StateVector m_states;
+    ShiftStateVector m_shift_state_sels;
+    ShiftStatePtrVector m_shift_state_sels_beg;
+    GotoVector m_gotos;
+
+  private:
+    // keywords
+    void readKeywords (BinaryReader & r)
+    {
+      int size = r.readInt ();
+      m_keywords.reserve (size);
+      generate_n (back_inserter (m_keywords), size, ReadKeyword (r));
+    }
+    inline StringIntPair ReadKeyword (BinaryReader & r;) const
+    {
+      std::string name = r.readString ();
+      int num = r.readInt ();
+      return StringIntPair (name, num);
+    }
+
+    // nodes
+    void readNodes (BinaryReader & r)
+    {
+      int size = r.readInt ();
+      generate_n (inserter (m_nodes, m_nodes.end ()), size, ReadNode (r));
+    }
+    inline StringIntPair ReadNode (BinaryReader & r, int num = 0;)
+    {
+      std::string name = r.readString ();
+      return StringIntPair (name, num ++);
+    }
+
+    // rules
+    void readRules (BinaryReader & r)
+    {
+      int size = r.readInt ();
+      m_num_start_rules = r.readInt ();
+      m_rules.reserve (size);
+      generate_n (back_inserter (m_rules), size, ReadRule (r));
+    }
+    inline FSMImpl::Rule ReadRule (BinaryReader & r;) const
+    {
+      int size = r.readInt ();
+      int node = r.readInt ();
+      return Rule (size, node);
+    }
+
+    // actions
+    void readActionSeqs (BinaryReader & r)
+    {
+      int size = r.readInt ();
+      m_action_seqs.reserve (size);
+      generate_n (back_inserter (m_action_seqs), size, ReadAction (r));
+      IntVector nums;
+      readVector (r, nums);
+      m_action_seqs_beg.reserve (nums.size () + 1);
+      m_action_seqs_beg.push_back (& m_action_seqs [0]);
+      transform (nums.begin (), nums.end (), back_inserter (m_action_seqs_beg), GetActionPtr (m_action_seqs));
+    }
+    inline FSMImpl::Action ReadAction (BinaryReader & r;) const
+    {
+      int kind = r.readInt ();
+      int arg1 = r.readInt ();
+      int arg2 = kind == SHIFT ? NOINDEX : r.readInt ();
+      return Action (kind, arg1, arg2);
+    }
+    inline FSMImpl::ActionPtr GetActionPtr (ActionVector const & actions; int num) const
+    {
+      return & actions [num];
+    }
+
+    // moves
+    void readMoveSels (BinaryReader & r)
+    {
+      int size = r.readInt ();
+      m_move_sels.reserve (size);
+      generate_n (back_inserter (m_move_sels), size, ReadMove (r));
+      IntVector nums;
+      readVector (r, nums);
+      m_move_sels_beg.reserve (nums.size () + 1);
+      m_move_sels_beg.push_back (& m_move_sels [0]);
+      transform (nums.begin (), nums.end (), back_inserter (m_move_sels_beg), GetMovePtr (m_move_sels));
+    }
+    inline FSMImpl::Move ReadMove (BinaryReader & r;) const
+    {
+      int token = r.readInt ();
+      int action_seq_num = r.readInt (); 
+      return Move (token, action_seq_num);
+    }
+    inline FSMImpl::MovePtr GetMovePtr (MoveVector const & moves; int num) const
+    {
+      return & moves [num];
+    }
+
+    // states
+    void readStates (BinaryReader & r)
+    {
+      int size = r.readInt ();
+      m_states.reserve (size);
+      generate_n (back_inserter (m_states), size, ReadState (r));
+    }
+    inline FSMImpl::State ReadState (BinaryReader & r;) const
+    {
+      int move_sel = r.readInt ();
+      int def_action_seq = r.readInt ();
+      int lex_state = r.readInt ();
+      int num = r.readInt ();
+      return State (move_sel, def_action_seq, lex_state, num);
+    }
+
+    // shift states
+    void readShiftStateSels (BinaryReader & r)
+    {
+      int size = r.readInt ();
+      m_shift_state_sels.reserve (size);
+      generate_n (back_inserter (m_shift_state_sels), size, ReadShiftState (r));
+      IntVector nums;
+      readVector (r, nums);
+      m_shift_state_sels_beg.reserve (nums.size () + 1);
+      m_shift_state_sels_beg.push_back (& m_shift_state_sels [0]);
+      transform (nums.begin (), nums.end (), back_inserter (m_shift_state_sels_beg), GetShiftStatePtr (m_shift_state_sels));
+    }
+    inline FSMImpl::ShiftState ReadShiftState (BinaryReader & r;) const
+    {
+      int num = r.readInt ();
+      int state = r.readInt ();
+      return ShiftState (num, state);
+    }
+    inline FSMImpl::ShiftStatePtr GetShiftStatePtr (ShiftStateVector const & shift_states; int num) const
+    {
+      return & shift_states [num];
+    }
+
+    // and gotos
+    void readGotos (BinaryReader & r)
+    {
+      int size = r.readInt ();
+      m_gotos.reserve (size);
+      generate_n (back_inserter (m_gotos), size, ReadGoto (r));
+    }
+    inline FSMImpl::Goto ReadGoto (BinaryReader & r;) const
+    {
+      int shift_state_sel = r.readInt ();
+      int def_state = r.readInt (); 
+      return Goto (shift_state_sel, def_state);
+    }
+  }
+}
+
+using namespace std;
+
+#hdr
+#include <util/bstream.h>
+#include <util/int_vector.h>
+#include <util/string_int_map.h>
+#include <util/string_int_vector.h>
+#include <vector>
+#end
+
+#src
+#include <util/throw_exception.h>
+#include <algorithm>
+#include <fstream>
+#include <limits>
+#end

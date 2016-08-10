@@ -1,0 +1,274 @@
+namespace basilcc
+{
+  class CC;
+
+  class TempMove
+  {
+  public:
+    TempMove (SymbolPtr token)
+      : m_token (token)
+    {}
+    ~ TempMove ()
+    {
+      deleteObjects (m_temp_actions.begin (), m_temp_actions.end ());
+    }
+
+    // get token
+    inline SymbolPtr getToken () const
+    {
+      return m_token;
+    }
+
+    // get temp actions associated with token
+    inline TempActionPtrVector const & getTempActions () const
+    {
+      return m_temp_actions;
+    }
+
+    // add reduction
+    void addReduction (RulePtr rule, SymbolPtr shortcut, Priority const & priority, bool sticky, bool accept)
+    {
+      // search priority action set for same rule and shortcut, if present just update it
+      for (TempActionPtrVectorConstIter i = m_temp_actions.begin (), endi = m_temp_actions.end (); i != endi; ++ i)
+      {
+        TempActionPtr temp_action = * i;
+        if (temp_action->isReduction ())
+        {
+          ReduceTempAction & r_temp_action = static_cast <ReduceTempAction &> (* temp_action);
+          if (r_temp_action.getRule () == rule && r_temp_action.getShortcut () == shortcut)
+          {
+            r_temp_action.update (priority, sticky, accept);
+            return;
+          }
+        }
+      }
+      // otherwise new temp action
+      m_temp_actions.push_back (new ReduceTempAction (rule, shortcut, priority, sticky, accept));
+    }
+
+    // add shift
+    void addShift (Priority const & priority)
+    {
+      // search for shift action, if present update it
+      for (TempActionPtrVectorConstIter i = m_temp_actions.begin (), endi = m_temp_actions.end (); i != endi; ++ i)
+      {
+        // only shift
+        TempActionPtr temp_action = * i;
+        if (temp_action->isShift ())
+        {
+          temp_action->update (priority);
+          return; 
+        }
+      }
+      // otherwise new shift
+      m_temp_actions.push_back (new ShiftTempAction (priority));
+    }
+
+    // freeze temp move, no more changes
+    void freeze ()
+    {
+      // sort and trim
+      sort ();
+      trim ();
+    }
+
+    // true if this move can be a default move
+    bool canBeDefault () const
+    {
+      // only if all reductions and none are sticky
+      bool result = true;
+      for (TempActionPtrVectorConstIter i = m_temp_actions.begin (), endi = m_temp_actions.end (); result && i != endi; ++ i)
+      {
+        TempActionPtr temp_action = * i;
+        result = temp_action->isReduction () && ! static_cast <ReduceTempAction const &> (* temp_action).hasSticky ();
+      }
+      return result;
+    }
+
+    // get lazy move
+    LazyMovePtr getLazyMove (CC & cc) const
+    {
+      return basilcc::getLazyMove (cc, m_token, getLazyActionSeq (cc));
+    }
+
+    // get lazy action seq
+    LazyActionSeqPtr getLazyActionSeq (CC & cc) const
+    {
+      LazyActionPtrVector lazy_actions;
+      lazy_actions.reserve (m_temp_actions.size ());
+      for (TempActionPtrVectorConstIter i = m_temp_actions.begin (), endi = m_temp_actions.end (); i != endi; ++ i)
+      {
+        TempActionPtr temp_action = * i;
+        lazy_actions.push_back (temp_action->getLazyAction (cc));
+      }
+      return basilcc::getLazyActionSeq (cc, lazy_actions);
+    }
+
+    // get conflicts, will steal actions, so call after getLazyMove and getLazyActionSeq
+    void getConflicts (ConflictPtrVector & conflicts)
+    {
+      assert (! m_temp_actions.empty ());
+      TempActionPtrVectorIter i = m_temp_actions.begin (), j = i + 1;
+      for (; j != m_temp_actions.end (); ++ j)
+      {
+        if (** i != ** j)
+        {
+          if (j - i > 1)
+          {
+            j = createConflict (i, j, conflicts);
+          }
+          i = j;
+        }
+      }
+      if (j - i > 1)
+      {
+        j = createConflict (i, j, conflicts);
+      }
+    }
+
+  private:
+    // sort actions
+    void sort ()
+    {
+      std::sort (m_temp_actions.begin (), m_temp_actions.end (), tempActionLess);
+    }
+
+    // trim
+    // remove actions that have lower bang count
+    void trim ()
+    {
+      int bang  = 0;
+      int count = 0;
+      for (TempActionPtrVectorIter i = m_temp_actions.begin (), endi = m_temp_actions.end (); i != endi; ++ i)
+      {
+        TempActionPtr temp_action = * i;
+        int next_bang  = temp_action->getPriority ().getBang ();
+        int next_count = temp_action->getPriority ().getCount ();
+        if (bang > next_bang && count > next_count)
+        {
+          deleteObjects (i, endi);
+          m_temp_actions.erase (i, endi);
+          break;
+        }
+        bang  = next_bang;
+        count = next_count;
+      }
+    }
+
+    // create conflict, will steal/erase actions, return interator after last one erased 
+    TempActionPtrVectorIter createConflict (TempActionPtrVectorIter i, TempActionPtrVectorIter j, ConflictPtrVector & conflicts)
+    {
+      conflicts.push_back (new Conflict (m_token, TempActionPtrVector (i, j)));
+      return m_temp_actions.erase (i, j);
+    }
+
+  private:
+    // token associated with move
+    SymbolPtr m_token;
+    // temp actions on token
+    TempActionPtrVector m_temp_actions;
+  }
+
+  // true if temp move can not be default, for partition
+  bool tempMoveCanNotBeDefault (TempMovePtr temp_move)
+  {
+    return ! temp_move->canBeDefault ();
+  }
+
+  //
+  // comparisons below used only for finding default action set in TempFollowMove,
+  // only moves that can be default will be compared
+  //
+
+  // a == b, only for moves that can be default
+  bool tempMoveDefaultSame (TempMovePtr a, TempMovePtr b)
+  {
+    bool result = false;
+    TempActionPtrVector const & a_temp_actions = a->getTempActions ();
+    TempActionPtrVector const & b_temp_actions = b->getTempActions ();
+    if (a_temp_actions.size () == b_temp_actions.size ())
+    {
+      result = true;
+      for (TempActionPtrVectorConstIter i = a_temp_actions.begin (), endi = a_temp_actions.end (), j = b_temp_actions.begin ();
+           result && i != endi; ++ i, ++ j)
+      {
+        // both are reductions
+        TempActionPtr a = * i;
+        TempActionPtr b = * j;
+        assert (a->isReduction () && b->isReduction ());
+        // compare reductions
+        ReduceTempAction const & c = static_cast <ReduceTempAction const &> (* a);
+        ReduceTempAction const & d = static_cast <ReduceTempAction const &> (* b);
+        result = (c == d);
+      }
+    }
+    return result;
+  }
+
+  // a < b, only for moves that can be default
+  bool tempMoveDefaultLess (TempMovePtr a, TempMovePtr b)
+  {
+    bool result = false;
+    TempActionPtrVector const & a_temp_actions = a->getTempActions ();
+    TempActionPtrVector const & b_temp_actions = b->getTempActions ();
+    // less if size is smaller
+    if (a_temp_actions.size () < b_temp_actions.size ())
+    {
+      result = true;
+    }
+    else if (a_temp_actions.size () == b_temp_actions.size ())
+    {
+      // find first that's not same
+      for (TempActionPtrVectorConstIter i = a_temp_actions.begin (), endi = a_temp_actions.end (), j = b_temp_actions.begin ();
+           i != endi; ++ i, ++ j)
+      {
+        // both are be reductions
+        TempActionPtr a = * i;
+        TempActionPtr b = * j;
+        assert (a->isReduction () && b->isReduction ());
+        // find first that are not same 
+        ReduceTempAction const & c = static_cast <ReduceTempAction const &> (* a);
+        ReduceTempAction const & d = static_cast <ReduceTempAction const &> (* b);
+        if (c < d)
+        {
+          result = true;
+          break;
+        }
+        if (d < c)
+        {
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  // get conflicts from temp move, will steal take actions
+  void GetConflicts (ConflictPtrVector & conflicts; TempMovePtr temp_move) const
+  {
+    temp_move->getConflicts (conflicts);
+  }
+}
+
+#hdr
+#include <basilcc/conflict_ptr_vector.h>
+#include <basilcc/lazy_action_seq_ptr.h>
+#include <basilcc/lazy_move_ptr.h>
+#include <basilcc/priority.h>
+#include <basilcc/rule_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#include <basilcc/temp_action_ptr_vector.h>
+#include <basilcc/temp_move_ptr.h>
+#end
+
+#src
+#include <basilcc/conflict.h>
+#include <basilcc/lazy_action_seq_api.h>
+#include <basilcc/lazy_move_api.h>
+#include <basilcc/rule.h>
+#include <basilcc/symbol.h>
+#include <basilcc/temp_action.h>
+#include <basilcc/util.h>
+#include <algorithm>
+#include <cassert>
+#end

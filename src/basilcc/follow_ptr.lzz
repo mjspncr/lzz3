@@ -1,0 +1,4 @@
+namespace basilcc
+{
+  typedef class Follow * FollowPtr;
+}

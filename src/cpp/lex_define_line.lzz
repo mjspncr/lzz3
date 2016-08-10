@@ -1,0 +1,180 @@
+namespace cpp
+{
+  class Lexer;
+
+  // lex define line, dir_loc is location of directive, if dir_loc not set then define on command line
+  // return true if successful
+  // set var if macro (last param) can take variable number of args
+  // if not successful all remaining tokens on line discarded
+  bool lexDefineLine (Session & session, Lexer & lexer, bool is_cmd, Loc const & dir_loc, Loc & name_loc,
+      std::string & name, bool & is_func, StringVector & params, bool & var, TokenPtrVector & tokens)
+  {
+    Loc loc;
+    TokenPtr token;
+    // get macro name
+    if (! lexer.getNextToken (loc, token))
+    {
+      session.error (dir_loc, "unexpected of #define");
+      return false;
+    }
+    // and must be an identifier
+    if (token->getNumber () != TOKEN_IDENT)
+    {
+      session.error (dir_loc, "expect identifier after #define");
+      discardRestOfLine (lexer);
+      return false;
+    }
+    name_loc = loc;
+    name = token->getLexeme ();
+    // get replacment set, func macro if left paren is next with no white space
+    is_func = false;
+    bool has_asgn = false;
+    if (lexer.getNextToken (token))
+    {
+      if (token->getNumber () == TOKEN_LPAREN && ! token->hasSpaceBefore ())
+      {
+        // lex param list, if any errors will discard remaining tokens on line
+        if (! lexFuncMacroParamList (session, lexer, params, var))
+        {
+          return false;
+        }
+        is_func = true;
+        if (lexer.getNextToken (token))
+        {
+          if (is_cmd && token->getNumber () == TOKEN_ASSIGN)
+          {
+            has_asgn = true;
+          }
+          else
+          {
+            tokens.push_back (token);
+          }
+          lexRestOfLine (lexer, tokens);
+        }
+      }
+      else
+      {
+        if (is_cmd && token->getNumber () == TOKEN_ASSIGN)
+        {
+          has_asgn = true;
+        }
+        else
+        {
+          tokens.push_back (token);
+        }
+        lexRestOfLine (lexer, tokens);
+      }
+    }
+    // if on command line and replacement set is empty without assignment then replacment set is '1'
+    if (is_cmd && ! has_asgn && tokens.empty ())
+    {
+      tokens.push_back (new Token (TOKEN_LITERAL_INT, Loc (), "1"));
+    }
+    return true;
+  }
+}
+
+using namespace cpp;
+using namespace std;
+
+namespace
+{
+  // lex func macro param list, return true if successful, if error discard remaining tokens on line
+  // set var if macro (last param) can take variable number of args 
+  bool lexFuncMacroParamList (Session & session, Lexer & lexer, StringVector & params, bool & var)
+  {
+    // read first token
+    Loc loc;
+    TokenPtr token;
+    // read parameter, must not be end of line
+    if (! lexer.getNextToken (loc, token))
+    {
+      session.error (loc, "unexpected end of function macro parameter list"); 
+      return false;
+    }
+    if (token->getNumber () != TOKEN_RPAREN)
+    {
+      for (;;)
+      {
+        // must be a parameter or an ellipse
+        if (token->getNumber () == TOKEN_ELLIPSE)
+        {
+          // '__VA_ARGS__' is implicitly the last parameter; can take a variable number of args
+          params.push_back ("__VA_ARGS__");
+          var = true;
+          break;
+        }
+        if (token->getNumber () != TOKEN_IDENT)
+        {
+          session.error (loc, "expect identifier"); 
+          discardRestOfLine (lexer);
+          return false;
+        }
+        string const & lexeme = token->getLexeme ();
+        if (lexeme == "__VA_ARGS__")
+        {
+          session.error (loc, "__VA_ARGS__ can not be a parameter name"); 
+          discardRestOfLine (lexer);
+          return false;
+        }
+        if (find (params.begin (), params.end (), lexeme) != params.end ())
+        {
+          session.error (loc, Message ("duplicate parameter name: %") << lexeme);
+          discardRestOfLine (lexer);
+          return false;
+        }
+        params.push_back (lexeme);
+        if (! lexer.getNextToken (loc, token))
+        {
+          session.error (loc, "unexpected end of function macro parameter list"); 
+          return false;
+        }
+        // expect comma or ellipse
+        if (token->getNumber () == TOKEN_ELLIPSE)
+        {
+          // last param can take variable number of args
+          var = true;
+          break;
+        }
+        else if (token->getNumber () != TOKEN_COMMA)
+        {
+          break;
+        }
+        if (! lexer.getNextToken (loc, token))
+        {
+          session.error (loc, "unexpected end of function macro parameter list"); 
+          return false;
+        }
+      }
+      // if var then last token was an ellipse so get next token
+      if (var && ! lexer.getNextToken (loc, token))
+      {
+        session.error (loc, "unexpected end of function macro parameter list"); 
+        return false;
+      }
+      if (token->getNumber () != TOKEN_RPAREN)
+      {
+        session.error (loc, Message ("syntax error before %") << token->getLexeme ()); 
+        discardRestOfLine (lexer);
+        return false;
+      }
+    }
+    return true;
+  }
+}
+  
+#hdr
+#include <cpp/session_fwd.h>
+#include <cpp/token_ptr_vector.h>
+#include <util/loc.h>
+#include <util/string_vector.h>
+#end
+
+#src
+#include <cpp/lexer.h>
+#include <cpp/session.h>
+#include <cpp/token.h>
+#include <cpp/token_numbers.h>
+#include <util/message.h>
+#include <algorithm>
+#end

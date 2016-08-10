@@ -1,0 +1,155 @@
+namespace cpp
+{
+  class LineReader
+  {
+  public:
+    LineReader (char const * filename, char const * fullname)
+      : char_reader_ (filename), peek_beg_ (0), peek_end_ (0), filename_ (filename), fullname_ (fullname),
+        line_ (1), column_ (1), newline_ (true)
+    {}
+    LineReader (std::string const & str, Loc const & loc)
+      : char_reader_ (str, loc), peek_beg_ (0), peek_end_ (0), filename_ (loc.getFilename ()), fullname_ (loc.getFullname ()),
+        line_ (loc.getLine ()), column_ (loc.getColumn ()), newline_ (true)
+    {}
+    // peek n chars, return true if successful
+    bool peekChar (char & c, int n = 0)
+    {
+      int i = (peek_beg_ + n) % MAX_PEEK;
+      if (i == peek_end_)
+      {
+        if (! readChar (peek_buf_ [peek_end_]))
+        {
+          return false;
+        }
+        peek_end_ = (peek_end_ + 1) % MAX_PEEK;
+      }
+      c = peek_buf_ [i].c; 
+      return true;
+    }
+    // read char, return true if successful
+    bool nextChar (char & c)
+    {
+      // check in peek buffer first
+      Char ch;
+      if (peek_beg_ == peek_end_)
+      {
+        if (! readChar (ch))
+        {
+          return false;
+        }
+      }
+      else
+      {
+        ch = peek_buf_ [peek_beg_];
+        peek_beg_ = (peek_beg_ + 1) % MAX_PEEK;
+      }
+      c = ch.c;
+      if (ch.lines > 0)
+      {
+        line_ += ch.lines;
+        column_ = 1;
+      }
+      else
+      {
+        column_ += ch.cols;
+      }
+      return true;
+    }
+    // get location of next character
+    Loc getLocation () const
+    {
+      return Loc (filename_, fullname_, line_, column_);
+    }
+    // get filename
+    inline char const * getFilename () const
+    {
+      return filename_;
+    }
+    // set line
+    inline void setLine (int line)
+    {
+      line_ = line;
+    }
+    // set line and filename
+    inline void setLine (int line, char const * filename)
+    {
+      line_ = line;
+      filename_ = filename;
+    }
+    // pause
+    inline void pause ()
+    {
+      char_reader_.pause ();
+    }
+  private:
+    // Char
+    struct Char
+    {
+      char c;
+      int lines;
+      int cols;
+      inline Char () {}
+      inline Char (char c, int lines, int cols) : c (c), lines (lines), cols (cols) {}
+    }
+    // read direct char, return true if successful
+    bool readChar (Char & ch)
+    {
+      char c;
+      int cols;
+      int lines = 0;
+      for (;;)
+      {
+        if (! char_reader_.nextChar (c, cols))
+        {
+          // want newline before end of file
+          if (newline_)
+          {
+            return false;
+          }
+          c = '\n';
+        }
+        else
+        {
+          // check if backslash followed by newline
+          char c1;
+          if (c == '\\' && char_reader_.peekChar (c1, 0) && c1 == '\n')
+          {
+            char_reader_.nextChar (c, cols);
+            ++ lines;
+            continue;
+          }
+        }
+        break;
+      }
+      if (c == '\n')
+      {
+        ++ lines;
+        newline_ = true;
+      }
+      else
+      {
+        newline_ = false;
+      }
+      ch = Char (c, lines, cols);
+      return true;
+    }
+  private:
+    CharReader char_reader_;
+    enum { MAX_PEEK = 16 }
+    // peek buffer
+    Char peek_buf_ [MAX_PEEK];
+    int peek_beg_;
+    int peek_end_;
+    char const * filename_;
+    char const * fullname_;
+    // current line and column
+    int line_;
+    int column_;
+    // true if last char read from char reader was newline
+    bool newline_;
+  }
+}
+
+#hdr
+#include <cpp/char_reader.h>
+#end

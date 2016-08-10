@@ -1,0 +1,37 @@
+enum SectionKind
+{
+  // header section
+  SECTION_HEADER,
+
+  // user section, for user include blocks
+  SECTION_USER,
+
+  // top, code that must be before declarations and body but after user code
+  SECTION_TOP,
+
+  // declarations
+  SECTION_DECLARATION,
+
+  // body, definitions
+  SECTION_BODY,
+
+  // inline sections for inlining inline file in header and source
+
+  // inline header section
+  SECTION_INLINE_HEADER,
+
+  // inline user section
+  SECTION_INLINE_USER,
+
+  // inline section
+  SECTION_INLINE_TOP,
+
+  // inline section
+  SECTION_INLINE_BODY,
+
+  // inline tail section
+  SECTION_INLINE_TAIL,
+
+  // tail
+  SECTION_TAIL,
+}

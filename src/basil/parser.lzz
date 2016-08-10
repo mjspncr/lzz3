@@ -1,0 +1,505 @@
+// parser.lzz
+
+class Logger;
+
+namespace basil
+{
+  class Lexer;
+
+  class Parser
+  {
+  public:
+    Parser (lua_State * L, FSM & fsm, int nodes, Lexer & lexer, int app, Logger & logger)
+      : L (L), fsm (fsm), nodes (nodes), lexer (lexer), app (app), logger (logger)
+    {}
+    ~ Parser ()
+    {
+      clearStack (stack);
+      clearStack (last_stack);
+      clearTokens (0, tokens.size ());
+    }
+
+    // parse from start state
+    void parse (int start_state = 0)
+    {
+      stack.push_back (Frame (start_state));
+      for (;;)
+      {
+        copyStack (stack, last_stack);
+        int r = PARSER_OK;
+        for (;;)
+        {
+          if (! ((r != PARSER_FAIL && lookup ()) || backtrack ()))
+          {
+            r = PARSER_FAIL;
+            break;
+          }
+          bool guess = false;
+          FSM::ActionPtr action = nextAction (guess);
+          if (guess)
+          {
+            snap ();
+            ++ stack.guess_cnt;
+          }
+          r = PARSER_OK;
+          if (action->kind == FSM::SHIFT)
+          {
+            shift (action, guess);
+          }
+          else
+          {
+            int num_cancel = 0;
+            r = reduce (action, guess, num_cancel);
+            pop (num_cancel);
+            if (r == PARSER_DONE || r == PARSER_ACCEPT)
+            {
+              break;
+            }
+          }
+        }
+        if (r == PARSER_DONE)
+        {
+          break;
+        }
+        if (r == PARSER_FAIL)
+        {
+          // try recover strategies
+          Token const  & unexpected_token = derefToken (stack.token_pos);
+          logger.error (unexpected_token.loc) << "unexpected '" << unexpected_token.lexeme << '\'' << '\n';
+          copyStack (last_stack, stack);
+          // ...
+          break;
+        }
+        clearTokens (0, stack.token_pos);
+        stack.token_pos = 0;
+      }
+    }
+
+    // register token class  
+    static void registerToken (lua_State * L)
+    {
+      luaL_newmetatable (L, MT_TOKEN);
+      lua_pushcfunction (L, token_gc);
+      lua_setfield (L, -2, "__gc");
+      lua_pushcfunction (L, token_index);
+      lua_setfield (L, -2, "__index");
+      lua_pop (L, 1);
+    }
+
+  private:
+    // types
+    struct Frame (int state, int guess_cnt = 0, int form = LUA_NOREF) {}
+    typedef std::vector <Frame> FrameVector;
+    typedef FrameVector::const_iterator FrameVectorConstIter;
+    typedef FrameVector::iterator FrameVectorIter;
+
+    // LR parser stack
+    struct Stack (int token_pos = 0, int guess_cnt = 0) : FrameVector {}
+
+    struct Token
+    {
+      inline Token (int number, Loc const & loc, std::string const & lexeme)
+        : number (number), loc (loc), lexeme (lexeme)
+      {}
+      ~ Token ()
+      {}
+      int number;
+      Loc loc;
+      std::string lexeme;
+    }
+    typedef Token const * TokenPtr;
+
+    // snapshot of parser state, stack and actions
+    struct Snapshot : Stack
+    {
+      FSM::ActionPtr action_beg;
+      FSM::ActionPtr action_end;
+    };
+    typedef std::deque <Snapshot> SnapshotDeque;
+
+  private:
+    //
+    // parse functions
+    //
+
+    // lookup parser actions at current state and token, return true if one or more actions
+    bool lookup ()
+    {
+      int state = stack.back ().state;
+      action_beg = fsm.getActionSeq (state, getTokenNumber (state, stack.token_pos), action_end);
+      return action_beg != action_end;
+    }
+
+    // return next action, if multiple actions remaining increment stack guess_cnt and set guess=true
+    FSM::ActionPtr nextAction (bool & guess)
+    {
+      FSM::ActionPtr action = action_beg;
+      if ((guess = (++ action_beg != action_end)))
+      {
+        // don't want to do before snap
+        // ++ stack.guess_cnt;
+      }
+      return action;
+    }
+
+    // take snapshot of current parser state
+    void snap ()
+    {
+      Snapshot & snapshot = * snapshots.insert (snapshots.end (), Snapshot ());
+      copyStack (stack, snapshot);
+      snapshot.action_beg = action_beg;
+      snapshot.action_end = action_end;
+    }
+
+    // revert to last parser state, retrn false if no snapshots remaining 
+    bool backtrack ()
+    {
+      if (snapshots.empty ())
+      {
+        return false;
+      }
+      Snapshot & snapshot = snapshots.back ();
+      moveStack (snapshot, stack);
+      action_beg = snapshot.action_beg;
+      action_end = snapshot.action_end;
+      snapshots.pop_back ();
+      return true;
+    }
+
+    // pop and discard num snapshots
+    void pop (int num)
+    {
+      num = min (num, int (snapshots.size ()));
+      for (; num > 0; -- num)
+      {
+        clearStack (snapshots.back ());
+        snapshots.pop_back ();
+      }
+    }
+
+    // shift token and advance position 
+    void shift (FSM::ActionPtr action, bool guess)
+    {
+      stack.push_back (Frame (action->arg1, guess ? 1 : 0, copyToken (stack.token_pos)));
+      ++ stack.token_pos;
+    }
+
+    // reduce and execute any semantic actions
+    int reduce (FSM::ActionPtr action, bool guess, int & num_cancel)
+    {
+      int kind = action->kind;
+      FSM::Rule const & rule = fsm.getRule (action->arg1);
+      int rule_size = rule.size;
+      int node = rule.node;
+      int shortcut = action->arg2;
+      int guess_cnt = guess ? 1 : 0;
+      int form = LUA_NOREF;
+      if (node == FSM::NOINDEX && rule_size == 1)
+      {
+        Frame const & frame = stack.back ();
+        guess_cnt += frame.guess_cnt;
+        form = frame.form;
+        stack.pop_back ();
+      }
+      else
+      {
+        lua_createtable (L, rule_size, 0);
+        FrameVectorIter begi = stack.end () - rule_size, endi = stack.end ();
+        for (FrameVectorIter i = begi; i != endi ; ++ i)
+        {
+          Frame const & frame = * i;
+          guess_cnt += frame.guess_cnt;
+          if (frame.form == LUA_NOREF)
+          {
+            lua_pushnil (L);
+          }
+          else
+          {
+            lua_rawgeti (L, LUA_REGISTRYINDEX, frame.form);
+            luaL_unref  (L, LUA_REGISTRYINDEX, frame.form);
+          }
+          lua_rawseti (L, -2, int (i - begi) + 1);
+        }
+        stack.erase (begi, endi);
+        if (node == FSM::NOINDEX)
+        {
+          // discard node
+          lua_pop (L, 1);
+        }
+        else
+        {
+          // make the object an instance of node class
+          lua_rawgeti (L, LUA_REGISTRYINDEX, nodes);
+          lua_rawgeti (L, -1, node + 1);
+          // move node class down one, replacing node class array
+          lua_replace (L, -2);
+          // class is metatable of object
+          lua_setmetatable (L, -2);
+          // call onNode if user defined semantic actions on node
+          lua_getfield (L, -1, "onNode");
+          if (lua_isnil (L, -1))
+          {
+            lua_pop (L, 1);
+          }
+          else
+          {
+            // function first then node object
+            lua_rotate (L, -2, 1);
+            // and app, or nil if no app defined
+            if (app == LUA_NOREF)
+            {
+              lua_pushnil (L);
+            }
+            else
+            {
+              lua_rawgeti (L, LUA_REGISTRYINDEX, app);
+            }
+            if (lua_pcall (L, 2, 1, 1) != LUA_OK)
+            {
+              string errmsg = lua_tostring (L, -1);
+              lua_pop (L, 1);
+              throw LuaException (errmsg);
+            }
+          }
+          form = luaL_ref (L, LUA_REGISTRYINDEX);
+        }
+      }
+      int r = PARSER_OK;
+      if (kind == FSM::DONE)
+      {
+        num_cancel = guess_cnt;
+        assert (num_cancel == stack.guess_cnt);
+        assert (stack.size () == 1);
+        stack.back ().form = form;
+        r = PARSER_DONE;
+      }
+      else
+      {
+        int s1 = stack.back ().state;
+        int s2 = fsm.getGotoState (s1, shortcut);
+        if (kind == FSM::ACCEPT)
+        {
+          num_cancel = guess_cnt;
+          guess_cnt = 0;
+          assert (num_cancel <= stack.guess_cnt);
+          stack.guess_cnt -= num_cancel;
+          if (stack.guess_cnt == 0)
+          {
+            r = PARSER_ACCEPT;
+          }
+        }
+        stack.push_back (Frame (s2, guess_cnt, form));
+      }
+      return r;
+    }
+
+    //
+    // token functions
+    //
+
+    // release token references, num tokens from pos
+    void clearTokens (int pos, int num)
+    {
+      IntVectorIter beg = tokens.begin () + pos;
+      IntVectorIter end = beg + num;
+      for (IntVectorIter i = beg; i != end; ++ i)
+      {
+        unref (* i);
+      }
+      tokens.erase (beg, end);
+    }
+
+    // get token number at pos, lex if necessary
+    int getTokenNumber (int state, int pos)
+    {
+      if (pos < int (tokens.size ()))
+      {
+        return derefToken (pos).number;
+      }
+      Loc loc;
+      string lexeme;
+      int token_number = lexer.getNextToken (fsm.getLexState (state), loc, lexeme);
+      tokens.push_back (createToken (token_number, loc, lexeme));
+      return token_number;
+    }
+
+    // create token, return Lua reference to token
+    int createToken (int number, Loc const & loc, std::string const & lexeme)
+    {
+      new (lua_newuserdata (L, sizeof (Token))) Token (number, loc, lexeme);
+      luaL_setmetatable (L, MT_TOKEN);
+      return luaL_ref (L, LUA_REGISTRYINDEX);
+    }
+
+    // copy token at pos, return new reference
+    inline int copyToken (int pos)
+    {
+      return copy (tokens [pos]);
+    }
+
+    // return token object from pos
+    Parser::Token const & derefToken (int pos)
+    {
+      lua_rawgeti (L, LUA_REGISTRYINDEX, tokens [pos]);
+      Token const * token = static_cast <Token *> (luaL_testudata (L, -1, MT_TOKEN));
+      lua_pop (L, 1);
+      return * token;
+    }
+
+    //
+    // misc functions
+    //
+
+    // clear stack
+    void clearStack (Stack & stack)
+    {
+      stack.token_pos = 0;
+      stack.guess_cnt = 0;
+      for (FrameVectorIter i = stack.begin (), endi = stack.end (); i != endi ; ++ i)
+      {
+        unref (i->form);
+      }
+      stack.clear ();
+    }
+
+    // copy stack to other, first clears other
+    void copyStack (Stack const & stack, Stack & other)
+    {
+      clearStack (other);
+      other.token_pos = stack.token_pos;
+      other.guess_cnt = stack.guess_cnt;
+      other.reserve (stack.size ());
+      for (FrameVectorConstIter i = stack.begin (), endi = stack.end (); i != endi; ++ i)
+      {
+        Frame const & frame = * i;
+        other.push_back (Frame (frame.state, frame.guess_cnt, copy (frame.form)));
+      }
+    }
+
+    // move stack to other, clears stack afterwards
+    void moveStack (Stack & stack, Stack & other)
+    {
+      other.token_pos = stack.token_pos;
+      other.guess_cnt = stack.guess_cnt;
+      other.swap (stack);
+      clearStack (stack);
+    }
+
+    //
+    // Lua utility funcs
+    //
+    
+    // release lua reference
+    inline void unref (int & ref)
+    {
+      luaL_unref (L, LUA_REGISTRYINDEX, ref);
+      ref = LUA_NOREF;
+    }
+
+    // return new reference to object referenced by ref
+    int copy (int ref)
+    {
+      if (ref != LUA_NOREF)
+      {
+        lua_rawgeti (L, LUA_REGISTRYINDEX, ref);
+        ref = luaL_ref (L, LUA_REGISTRYINDEX);
+      }
+      return ref;
+    }
+
+    //
+    // Lua token methods
+    //
+
+    // token garbage collector
+    static int token_gc (lua_State * L)
+    {
+      Token * token = (Token *) lua_touserdata (L, 1);
+      token->Token::~ Token ();
+      return 0;
+    }
+
+    // token index for loc and lexeme
+    static int token_index (lua_State * L)
+    {
+      Token const & token = * static_cast <Token *> (lua_touserdata (L, 1));
+      char const * key = lua_tostring (L, 2);
+      if (strcmp (key, "loc") == 0)
+      {
+        pushLoc (L, token.loc);
+      }
+      else if (strcmp (key, "lexeme") == 0)
+      {
+        lua_pushstring (L, token.lexeme.c_str ());
+      }
+      else
+      {
+        luaL_argerror (L, 2, "invalid token property");
+      }
+      return 1;
+    }
+
+  private:
+    lua_State * L;
+    FSM & fsm;
+    int nodes;
+    Lexer & lexer;
+    int app;
+    Logger & logger;
+
+    // references to tokens from last accept
+    IntVector tokens;
+
+    // parser LR stack
+    Stack stack;
+    // stack at last accepted state, syntax error recovery starts here
+    Stack last_stack;
+
+    // sequence of possible shift/reduce actions at current state for next token
+    FSM::ActionPtr action_beg;
+    FSM::ActionPtr action_end;
+
+    // snapshots of parser state, stack and actions
+    SnapshotDeque snapshots;
+  }
+}
+
+using namespace std;
+
+namespace
+{
+  // parser codes
+  enum
+  {
+    PARSER_OK,
+    PARSER_ACCEPT,
+    PARSER_DONE,
+    PARSER_FAIL,
+  }
+
+  int error_handler (lua_State * L)
+  {
+    char const * msg = luaL_checkstring (L, 1);
+    luaL_traceback (L, L, msg, 1);
+    return 1;
+  }
+
+  char const MT_TOKEN [] = "TOKEN";
+}
+
+#hdr
+#include <basil/fsm.h>
+#include <util/int_vector.h>
+#include <util/loc.h>
+#include <lua.hpp>
+#include <deque>
+#end
+
+#src
+#include <basil/lexer.h>
+#include <util/loc_lua.h>
+#include <util/logger.h>
+#include <util/lua_exception.h>
+#include <cassert>
+#include <cstring>
+#end

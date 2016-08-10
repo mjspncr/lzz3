@@ -1,0 +1,73 @@
+namespace cpp
+{
+  // if name is directive set kind and return true 
+  bool isDir (Session & session, std::string const & name, DirKind & kind)
+  {
+    return session.getDirTable ().isDir (name, kind);
+  }
+
+  class DirTable
+  {
+  public:
+    DirTable ()
+    {
+      struct
+      {
+        char const * name;
+        int kind;
+      }
+      tbl [] =
+      {
+        // std directives
+        { "define",   DEFINE_DIR },
+        { "include",  INCLUDE_DIR },
+        { "insert",   INSERT_DIR },
+        { "if",       IF_DIR },
+        { "ifdef",    IFDEF_DIR },
+        { "ifndef",   IFNDEF_DIR },
+        { "elif",     ELIF_DIR },
+        { "else",     ELSE_DIR },
+        { "endif",    ENDIF_DIR },
+        { "undef",    UNDEF_DIR },
+        { "line",     LINE_DIR },
+        { "error",    ERROR_DIR },
+        { "pragma",   PRAGMA_DIR },
+        { "warning",  WARNING_DIR },
+        // lzz directives
+        { "hdr",      HDR_DIR },
+        { "src",      SRC_DIR },
+        { "inl",      INL_DIR },
+        { "tpl",      TPL_DIR },
+        { "tnl",      TNL_DIR },
+      };
+      for (int i = 0, n = ARRAY_SIZE (tbl); i < n; ++ i)
+      {
+        dirs_.insert (StringIntMap::value_type (tbl [i].name, tbl [i].kind));
+      }
+    }
+    // true if name is directive
+    bool isDir (std::string const & name, DirKind & kind)
+    {
+      StringIntMapConstIter p = dirs_.find (name);
+      if (p == dirs_.end ())
+      {
+        return false;
+      }
+      kind = (DirKind) p->second;
+      return true;
+    }
+  private:
+    StringIntMap dirs_;
+  }
+}
+
+#hdr
+#include <cpp/dir_kind.h>
+#include <cpp/session_fwd.h>
+#include <util/string_int_map.h>
+#end
+
+#src
+#include <cpp/session.h>
+#include <util/array_size.h>
+#end

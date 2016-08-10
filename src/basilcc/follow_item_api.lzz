@@ -1,0 +1,25 @@
+namespace basilcc
+{
+  class CC;
+
+  // freeze follow item, return shared item, reuse follow_item or delete it
+  FollowItemPtr freezeFollowItem (CC & cc, FollowItemPtr & follow_item)
+  {
+    return getTable <FollowItemTable> (cc).freeze (follow_item);
+  }
+  
+  // freeze follow item functor
+  inline FollowItemPtr FreezeFollowItem (CC & cc; FollowItemPtr & follow_item) const
+  {
+    return freezeFollowItem (cc, follow_item);
+  }
+}
+
+#hdr
+#include <basilcc/follow_item_ptr.h>
+#end
+
+#src
+#include <basilcc/cc.h>
+#include <basilcc/follow_item_table.h>
+#end

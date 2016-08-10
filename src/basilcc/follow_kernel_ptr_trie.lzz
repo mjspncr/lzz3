@@ -1,0 +1,14 @@
+namespace basilcc
+{
+  typedef Trie <unsigned int, 0xFFFFFFFF, 512, FollowKernelPtr> FollowKernelPtrTrie;
+}
+template class Trie <unsigned int, 0xFFFFFFFF, 512, basilcc::FollowKernelPtr>;
+
+#hdr
+#include <basilcc/follow_kernel_ptr.h>
+#include <util/trie.h>
+#end
+
+#src
+#include <util/trie.tpl>
+#end

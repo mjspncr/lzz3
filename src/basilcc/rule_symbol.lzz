@@ -1,0 +1,138 @@
+namespace basilcc
+{
+  // symbol with attributes 
+  class RuleSymbol
+  {
+  public:
+    RuleSymbol (SymbolPtr symbol, Loc const & loc, Priority const & reduce_priority,
+        Priority const & first_priority, Priority const & shift_priority, LexState const & lex_state, bool sticky, bool accept)
+      : m_symbol (symbol), m_loc (loc), m_reduce_priority (reduce_priority), m_first_priority (first_priority),
+        m_shift_priority (shift_priority), m_lex_state (lex_state), m_accept (accept), m_sticky (sticky)
+    {}
+    ~ RuleSymbol ()
+    {}
+
+    // get symbol
+    inline SymbolPtr getSymbol () const
+    {
+      return m_symbol;
+    }
+    
+    // get loc
+    inline Loc const & getLoc () const
+    {
+      return m_loc;
+    }
+    
+    // get reduce priority
+    inline Priority const & getReducePriority () const
+    {
+      return m_reduce_priority;
+    }
+    
+    // get first priority
+    inline Priority const & getFirstPriority () const
+    {
+      return m_first_priority;
+    }
+    
+    // get shift priority
+    inline Priority const & getShiftPriority () const
+    {
+      return m_shift_priority;
+    }
+    
+    // get lex state
+    inline LexState const & getLexState () const
+    {
+      return m_lex_state;
+    }
+    
+    // true if has sticky
+    inline bool hasSticky () const
+    {
+      return m_sticky;
+    }
+
+    // true if has accept
+    inline bool hasAccept () const
+    {
+      return m_accept;
+    }
+    
+    // rule symbol to string
+    std::string toString ()
+    {
+      string attrib_str;
+      if (m_shift_priority.isSet ())
+      {
+        attrib_str += shiftPriorityToString (m_shift_priority);
+      }
+      if (m_first_priority.isSet ())
+      {
+        attrib_str += firstPriorityToString (m_first_priority);
+      }
+      if (m_reduce_priority.isSet ())
+      {
+        attrib_str += reducePriorityToString (m_reduce_priority);
+      }
+      if (m_sticky)
+      {
+        attrib_str += "<";
+      }
+      if (m_accept)
+      {
+        attrib_str += "*";
+      }
+      if (m_lex_state.isSet ())
+      {
+        appendWithSpace (attrib_str, m_lex_state.toString ());
+      }
+      string str = m_symbol->getName ();
+      appendWithSpace (str, attrib_str);
+      return str;
+    }
+
+    // set cap string (used when serializing node), right hand rule symbols only
+    void setCapString (std::string const & cap_string)
+    {
+      m_cap_string = cap_string;
+    }
+
+    // get copy number
+    std::string const & getCapString () const
+    {
+      return m_cap_string;
+    }
+
+  private:
+    SymbolPtr m_symbol;
+    // location of symbol in rules file
+    Loc m_loc;
+    // priorities
+    Priority m_reduce_priority;
+    Priority m_first_priority;
+    Priority m_shift_priority;
+    // other attributes
+    LexState m_lex_state;
+    bool m_accept;
+    bool m_sticky;
+    std::string m_cap_string;
+  }
+}
+
+using namespace std;
+
+#hdr
+#include <basilcc/lex_state.h>
+#include <basilcc/priority.h>
+#include <basilcc/rule_symbol_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#include <util/loc.h>
+#include <string>
+#end
+
+#src
+#include <basilcc/symbol.h>
+#include <util/append.h>
+#end

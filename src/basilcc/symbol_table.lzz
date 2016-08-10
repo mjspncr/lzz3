@@ -1,0 +1,127 @@
+namespace basilcc
+{
+  class SymbolTable : public Table
+  {
+  public:
+    SymbolTable ()
+    {}
+    ~ SymbolTable ()
+    {
+      deleteObjects (m_tokens.begin (), m_tokens.end ());
+      deleteObjects (m_nonterminals.begin (), m_nonterminals.end ());
+    }
+
+    // add token with number, error if token already exists
+    SymbolPtr addToken (Ident name, int num)
+    {
+      SymbolPtr & symbol = m_symbols.insert (unsigned (name), 0);
+      if (symbol)
+      {
+        ThrowException (context) << "addToken: symbol already exists: " << name;
+      }
+      if (! isToken (name))
+      {
+        ThrowException (context) << "addToken: not a token: " << name;
+      }
+      return symbol = * m_tokens.insert (m_tokens.end (), new Token (num, name));
+    }
+
+    // add keyword
+    void addKeyword (Ident name, std::string const & lexeme)
+    {
+      // keyword numbers work backwards from token_num_max 
+      SymbolPtr symbol = addToken (name, token_num_max - int (m_keywords.size ()));
+      m_keywords.push_back (StringIntPair (lexeme, symbol->getNumber ()));
+    }
+
+    // freeze keywords, sort by name 
+    void freezeKeywords ()
+    {
+      sort (m_keywords.begin (), m_keywords.end (), StringIntFirstLess ());
+    }
+    
+    // get symbol from name, returns existing symbol if already exists, otherwise, if non-terminal, will create a new one
+    SymbolPtr getSymbol (Ident name)
+    {
+      SymbolPtr & symbol = m_symbols.insert (unsigned (name), 0);
+      if (! symbol)
+      {
+        if (isToken (name))
+        {
+          // tokens must be explicitly added with number, can't implicitly define
+          ThrowException (context) << "no such token: " << name;
+        }
+        else
+        {
+          symbol = * m_nonterminals.insert (m_nonterminals.end (), new NonTerminal (int (m_nonterminals.size ()), name));
+        }
+      }
+      return symbol;
+    }
+
+    // get all tokens
+    inline SymbolPtrVector const & getTokens () const
+    {
+      return m_tokens;
+    }
+
+    // get all keywords, lexeme and number pairs
+    inline StringIntVector const & getKeywords () const
+    {
+      return m_keywords;
+    }
+    
+    // get all non-terminals
+    inline SymbolPtrVector const & getNonTerminals () const
+    {
+      return m_nonterminals;
+    }
+
+    enum { TABLE = TABLE_SYMBOL }
+  private:
+    SymbolPtrTrie m_symbols;
+    SymbolPtrVector m_tokens;
+    StringIntVector m_keywords;
+    SymbolPtrVector m_nonterminals;
+  }
+}
+
+using namespace basilcc;
+using namespace std;
+
+namespace
+{
+  // max number for token symbol
+  int const token_num_max = numeric_limits <int>::max();
+
+  // true if name is a token, all upper caqse
+  bool isToken (Ident name)
+  {
+    for (char const * p = name; * p != '\0'; ++ p)
+    {
+      if (islower (* p))
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  char const context [] = "basilcc/symbol_table";
+}
+
+#hdr
+#include <basilcc/symbol_ptr_trie.h>
+#include <basilcc/symbol_ptr_vector.h>
+#include <basilcc/table.h>
+#include <util/ident.h>
+#include <util/string_int_vector.h>
+#include <string>
+#end
+
+#src
+#include <basilcc/symbol.h>
+#include <basilcc/util.h>
+#include <util/throw_exception.h>
+#include <limits>
+#end

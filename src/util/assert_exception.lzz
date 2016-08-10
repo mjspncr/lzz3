@@ -1,0 +1,18 @@
+// assert_exception.lzz
+//
+
+void throwAssertException (char const * exp, char const * file, int line)
+{
+  std::string path, name;
+  file_op::getPathAndName (file, path, name);
+  ThrowException (name.c_str ()) << "line " << line << ": unexpected: " << exp;
+}
+
+#hdr
+#define AssertException(exp) (void) ( (exp) || (throwAssertException (#exp, __FILE__, 0), 0) )
+#end
+
+#src
+#include <util/file_op.h>
+#include <util/throw_exception.h>
+#end

@@ -1,0 +1,110 @@
+namespace cpp
+{
+  class Token
+  {
+  public:
+    Token (int num, Loc const & loc, std::string const & lexeme)
+      : num_ (num), loc_ (loc), lexeme_ (lexeme), flags_ (0)
+    {}
+    ~ Token ()
+    {}
+    // get number
+    int getNumber () const
+    {
+      return num_;
+    }
+    // location
+    Loc const & getLocation () const
+    {
+      return loc_;
+    }
+    Loc const & getLoc () const
+    {
+      return loc_;
+    }
+    // lexeme
+    std::string const & getLexeme () const
+    {
+      return lexeme_;
+    }
+    // set location
+    void setLocation (Loc const & loc)
+    {
+      loc_ = loc;
+    }
+    void setLoc (Loc const & loc)
+    {
+      loc_ = loc;
+    }
+    // set number
+    void setNumber (int num)
+    {
+      num_ = num;
+    }
+    // set space before
+    inline void setSpaceBefore ()
+    {
+      flags_ |= TOKEN_FLAG_SPACE_BEFORE;
+    }
+    // true if has space before
+    inline bool hasSpaceBefore () const
+    {
+      return (flags_ & TOKEN_FLAG_SPACE_BEFORE) != 0;
+    }
+    // set recursively substituted macro
+    inline void setRecSubMacro ()
+    {
+      flags_ |= TOKEN_FLAG_REC_SUB_MACRO;
+    }
+    // true if recursively substituted macro
+    inline bool isRecSubMacro () const
+    {
+      return (flags_ & TOKEN_FLAG_REC_SUB_MACRO) != 0;
+    }
+    // true if from macro
+    inline bool isFromMacro () const
+    {
+      return (flags_ & TOKEN_FLAG_FROM_MACRO) != 0;
+    }
+    // set from macro flag
+    inline void setFromMacro ()
+    {
+      flags_ |= TOKEN_FLAG_FROM_MACRO;
+    }
+    TokenPtr clone () const
+    {
+      return TokenPtr (new Token (* this)); 
+    }
+  private:
+    int num_;
+    Loc loc_;
+    std::string lexeme_;
+    unsigned flags_;
+  }
+
+  // token flags
+  enum
+  {
+    // token (identifer) is a recursivly substituted macro
+    TOKEN_FLAG_REC_SUB_MACRO = 1 << 1,
+    // space before macro
+    TOKEN_FLAG_SPACE_BEFORE  = 1 << 2,
+    // token is from macro
+    TOKEN_FLAG_FROM_MACRO    = 1 << 3,
+  }
+
+  // clone tokens in vector
+  void cloneTokens (TokenPtrVector const & tokens, TokenPtrVector & cloned)
+  {
+    for (TokenPtrVectorConstIter i = tokens.begin (), endi = tokens.end (); i != endi; ++ i)
+    {
+      cloned.push_back ((* i)->clone ());
+    }
+  }
+}
+
+#hdr
+#include <cpp/token_ptr_vector.h>
+#include <util/loc.h> 
+#include <string>
+#end

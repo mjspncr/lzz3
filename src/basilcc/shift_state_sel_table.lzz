@@ -1,0 +1,40 @@
+namespace basilcc
+{
+  // goto could own shift state vector, but then not as straightforward to serialize
+  class ShiftStateSelTable : public Table
+  {
+  public:
+    ShiftStateSelTable ()
+    {}
+    ~ ShiftStateSelTable ()
+    {
+      deleteObjects (m_shift_state_sels.begin (), m_shift_state_sels.end ());
+    }
+
+    // get shift state sel
+    ShiftStateSelPtr getShiftStateSel (ShiftStateVector & shift_states)
+    {
+      return * m_shift_state_sels.insert (m_shift_state_sels.end (), new ShiftStateSel (m_shift_state_sels.size (), shift_states));
+    }
+    inline ShiftStateSelPtrVector const & getShiftStateSels () const
+    {
+      return m_shift_state_sels;
+    }
+
+    enum { TABLE = TABLE_SHIFT_STATE_SEL }
+  private:
+    ShiftStateSelPtrVector m_shift_state_sels;
+  }
+}
+
+#hdr
+#include <basilcc/shift_state_sel_ptr_vector.h>
+#include <basilcc/shift_state_vector.h>
+#include <basilcc/table.h>
+#end
+
+#src
+#include <basilcc/shift_state_sel.h>
+#include <basilcc/shift_state_sel_ptr_vector.h>
+#include <basilcc/util.h>
+#end

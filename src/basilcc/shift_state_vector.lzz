@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <ShiftState> ShiftStateVector;
+  typedef std::vector <ShiftState>::iterator ShiftStateVectorIter;
+  typedef std::vector <ShiftState>::const_iterator ShiftStateVectorConstIter;
+}
+
+#hdr
+#include <basilcc/shift_state.h>
+#include <vector>
+#end

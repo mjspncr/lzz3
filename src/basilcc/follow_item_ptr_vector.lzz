@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <FollowItemPtr> FollowItemPtrVector;
+  typedef std::vector <FollowItemPtr>::iterator FollowItemPtrVectorIter;
+  typedef std::vector <FollowItemPtr>::const_iterator FollowItemPtrVectorConstIter;
+}
+
+#hdr
+#include <basilcc/follow_item_ptr.h>
+#include <vector>
+#end

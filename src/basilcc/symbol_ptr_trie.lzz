@@ -1,0 +1,14 @@
+namespace basilcc
+{
+  typedef ITrie <unsigned int, SymbolPtr> SymbolPtrTrie;
+}
+template class ITrie <unsigned int, basilcc::SymbolPtr>;
+
+#hdr
+#include <basilcc/symbol_ptr.h>
+#include <util/itrie.h>
+#end
+
+#src
+#include <util/itrie.tpl>
+#end

@@ -1,0 +1,67 @@
+namespace basilcc
+{
+  class ActionTable : public Table
+  {
+  public:
+    ActionTable ()
+    {
+    }
+    ~ ActionTable ()
+    {
+      deleteObjects (m_actions.begin (), m_actions.end ());
+    }
+
+    // get shift action from state
+    ActionPtr getShiftAction (StatePtr state)
+    {
+      m_action_trie.plug (unsigned (state));
+      ActionPtr & action = m_action_trie.commit (0);
+      if (! action)
+      {
+        action = new ShiftAction (m_actions.size (), state);
+        m_actions.push_back (action);
+      }
+      return action;
+    }
+
+    // get reduce action from components
+    ActionPtr getReduceAction (RulePtr rule, SymbolPtr shortcut, bool accept)
+    {
+      m_action_trie.plug (unsigned (rule));
+      m_action_trie.plug (unsigned (shortcut));
+      m_action_trie.plug (accept ? 1 : 0);
+      ActionPtr & action = m_action_trie.commit (0);
+      if (! action)
+      {
+        action = new ReduceAction (m_actions.size (), rule, shortcut, accept);
+        m_actions.push_back (action);
+      }
+      return action;
+    }
+
+    // get all actions
+    inline ActionPtrVector const & getActions () const
+    {
+      return m_actions;
+    }
+
+    enum { TABLE = TABLE_ACTION }
+  private:
+    ActionPtrTrie m_action_trie;
+    ActionPtrVector m_actions;
+  }
+}
+
+#hdr
+#include <basilcc/action_ptr_trie.h>
+#include <basilcc/action_ptr_vector.h>
+#include <basilcc/rule_ptr.h>
+#include <basilcc/state_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#include <basilcc/table.h>
+#end
+
+#src
+#include <basilcc/action.h>
+#include <basilcc/util.h>
+#end

@@ -1,0 +1,44 @@
+namespace basilcc
+{
+  class ShiftTable : public Table
+  {
+  public:
+    ShiftTable ()
+    {}
+    ~ ShiftTable ()
+    {
+      deleteObjects (m_shifts.begin (), m_shifts.end ());
+    }
+
+    // get shift from symbol and state
+    ShiftPtr getShift (SymbolPtr symbol, StatePtr state)
+    {
+      m_shift_trie.plug (unsigned (symbol));
+      m_shift_trie.plug (unsigned (state));
+      ShiftPtr & shift = m_shift_trie.commit (0);
+      if (! shift)
+      {
+        shift = * m_shifts.insert (m_shifts.end (), new Shift (symbol, state));
+      }
+      return shift;
+    }
+
+    enum { TABLE = TABLE_SHIFT }
+  private:
+    ShiftPtrTrie m_shift_trie;
+    ShiftPtrVector m_shifts;
+  }
+}
+
+#hdr
+#include <basilcc/shift_ptr_trie.h>
+#include <basilcc/shift_ptr_vector.h>
+#include <basilcc/state_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#include <basilcc/table.h>
+#end
+
+#src
+#include <basilcc/shift.h>
+#include <basilcc/util.h>
+#end

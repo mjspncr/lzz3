@@ -1,0 +1,143 @@
+// itrie
+
+template <class T, class X>
+class ITrie
+{
+public:
+  ITrie ()
+  {
+    m_root = new Node (0, 0xFFFFFFFF, X ());
+    m_root->left = m_root;
+    m_root->right = m_root;
+  }
+  ~ ITrie ()
+  {
+    delete m_root;
+  } 
+  // insert obj if not already present, return ref to object
+  X & insert (T key, X const & obj = X ())
+  {
+    // find closest match
+    Node * n = m_root;
+    unsigned int mask;
+    do
+    {
+      mask = n->mask;
+      if (key & mask)
+      {
+        n = n->right;
+      }
+      else
+      {
+        n = n->left;
+      }
+    }
+    while (mask < n->mask);
+    if (key == n->key)
+    {
+      return n->obj;
+    }
+    // get first different bit
+    unsigned int dif_mask = 1;
+    for (unsigned int k = key ^ n->key; ! (k & dif_mask); dif_mask <<= 1);
+    // where to insert it?
+    Node ** p = & m_root;
+    n = * p;
+    mask = n->mask;
+    while (dif_mask > mask)
+    {
+      if (key & mask)
+      {
+        p = & n->right;
+      }
+      else
+      {
+        p = & n->left;
+      }
+      n = * p;
+      if (mask >= n->mask)
+      {
+        break;
+      }
+      mask = n->mask;
+    }
+    // create new node
+    Node * m = new Node (key, dif_mask, obj);
+    if (key & dif_mask)
+    {
+      m->right = m;
+      m->left = n;
+    }
+    else
+    {
+      m->left = m;
+      m->right = n;
+    }
+    * p = m;
+    return m->obj;
+  }
+  // find
+  X * find (T key) const
+  {
+    // find closest match
+    Node * n = m_root;
+    unsigned int mask;
+    do
+    {
+      mask = n->mask;
+      if (key & mask)
+      {
+        n = n->right;
+      }
+      else
+      {
+        n = n->left;
+      }
+    }
+    while (mask < n->mask);
+    if (key == n->key)
+    {
+      return & n->obj;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+private:
+  struct Node
+  {
+    T key;
+    unsigned int mask;
+    X obj;
+    Node * left;
+    Node * right;
+    Node (T key, unsigned int mask, X const & obj)
+      : key (key), mask (mask), obj (obj)
+    {}
+    ~ Node ()
+    {
+      if (left->mask > mask)
+      {
+        delete left;
+      }
+      if (right->mask > mask)
+      {
+        delete right;
+      }
+    }
+  };
+  Node * m_root;
+}
+
+// use tpl file
+#pragma tpl
+
+#hdr
+#include <assert.h>
+#include <stddef.h>
+#include <string.h>
+#end
+
+#src
+#end

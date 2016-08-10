@@ -1,0 +1,292 @@
+namespace basilcc
+{
+  class CC;
+
+  class TempAction
+  {
+  public:
+    TempAction (Priority const & priority)
+      : m_priority (priority)
+    {}
+    virtual ~ TempAction ()
+    {}
+
+    // true if shift
+    virtual bool isShift () const = 0;
+    // true if reduction
+    inline bool isReduction () const
+    {
+      return ! isShift ();
+    }
+
+    // get priority
+    inline Priority const & getPriority () const
+    {
+      return m_priority;
+    }
+
+    // update priority, take max 
+    void update (Priority const & priority)
+    {
+      m_priority = maxPriority (m_priority, priority);
+    }
+
+    // get lazy action
+    virtual LazyActionPtr getLazyAction (CC & cc) const = 0;
+
+  private:
+    Priority m_priority;
+  }
+
+  class ShiftTempAction : public TempAction
+  {
+  public:
+    // constructor
+    ShiftTempAction (Priority const & priority)
+      : TempAction (priority)
+    {}
+    ~ ShiftTempAction () {}
+
+    // true if shift
+    bool isShift () const
+    {
+      return true;
+    }
+
+    // get lazy action
+    LazyActionPtr getLazyAction (CC & cc) const
+    {
+      return getShiftLazyAction (cc);
+    }
+  }
+
+  class ReduceTempAction : public TempAction
+  {
+  public:
+    ReduceTempAction (RulePtr rule, SymbolPtr shortcut, Priority const & priority, bool sticky, bool accept)
+      : TempAction (priority), m_rule (rule), m_shortcut (shortcut), m_sticky (sticky), m_accept (accept)
+    {}
+    ~ ReduceTempAction () {}
+
+    // true if shift
+    bool isShift () const
+    {
+      return false;
+    }
+
+    // get rule
+    inline RulePtr getRule () const
+    {
+      return m_rule;
+    }
+
+    // get shortcut
+    inline SymbolPtr getShortcut () const
+    {
+      return m_shortcut;
+    }
+
+    // true if has sticky
+    inline bool hasSticky () const
+    {
+      return m_sticky;
+    }
+
+    // true if has accept
+    inline bool hasAccept () const
+    {
+      return m_accept;
+    }
+
+    // update, max priority and stick and accept if either are true
+    void update (Priority const & priority, bool sticky, bool accept)
+    {
+      TempAction::update (priority);
+      m_sticky = m_sticky || sticky;
+      m_accept = m_accept || accept;
+    }
+
+    // get lazy action
+    LazyActionPtr getLazyAction (CC & cc) const
+    {
+      return getReduceLazyAction (cc, m_rule, m_shortcut, m_accept);
+    }
+
+  private:
+    RulePtr m_rule;
+    SymbolPtr m_shortcut;
+    bool m_sticky;
+    bool m_accept;
+  }
+
+  // a < b
+  bool operator < (TempAction const & a, TempAction const & b)
+  {
+    bool result = false;
+    int count_a = a.getPriority ().getCount ();
+    int count_b = b.getPriority ().getCount ();
+    if (count_a > count_b)
+    {
+      result = true;
+    }
+    else if (count_a == count_b)
+    {
+      // conflict: just sort consistently then
+      if (a.isShift () && b.isReduction ())
+      {
+        result = true;
+      }
+      else if (b.isReduction ())
+      {
+        // both reductions, sort by rule
+        ReduceTempAction const & c = static_cast <ReduceTempAction const &> (a);
+        ReduceTempAction const & d = static_cast <ReduceTempAction const &> (b);
+        if (c.getRule () < d.getRule ())
+        {
+          result = true;
+        }
+        else if (c.getRule () == d.getRule ())
+        {
+          // sort by shortcut
+          result = c.getShortcut () < d.getShortcut ();
+        }
+      }
+    }
+    return result;
+  }
+  inline bool tempActionLess (TempActionPtr a, TempActionPtr b)
+  {
+    return * a < * b;
+  }
+
+  // a == b
+  bool operator == (TempAction const & a, TempAction const & b)
+  {
+    // equal if priority count is equal
+    return a.getPriority ().getCount () == b.getPriority ().getCount ();
+  }
+  inline bool operator != (TempAction const & a, TempAction const & b)
+  {
+    return ! (a == b);
+  }
+
+  // a == b
+  // or: can a replace b?
+  bool operator == (ReduceTempAction const & a, ReduceTempAction const & b)
+  {
+    // same if only rule and shortcut are same
+    bool result = false;
+    if (a.getRule () == b.getRule () && a.getShortcut () == b.getShortcut ())
+    {
+      result = true;
+      // if accepting on b but not on a, then a can't replace b
+      // this will happen if b is sticky--b won't be considered in default set
+      if (b.hasAccept () && ! a.hasAccept ())
+      {
+        result = false;
+      }
+    }
+    return result;
+  }
+
+  // a < b
+  bool operator < (ReduceTempAction const & a, ReduceTempAction const & b)
+  {
+    // result
+    bool result = false;
+    // compare rules
+    if (ruleLess (a.getRule (), b.getRule ()))
+    {
+      result = true;
+    }
+    else if (a.getRule () == b.getRule ())
+    {
+      // compare shortcuts
+      if (symbolLess (a.getShortcut (), b.getShortcut ()))
+      {
+        result = true;
+      }
+      else if (a.getShortcut () == b.getShortcut ())
+      {
+        // order accept first so that default move will be accept of like moves
+        if (a.hasAccept () && ! b.hasAccept ())
+        {
+          result = true;
+        }
+      }
+    }
+    return result;
+  }
+
+  // temp action to string
+  std::string tempActionToString (TempActionPtr temp_action)
+  {
+    string str;
+    if (temp_action->isShift ())
+    {
+      str = "SHIFT";
+      appendWithSpace (str, shiftPriorityToString (temp_action->getPriority ()));
+    }
+    else
+    {
+      ReduceTempAction const & r_temp_action = static_cast <ReduceTempAction const &> (* temp_action);
+      RulePtr rule = r_temp_action.getRule ();
+      SymbolPtr shortcut = r_temp_action.getShortcut ();
+      if (rule->isStart ())
+      {
+        str = "DONE";
+        appendWithSpace (str, intToString (rule->getNumber ()));
+      }
+      else
+      {
+        if (r_temp_action.hasAccept ())
+        {
+          str = "ACCEPT";
+        }
+        else
+        {
+          str = "REDUCE";
+        }
+        appendWithSpace (str, intToString (rule->getNumber ()));
+        appendWithSpace (str, shortcut->getName ());
+      }
+      appendWithSpace (str, firstPriorityToString (temp_action->getPriority ()));
+    }
+    return str;
+  }
+
+  // append tmp actions to string, comma separated
+  void appendTempActions (std::string & str, TempActionPtrVector const & temp_actions)
+  {
+    if (! temp_actions.empty ())
+    {
+      for (TempActionPtrVectorConstIter i = temp_actions.begin (), endi = temp_actions.end ();;)
+      {
+        str += tempActionToString (* i);
+        if (++ i == endi)
+        {
+          break;
+        }
+        str += ", ";
+      }
+    }
+  }
+}
+
+using namespace std;
+
+#hdr
+#include <basilcc/lazy_action_ptr.h>
+#include <basilcc/priority.h>
+#include <basilcc/rule_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#include <basilcc/temp_action_ptr_vector.h>
+#end
+
+#src
+#include <basilcc/lazy_action_api.h>
+#include <basilcc/rule.h>
+#include <basilcc/symbol.h>
+#include <util/append.h> 
+#include <util/int_to_string.h> 
+#end

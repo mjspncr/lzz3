@@ -1,0 +1,88 @@
+// trim.lzz
+//
+
+// return trimed string, whitespace before and after removed
+std::string trim (std::string const & str, char const * ws)
+{
+  string::size_type p (str.find_first_not_of (ws));
+  if (p == string::npos)
+  {
+    return string (); 
+  }
+  string::size_type q (str.find_last_not_of (ws));
+  if (q == string::npos)
+  {
+    return str.substr (p);
+  }
+  else
+  {
+    return str.substr (p, q - p + 1);
+  }
+}
+
+// return trimed string, leading and trailing space and tabs removed  
+std::string trim (std::string const & str)
+{
+  // trim spaces, tabs and newlines
+  return trim (str, whitespace);
+}
+
+void trimBack (std::string & str, char const * ws)
+{
+  string::size_type q (str.find_last_not_of (ws));
+  if (q == string::npos)
+  {
+    str.clear ();
+  }
+  else
+  {
+    str.erase (q + 1);
+  }
+}
+void trimBack (std::string & str)
+{
+  trimBack (str, whitespace);
+}
+
+// trim ws before, after, and inside str
+// repeating ws inside replaced with a single space
+std::string trimInOut (std::string const & str, char const * ws)
+{
+  string res;
+  for (string::size_type p = 0;;)
+  {
+    string::size_type q (str.find_first_not_of (ws, p));
+    if (q == string::npos)
+    {
+      break;
+    }
+    if (p != 0)
+    {
+      res += ' ';
+    }
+    p = str.find_first_of (ws, q + 1);
+    res += str.substr (q, p - q);
+  }
+  return res;
+}
+  
+// trim ws before, after, and inside str
+// repeating ws inside replaced with a single space
+std::string trimInOut (std::string const & str)
+{
+  return trimInOut (str, whitespace);
+}
+
+using namespace std;
+
+namespace
+{
+  char const whitespace [] = " \t\n\r";
+}
+
+#hdr
+#include <string>
+#end
+
+#src
+#end

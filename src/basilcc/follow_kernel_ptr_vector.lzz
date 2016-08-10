@@ -1,0 +1,11 @@
+namespace basilcc
+{
+  typedef std::vector <FollowKernelPtr> FollowKernelPtrVector;
+  typedef std::vector <FollowKernelPtr>::iterator FollowKernelPtrVectorIter;
+  typedef std::vector <FollowKernelPtr>::const_iterator FollowKernelPtrVectorConstIter;
+}
+
+#hdr
+#include <basilcc/follow_kernel_ptr.h>
+#include <vector>
+#end

@@ -1,0 +1,11 @@
+// ident_int_map.lzz
+//
+
+typedef std::map <Ident, int> IdentIntMap;
+typedef IdentIntMap::const_iterator IdentIntMapConstIter;
+typedef IdentIntMap::iterator IdentIntMapIter;
+
+#hdr
+#include <util/ident.h>
+#include <map>
+#end

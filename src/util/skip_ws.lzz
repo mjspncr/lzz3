@@ -1,0 +1,27 @@
+// skip ws, return iterator to end of white space
+StringConstIter skipWs (StringConstIter str_beg, StringConstIter str_end, char const * ws)
+{
+  StringConstIter i = str_beg;
+  while (i != str_end && strchr (ws, * i) != NULL)
+  {
+    ++ i;
+  }
+  return i;
+}
+
+// skip ws, return iterator to end of white space, whitespace is " \t"
+StringConstIter skipWs (StringConstIter str_beg, StringConstIter str_end)
+{
+  return skipWs (str_beg, str_end, " \t");
+}
+
+using namespace std;
+
+#hdr
+#include <util/string.h>
+#end
+
+#src
+#include <cstring>
+#end
+

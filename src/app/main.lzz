@@ -1,0 +1,62 @@
+int main (int argc, char ** argv)
+{
+  try
+  {
+    StringVector filenames;
+    parseOptions (argc, argv, filenames);
+    string scripts_dir = getOptionValue (opt_lzz_dir);
+    if (scripts_dir.empty ())
+    {
+      if (const char * env = getenv ("LZZSCRIPTS"))
+      {
+        scripts_dir = env;
+      }
+    }
+    if (! file_op::exists (scripts_dir))
+    {
+      throw Exception (Message ("% does not exist") << scripts_dir);
+    }
+    if (getOptionValue (opt_bootstrap_basil))
+    {      
+      bootstrap (scripts_dir);
+    }
+    if (getOptionValue (opt_compile_basil))
+    {
+      compileBasil (scripts_dir);
+    }
+    if (getOptionValue (opt_compile_lzz))
+    {
+      compileLzz (scripts_dir);
+    }
+    if (! filenames.empty ())
+    {
+      runLzz (scripts_dir, filenames);
+    }
+  }
+  catch (exception const & e)
+  {
+    cout << e.what () << endl;
+    return 1;
+  }
+  catch (...)
+  {
+    cout << "unknown exception" << endl;
+    return 1;
+  }
+  return 0;
+}
+
+using namespace std;
+using namespace config;
+
+#src
+#include <app/run_basil.h>
+#include <app/run_lzz.h>
+#include <config/config.h>
+#include <config/options.h>
+#include <util/exception.h>
+#include <util/file_op.h>
+#include <util/message.h>
+#include <cstdlib>
+#include <iostream>
+#end

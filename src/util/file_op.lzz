@@ -1,0 +1,317 @@
+namespace file_op
+{
+  // remove extension
+  std::string remExt (std::string const & filename)
+  {
+    string result;
+    size_t dot = filename.find_last_of ('.');
+    size_t slash = filename.find_last_of ("/\\");
+    if (dot != string::npos && (slash == string::npos || slash < dot))
+    {
+      result = filename.substr (0, dot);
+    }
+    else
+    {
+      result = filename;
+    }      
+    return result;
+  }
+
+  // true if has extension
+  bool hasExt (std::string const & filename)
+  {
+    string ext;
+    return hasExt (filename, ext);
+  }
+
+  // true if has extension, set extension if yes
+  bool hasExt (std::string const & filename, std::string & ext)
+  {
+    bool res (false);
+    size_t dot = filename.find_last_of ('.');
+    size_t slash = filename.find_last_of ("/\\");
+    if (dot != string::npos && (slash == string::npos || slash < dot))
+    {
+      ext = filename.substr (dot + 1);
+      res = true;
+    }
+    return res;
+  }
+
+  // add extension
+  std::string addExt (std::string const & filename, std::string const & ext)
+  {
+    string result = filename;
+    result += '.';
+    result += ext;
+    return result;
+  }
+
+  // get base name, filename without path and ext
+  std::string getBaseName (std::string const & filename)
+  {
+    string path, name;
+    getPathAndName (filename, path, name);
+    return remExt (name);
+  }
+
+  // get path and name
+  void getPathAndName (std::string const & filename, std::string & path, std::string & name)
+  {
+#ifdef WINDOWS
+    size_t len = filename.length ();
+    while (len > 0 && (filename [len - 1] == '\\' || filename [len - 1] == '/'))
+    {
+      -- len;
+    }
+    size_t p = filename.find_last_of ("/\\", len);
+    if (p == string::npos)
+    {
+      name = filename.substr (0, len);
+      path = ".\\";
+    }
+    else
+    {
+      path = filename.substr (0, p + 1);
+      name = filename.substr (p + 1, len - (p + 1)); 
+    }
+#else
+    size_t len = filename.length ();
+    while (len > 0 && filename [len - 1] == '/')
+    {
+      -- len;
+    }
+    size_t p = filename.rfind ('/', len);
+    if (p == string::npos)
+    {
+      name = filename.substr (0, len);
+      path = "./";
+    }
+    else
+    {
+      path = filename.substr (0, p + 1);
+      name = filename.substr (p + 1, len - (p + 1));
+    }
+#endif
+  }
+
+  // get path
+  std::string getPath (std::string const & filename)
+  {
+    string path, name;
+    getPathAndName (filename, path, name);
+    return path;
+  }
+
+  // get real path for file, return true if successful
+  bool realPath (std::string const & file, std::string & fullname)
+  {
+    bool result = false;
+#ifdef WINDOWS
+    char resolved_path [MAX_PATH];
+    if (_fullpath (resolved_path, file.c_str (), MAX_PATH) == resolved_path)
+#else
+    char resolved_path [PATH_MAX];
+    if (realpath (file.c_str (), resolved_path) == resolved_path)
+#endif
+    {
+      fullname = resolved_path;
+      result = true;
+    }
+    return result;
+  }
+
+  // get real path and return it
+  std::string realPath (std::string const & filename)
+  {
+    string fullpath;
+    return realPath (filename, fullpath) ? fullpath : filename;
+  }
+
+  // join directory with filename
+  std::string join (std::string const & dirname, std::string const & filename)
+  {
+    string result = dirname;
+    size_t len = result.length ();
+    if (len > 0)
+    {
+#ifdef WINDOWS
+      if (! (result [len - 1] == '/' || result [len - 1] == '\\'))
+      {
+        result += '\\';
+      }
+#else
+      if (! (result [len - 1] == '/'))
+      {
+        result += '/';
+      }
+#endif
+    }
+    result += filename;
+    return result;
+  }
+  std::string join (std::string const & part1, std::string const & part2, std::string const & part3)
+  {
+    return join (join (part1, part2), part3); 
+  }
+  std::string join (std::string const & part1, std::string const & part2, std::string const & part3,
+      std::string const & part4)
+  {
+    return join (join (part1, part2, part3), part4); 
+  }
+
+  // size of file if file exists, -1 otherwise
+  long len (std::string const & filename)
+  {
+    long result = -1;
+    if (ACCESS (filename.c_str (), F_OK) == 0)
+    {
+      FILE * pFile = fopen ( filename.c_str () , "rb" );
+      if( pFile )
+      {
+        fseek (pFile , 0 , SEEK_END);
+        result = ftell (pFile);
+        fclose (pFile);
+      }
+    }
+    return result;
+  }
+
+  // true if file exists
+  bool exists (std::string const & filename)
+  {
+    bool result = false;
+    if (ACCESS (filename.c_str (), F_OK) == 0)
+    {
+      result = true;
+    }
+    return result;
+  }
+
+  // true if file renamed
+  bool ren (std::string const & old_filename, std::string const & new_filename)
+  {
+    bool result = false;
+    if (rename(old_filename.c_str(), new_filename.c_str()) == 0)
+    {
+      result = true;
+    }
+    return result;
+  }
+
+  // true if file removed
+  bool del (std::string const & filename)
+  {
+    bool result = false;
+    if (remove(filename.c_str ()) == 0)
+    {
+      result = true;
+    }
+    return result;
+  }
+
+  // true if file exists and renamed
+  bool renIfExists (std::string const & old_filename, std::string const & new_filename)
+  {
+    bool result = false;
+    if (ACCESS (old_filename.c_str (), F_OK) == 0 && rename(old_filename.c_str(), new_filename.c_str()) == 0)
+    {
+      result = true;
+    }
+    return result;
+  }
+
+  // true if file exists and removed
+  bool delIfExists (std::string const & filename)
+  {
+    bool result = false;
+    if (ACCESS (filename.c_str (), F_OK) == 0 && remove(filename.c_str ()) == 0)
+    {
+      result = true;
+    }
+    return result;
+  }
+
+  // make unix filename (replace backslash with forward slash)
+  std::string dos2unix (std::string const & filename)
+  {
+    string result = filename;
+    size_t p;
+    while ((p = result.find ('\\')) != string::npos)
+    {
+      result.replace (p, 1, "/");
+    }
+    return result;
+  }
+
+  // true if filename is absolute
+  bool isAbsolute (std::string const & filename)
+  {
+    bool result = false;
+#ifdef WINDOWS
+    // true if starts with '\', '/' or drive letter
+    result = filename.length () > 0 && (filename [0] == '\\' || filename [0] == '/') || filename.length () > 1 && filename [0] == ':';
+#else
+    // true if starts with '/'
+    result = filename.length () > 0 && filename [0] == '/';
+#endif
+    return result;
+  }
+
+  // true if directory
+  bool isDirectory (std::string const & filename)
+  {
+    struct stat fs;
+    return stat (filename.c_str (), & fs) == 0 && S_ISDIR (fs.st_mode);
+  }
+}
+
+using namespace std;
+
+namespace 
+{
+  char const context [] = "util/file_op";
+}
+
+#hdr
+#include <string>
+#include <stdio.h>
+#ifdef WINDOWS
+#include <map>
+#include <windows.h>
+#include <util/throw_exception.h>
+#endif
+#end
+
+#src
+#include <sys/stat.h>
+#ifdef WINDOWS
+#include <io.h>
+#else
+#include <unistd.h>
+#include <limits.h>
+#include <stdlib.h>
+#endif
+
+#ifndef F_OK
+#ifdef WINDOWS
+#define F_OK 0
+#endif
+#endif
+
+#ifndef S_ISREG
+#define S_ISREG(mode) (((mode) & _S_IFMT) == _S_IFREG)
+#endif
+
+#ifndef S_ISDIR
+#define S_ISDIR(mode) (((mode) & _S_IFMT) == _S_IFDIR)
+#endif
+
+// fixes VS2005 deprecated warning for access POSIX function
+#ifdef WINDOWS
+#define ACCESS _access
+#else
+#define ACCESS access
+#endif
+
+#end

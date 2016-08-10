@@ -1,0 +1,14 @@
+// int_vector.lzz
+//
+
+typedef std::vector <int> IntVector;
+typedef IntVector::const_iterator IntVectorConstIter;
+typedef IntVector::const_reverse_iterator IntVectorConstRevIter;
+typedef IntVector::iterator IntVectorIter;
+
+#hdr
+#include <vector>
+#end
+
+#src
+#end

@@ -1,0 +1,11 @@
+// int_string_pair.lzz
+
+typedef std::pair <int, std::string> IntStringPair;
+
+#hdr
+#include <string>
+#include <utility>
+#end
+
+#src
+#end

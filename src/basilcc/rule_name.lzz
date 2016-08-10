@@ -1,0 +1,47 @@
+namespace basilcc
+{
+  class RuleName
+  {
+  public:
+    RuleName (Ident name, Loc const & loc, bool is_def, Ident cap_string)
+      : m_name (name), m_loc (loc), m_is_def (is_def), m_cap_string (cap_string)
+    {}
+    ~ RuleName ()
+    {}
+
+    // get name
+    inline Ident getName () const
+    {
+      return m_name;
+    }
+
+    // get location
+    inline Loc const & getLoc () const
+    {
+      return m_loc;
+    }
+
+    // true if name defines a particular rule ('a= foo->bar' vs 'a: foo->bar')
+    inline bool isDef () const
+    {
+      return m_is_def;
+    }
+
+    // get cap string, node name
+    inline Ident getCapString () const
+    {
+      return m_cap_string;
+    }
+
+  private:
+    Ident m_name;
+    Loc m_loc;
+    bool m_is_def;
+    Ident m_cap_string;
+  }
+}
+
+#hdr
+#include <util/ident.h>
+#include <util/loc.h>
+#end

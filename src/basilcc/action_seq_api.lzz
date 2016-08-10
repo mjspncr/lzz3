@@ -1,0 +1,26 @@
+namespace basilcc
+{
+  class CC;
+
+  // get action seq
+  ActionSeqPtr getActionSeq (CC & cc, ActionPtrVector & actions)
+  {
+    return getTable <ActionSeqTable> (cc).getActionSeq (actions);
+  }
+
+  // get action sequences
+  ActionSeqPtrVector const & getActionSeqs (CC & cc)
+  {
+    return getTable <ActionSeqTable> (cc).getActionSeqs ();
+  }
+}
+
+#hdr
+#include <basilcc/action_ptr_vector.h>
+#include <basilcc/action_seq_ptr_vector.h>
+#end
+
+#src
+#include <basilcc/cc.h>
+#include <basilcc/action_seq_table.h>
+#end

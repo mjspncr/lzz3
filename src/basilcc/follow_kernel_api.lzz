@@ -1,0 +1,20 @@
+namespace basilcc
+{
+  class CC;
+
+  // get follow kernel from follow rules
+  FollowKernelPtr getFollowKernel (CC & cc, FollowRulePtrVector & follow_rules)
+  {
+    return getTable <FollowKernelTable> (cc).getFollowKernel (follow_rules);
+  }
+}
+
+#hdr
+#include <basilcc/follow_kernel_ptr.h>
+#include <basilcc/follow_rule_ptr_vector.h>
+#end
+
+#src
+#include <basilcc/follow_kernel_table.h>
+#include <basilcc/cc.h>
+#end

@@ -1,0 +1,59 @@
+namespace basilcc
+{
+  class LazyActionTable : public Table
+  {
+  public:
+    // get shift lazy action
+    LazyActionPtr getShiftLazyAction ()
+    {
+      // there's only one shift lazy action
+      LazyActionPtr & lazy_action = m_lazy_action_trie.commit (0);
+      if (! lazy_action)
+      {
+        lazy_action = new ShiftLazyAction ();
+        m_lazy_actions.push_back (lazy_action); 
+      }
+      return lazy_action;
+    }
+
+    // get reduce lazy action
+    LazyActionPtr getReduceLazyAction (RulePtr rule, SymbolPtr shortcut, bool accept)
+    {
+      m_lazy_action_trie.plug (unsigned (rule));
+      m_lazy_action_trie.plug (unsigned (shortcut));
+      m_lazy_action_trie.plug (accept ? 1 : 0);
+      LazyActionPtr & lazy_action = m_lazy_action_trie.commit (0);
+      if (! lazy_action)
+      {
+        lazy_action = new ReduceLazyAction (rule, shortcut, accept);
+        m_lazy_actions.push_back (lazy_action);
+      }
+      return lazy_action;
+    }
+
+    // ctor/dtor
+    enum { TABLE = TABLE_LAZY_ACTION }
+    LazyActionTable () {}
+    ~ LazyActionTable ()
+    {
+      deleteObjects (m_lazy_actions.begin (), m_lazy_actions.end ());
+    }
+  private:
+    LazyActionPtrTrie m_lazy_action_trie;
+    LazyActionPtrVector m_lazy_actions;
+  }
+}
+
+#hdr
+#include <basilcc/lazy_action_ptr_trie.h>
+#include <basilcc/lazy_action_ptr_vector.h>
+#include <basilcc/rule_ptr.h>
+#include <basilcc/symbol_ptr.h>
+#include <basilcc/table.h>
+#include <basilcc/table_number.h>
+#end
+
+#src
+#include <basilcc/lazy_action.h>
+#include <basilcc/util.h>
+#end

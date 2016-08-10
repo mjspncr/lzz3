@@ -1,0 +1,25 @@
+namespace basilcc
+{
+  class CC;
+
+  // return new rule name
+  RuleNamePtr getRuleName (CC & cc, Ident name, Loc const & loc, bool is_node)
+  {
+    string cap_string = toCapString (name);
+    return getTable <RuleNameTable> (cc).getRuleName (name, loc, is_node, cc.intern (cap_string));
+  }
+}
+
+using namespace std; 
+
+#hdr
+#include <basilcc/rule_name_ptr.h>
+#include <util/ident.h>
+#include <util/loc.h>
+#end
+
+#src
+#include <basilcc/cc.h>
+#include <basilcc/rule_name_table.h>
+#include <basilcc/util.h>
+#end
