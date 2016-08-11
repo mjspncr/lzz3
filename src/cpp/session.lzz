@@ -8,7 +8,9 @@ namespace cpp
   public:
     Session (StringTable & string_table, StringIntVector const & keywords, Output & output, Logger & logger)
       : m_string_table (string_table), m_keywords (keywords), m_output (output), m_logger (logger) 
-    {}
+    {
+      m_macro_table.init (* this); 
+    }
     ~ Session ()
     {}
 

@@ -371,6 +371,7 @@ namespace cpp
           }
         }
         next (name, tokens);
+        tokens.clear ();
       }
     }
     // next, push macro name on stack first, pop off when finished
@@ -498,7 +499,6 @@ using namespace std;
 #end
 
 #src
-#include <algorithm>
 #include <cpp/lexer.h>
 #include <cpp/macro.h>
 #include <cpp/macro_arg.h>
@@ -509,4 +509,5 @@ using namespace std;
 #include <util/int_to_string.h>
 #include <util/message.h>
 #include <util/parse_exception.h>
+#include <algorithm>
 #end

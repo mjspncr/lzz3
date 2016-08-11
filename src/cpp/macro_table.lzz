@@ -24,14 +24,13 @@ namespace cpp
     return session.getMacroTable ().delMacro (name);
   }
 
-  // macro table
   class MacroTable
   {
   public:
     MacroTable () {}
     ~ MacroTable () {}
     // initialize
-    void init ()
+    void init (Session & session)
     {
       // clear all entries
       macros_.clear ();
@@ -72,10 +71,13 @@ namespace cpp
       rep_tokens.push_back (new Token (TOKEN_LITERAL_INT, Loc (), "199711L"));
       addMacro (new ObjMacro (Loc (), "__cplusplus", rep_tokens));
       rep_tokens.clear ();
-      /*
+
       // add -D macros
-      addCmdMacroSet (conf::getOptionValue (conf::opt_macro_set));
-      */
+      StringVector const & cmd_macros = config::getOptionValue (config::opt_macro_set);
+      for (StringVectorConstIter i = cmd_macros.begin (), endi = cmd_macros.end (); i != endi; ++ i)
+      {
+        addCmdMacro (session, * i); 
+      }
     }
 
     // add macro
@@ -110,64 +112,40 @@ namespace cpp
       macros_.erase (name);
     }
 
-    /*
-    // get data table 
-    MacroPtrDataTable const & getDataTable () const
-    {
-      return data_table;
-    }
-    */
-
   private:
-#if 0
     // add cmd macro
-    void addCmdMacro (util::String const & str)
+    void addCmdMacro (Session & session, std::string const & str)
     {
-      // exceptions
-      try
+      Loc loc;
+      Lexer lexer (session, str, loc);
+      Loc name_loc;
+      string name;
+      bool is_func = false;
+      StringVector params;
+      bool var = false;
+      TokenPtrVector tokens;
+      if (lexDefineLine (session, lexer, true, loc, name_loc, name, is_func, params, var, tokens))
       {
-        // create lexer to lex string
-        util::Loc dir_loc;
-        Lexer lexer (str, dir_loc);
-        util::Loc name_loc;
-        util::Ident name;
-        bool is_func = false;
-        util::IdentVector param_set;
-        bool var = false;
-        basl::TokenVector rep_set;
-        if (lexDefineLine (lexer, true, dir_loc, name_loc, name, is_func, param_set, var, rep_set))
+        // remove macro with same name if exists
+        if (isMacro (name))
         {
-          // remove macro with same name if exists
-          if (isMacro (name))
+          delMacro (name);
+        }
+        if (checkMacroTokens (session, is_func, params, var, tokens))
+        {
+          MacroPtr macro;
+          if (is_func)
           {
-            delMacro (name);
+            macro = MacroPtr (new FuncMacro (loc, name, params, var, tokens));
           }
-          if (checkMacroRepSet (is_func, param_set, var, rep_set))
+          else
           {
-            // use default location to signify that the macro is not from source
-            addMacro (buildMacro (dir_loc, name, is_func, param_set, var, rep_set));
+            macro = MacroPtr (new ObjMacro  (loc, name, tokens));
           }
+          addMacro (macro);
         }
       }
-      catch (util::Exception const e)
-      {
-      }
-      catch (...)
-      {
-        throw;
-      }
     }
-
-    // add cmd macro set
-    void addCmdMacroSet (util::StringVector const & str_set)
-    {
-      // add all macros in list
-      for (util::StringVectorConstIter beg = str_set.begin (), end = str_set.end (); beg != end; ++ beg)
-      {
-        addCmdMacro (* beg);
-      }
-    }
-#endif
   private:
     // data table
     StringMacroPtrMap macros_;
@@ -177,10 +155,6 @@ namespace cpp
 using namespace cpp;
 using namespace std;
 
-namespace
-{
-}
-
 #hdr
 #include <cpp/session_fwd.h>
 #include <cpp/string_macro_ptr_map.h>
@@ -188,8 +162,12 @@ namespace
 #end
 
 #src
-#include <cpp/session.h>
+#include <config/options.h>
+#include <cpp/check_macro_tokens.h>
+#include <cpp/lex_define_line.h>
+#include <cpp/lexer.h>
 #include <cpp/macro.h>
+#include <cpp/session.h>
 #include <cpp/token.h>
 #include <cpp/token_numbers.h>
 #include <cpp/token_ptr_vector.h>
