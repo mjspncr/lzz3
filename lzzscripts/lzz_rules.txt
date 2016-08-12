@@ -1,0 +1,782 @@
+%keyword DINIT     "_dinit"
+%keyword TEMPLATE  "template"
+%keyword NEW       "new"
+%keyword DELETE    "delete"
+%keyword TYPEDEF   "typedef"
+%keyword FRIEND    "friend"
+%keyword CONST     "const"
+%keyword VOLATILE  "volatile"
+%keyword INLINE    "inline"
+%keyword VIRTUAL   "virtual"
+%keyword EXPLICIT  "explicit"
+%keyword STATIC    "static"
+%keyword EXTERN    "extern"
+%keyword MUTABLE   "mutable"
+%keyword AUTO      "auto"
+%keyword REGISTER  "register"
+%keyword DLL_API   "dll_api"
+%keyword ENUM      "enum"
+%keyword TYPENAME  "typename"
+%keyword CLASS     "class"
+%keyword STRUCT    "struct"
+%keyword UNION     "union"
+%keyword BOOL      "bool"
+%keyword CHAR      "char"
+%keyword DOUBLE    "double"
+%keyword FLOAT     "float"
+%keyword INT       "int"
+%keyword LONG      "long"
+%keyword SHORT     "short"
+%keyword SIGNED    "signed"
+%keyword UNSIGNED  "unsigned"
+%keyword VOID      "void"
+%keyword WCHAR     "wchar"
+%keyword THROW     "throw"
+%keyword NAMESPACE "namespace"
+%keyword PUBLIC    "public"
+%keyword PROTECTED "protected"
+%keyword PRIVATE   "private"
+%keyword TRY       "try"
+%keyword CATCH     "catch"
+%keyword USING     "using"
+%keyword OPERATOR  "operator"
+
+start -> decl-seq-opt
+
+decl-seq-opt -> decl-seq
+decl-seq-opt ->
+decl-seq -> decl-seq decl
+decl-seq -> decl
+
+decl -> namespace
+decl -> simple-decl
+decl -> fun-def
+decl -> class-decl
+decl -> class-def
+decl -> tmpl-decl
+decl -> enum-def
+decl -> lazy-class
+decl -> functor-def
+decl -> tmpl-inst 
+decl -> using-decl
+decl -> using-dir
+
+#================================================================================
+#
+# declaration specifiers
+#
+#================================================================================
+
+# cv spec
+cv-spec -> cv-token
+
+# cv token
+cv-token -> CONST
+cv-token -> VOLATILE
+
+# cv spec seq
+v_decl_spec_seq_1: cv-spec-seq -> cv-spec
+v_decl_spec_seq_2: cv-spec-seq -> cv-spec-seq cv-spec
+
+# cv spec seq opt
+cv-spec-seq-opt -> cv-spec-seq
+cv-spec-seq-opt ->
+
+# ftor spec
+ftor-spec -> ftor-token
+
+# ftor token
+ftor-token -> INLINE
+ftor-token -> VIRTUAL
+ftor-token -> EXPLICIT
+ftor-token -> STATIC
+ftor-token -> EXTERN
+ftor-token -> MUTABLE
+ftor-token -> AUTO
+ftor-token -> REGISTER
+ftor-token -> DLL_API
+
+# builtin type
+builtin-type -> builtin-type-token
+
+# builtin type token
+builtin-type-token -> BOOL
+builtin-type-token -> CHAR
+builtin-type-token -> DOUBLE
+builtin-type-token -> FLOAT
+builtin-type-token -> INT
+builtin-type-token -> LONG
+builtin-type-token -> SHORT
+builtin-type-token -> SIGNED
+builtin-type-token -> UNSIGNED
+builtin-type-token -> VOID
+builtin-type-token -> WCHAR
+
+# elaborated type
+elab_type= elab-type -> class-key obj-name
+elab_type: elab-type -> ENUM obj-name
+elab_type: elab-type -> TYPENAME obj-name
+
+# typedef
+typedef-spec -> TYPEDEF
+
+# friend
+friend-spec -> FRIEND
+
+# class key
+class-key -> CLASS
+class-key -> STRUCT
+class-key -> UNION
+
+################################################################################
+#
+# declaration specifier sequence
+#
+################################################################################
+
+# xxxS - ftor
+s_decl_spec_seq_1= xxxS-decl-spec-seq -> ftor-spec >!
+s_decl_spec_seq_2= xxxS-decl-spec-seq -> xxxS-decl-spec-seq ftor-spec
+s_decl_spec_seq_3= xxxS-decl-spec-seq ->
+
+# xxVS - optional cv ftor
+xxVS-decl-spec-seq -> xxxS-decl-spec-seq >!
+v_decl_spec_seq_1= xxVS-decl-spec-seq -> cv-spec >!
+v_decl_spec_seq_2= xxVS-decl-spec-seq -> xxVS-decl-spec-seq cv-spec
+s_decl_spec_seq_2: xxVS-decl-spec-seq -> xxVS-decl-spec-seq ftor-spec
+
+# xBVS - builtin cv ftor
+b_decl_spec_seq_1= xBVS-decl-spec-seq -> builtin-type >!
+b_decl_spec_seq_2= xBVS-decl-spec-seq -> xxVS-decl-spec-seq builtin-type
+v_decl_spec_seq_2: xBVS-decl-spec-seq -> xBVS-decl-spec-seq cv-spec
+s_decl_spec_seq_2: xBVS-decl-spec-seq -> xBVS-decl-spec-seq ftor-spec
+b_decl_spec_seq_2: xBVS-decl-spec-seq -> xBVS-decl-spec-seq builtin-type
+
+# xUVS - user cv ftor
+u_decl_spec_seq_2= xUVS-decl-spec-seq -> xxxS-decl-spec-seq obj-name >!
+u_decl_spec_seq_2: xUVS-decl-spec-seq -> xxVS-decl-spec-seq obj-name
+v_decl_spec_seq_2: xUVS-decl-spec-seq -> xUVS-decl-spec-seq cv-spec
+s_decl_spec_seq_2: xUVS-decl-spec-seq -> xUVS-decl-spec-seq ftor-spec
+
+# xEVS - elab type cv ftor
+e_decl_spec_seq_1= xEVS-decl-spec-seq -> elab-type >!
+e_decl_spec_seq_2= xEVS-decl-spec-seq -> xxVS-decl-spec-seq elab-type
+v_decl_spec_seq_2: xEVS-decl-spec-seq -> xEVS-decl-spec-seq cv-spec
+s_decl_spec_seq_2: xEVS-decl-spec-seq -> xEVS-decl-spec-seq ftor-spec
+
+# TxVS - typedef cv ftor
+t_decl_spec_seq_1= TxVS-decl-spec-seq -> typedef-spec >!
+t_decl_spec_seq_2= TxVS-decl-spec-seq -> xxVS-decl-spec-seq typedef-spec
+v_decl_spec_seq_2: TxVS-decl-spec-seq -> TxVS-decl-spec-seq cv-spec
+s_decl_spec_seq_2: TxVS-decl-spec-seq -> TxVS-decl-spec-seq ftor-spec
+
+# TBVS - typedef builtin cv ftor
+t_decl_spec_seq_2: TBVS-decl-spec-seq -> xBVS-decl-spec-seq typedef-spec
+b_decl_spec_seq_2: TBVS-decl-spec-seq -> TxVS-decl-spec-seq builtin-type
+s_decl_spec_seq_2: TBVS-decl-spec-seq -> TBVS-decl-spec-seq ftor-spec
+v_decl_spec_seq_2: TBVS-decl-spec-seq -> TBVS-decl-spec-seq cv-spec
+b_decl_spec_seq_2: TBVS-decl-spec-seq -> TBVS-decl-spec-seq builtin-type
+
+# TUVx - typedef user cv ftor
+t_decl_spec_seq_2: TUVS-decl-spec-seq -> xUVS-decl-spec-seq typedef-spec
+u_decl_spec_seq_2: TUVS-decl-spec-seq -> TxVS-decl-spec-seq obj-name
+s_decl_spec_seq_2: TUVS-decl-spec-seq -> TUVS-decl-spec-seq ftor-spec
+v_decl_spec_seq_2: TUVS-decl-spec-seq -> TUVS-decl-spec-seq cv-spec
+
+# TEVx - typedef elab type cv ftor
+t_decl_spec_seq_2: TEVS-decl-spec-seq -> xEVS-decl-spec-seq typedef-spec
+e_decl_spec_seq_2: TEVS-decl-spec-seq -> TxVS-decl-spec-seq elab-type
+s_decl_spec_seq_2: TEVS-decl-spec-seq -> TEVS-decl-spec-seq ftor-spec
+v_decl_spec_seq_2: TEVS-decl-spec-seq -> TEVS-decl-spec-seq cv-spec
+
+# FxVS - friend cv ftor
+f_decl_spec_seq_1= FxVS-decl-spec-seq -> FRIEND >!
+f_decl_spec_seq_2= FxVS-decl-spec-seq -> xxVS-decl-spec-seq FRIEND
+v_decl_spec_seq_2: FxVS-decl-spec-seq -> FxVS-decl-spec-seq cv-spec
+s_decl_spec_seq_2: FxVS-decl-spec-seq -> FxVS-decl-spec-seq ftor-spec
+
+# FBVS - friend builtin cv ftor
+f_decl_spec_seq_2: FBVS-decl-spec-seq -> xBVS-decl-spec-seq FRIEND
+b_decl_spec_seq_2: FBVS-decl-spec-seq -> FxVS-decl-spec-seq builtin-type
+s_decl_spec_seq_2: FBVS-decl-spec-seq -> FBVS-decl-spec-seq ftor-spec
+v_decl_spec_seq_2: FBVS-decl-spec-seq -> FBVS-decl-spec-seq cv-spec
+b_decl_spec_seq_2: FBVS-decl-spec-seq -> FBVS-decl-spec-seq builtin-type
+
+# FUVx - friend user cv ftor
+f_decl_spec_seq_2: FUVS-decl-spec-seq -> xUVS-decl-spec-seq FRIEND
+u_decl_spec_seq_2: FUVS-decl-spec-seq -> FxVS-decl-spec-seq obj-name
+s_decl_spec_seq_2: FUVS-decl-spec-seq -> FUVS-decl-spec-seq ftor-spec
+v_decl_spec_seq_2: FUVS-decl-spec-seq -> FUVS-decl-spec-seq cv-spec
+
+# FEVx - friend elab type cv ftor
+f_decl_spec_seq_2: FEVS-decl-spec-seq -> xEVS-decl-spec-seq FRIEND
+e_decl_spec_seq_2: FEVS-decl-spec-seq -> FxVS-decl-spec-seq elab-type
+s_decl_spec_seq_2: FEVS-decl-spec-seq -> FEVS-decl-spec-seq ftor-spec
+v_decl_spec_seq_2: FEVS-decl-spec-seq -> FEVS-decl-spec-seq cv-spec
+
+################################################################################
+#
+# declaration
+#
+################################################################################
+
+# object
+decl= obj-decl -> xBVS-decl-spec-seq obj-dcl
+decl: obj-decl -> xUVS-decl-spec-seq obj-dcl
+decl: obj-decl -> xEVS-decl-spec-seq obj-dcl
+
+# function
+decl: fun-decl -> xBVS-decl-spec-seq fun-dcl
+decl: fun-decl -> xUVS-decl-spec-seq >+ fun-dcl
+decl: fun-decl -> xEVS-decl-spec-seq fun-dcl
+decl: fun-decl -> FBVS-decl-spec-seq fun-dcl
+decl: fun-decl -> FUVS-decl-spec-seq fun-dcl
+decl: fun-decl -> FEVS-decl-spec-seq fun-dcl
+decl: fun-decl -> xxxS-decl-spec-seq fun-dcl
+
+# functor decl
+decl: functor-decl -> xBVS-decl-spec-seq functor-dcl
+decl: functor-decl -> xUVS-decl-spec-seq functor-dcl
+decl: functor-decl -> xEVS-decl-spec-seq functor-dcl
+
+# typedef
+decl: tdef-decl -> TBVS-decl-spec-seq param-dcl
+decl: tdef-decl -> TUVS-decl-spec-seq param-dcl
+decl: tdef-decl -> TEVS-decl-spec-seq param-dcl
+
+################################################################################
+#
+# abstract declaration
+#
+################################################################################
+
+decl: abstract-decl < -> xBVS-decl-spec-seq abstract-dcl-opt
+decl: abstract-decl < -> xUVS-decl-spec-seq abstract-dcl-opt
+decl: abstract-decl < -> xEVS-decl-spec-seq abstract-dcl-opt
+
+################################################################################
+#
+# parameter declaration
+#
+################################################################################
+
+decl: param-decl -> xBVS-decl-spec-seq param-dcl
+decl: param-decl -> xUVS-decl-spec-seq param-dcl
+decl: param-decl -> xEVS-decl-spec-seq param-dcl
+
+################################################################################
+#
+# object declarator
+#
+################################################################################
+
+obj-dcl -> obj-a-dcl
+
+ptr_dcl= obj-a-dcl -> ptr-oper obj-a-dcl
+obj-a-dcl -> obj-a-direct-dcl
+
+ptr_dcl: obj-b-dcl -> ptr-oper obj-a-dcl
+obj-b-dcl -> obj-b-direct-dcl
+
+ptr_oper_1= ptr-oper -> TIMES cv-spec-seq-opt
+ptr_oper_2= ptr-oper -> BITAND
+ptr_oper_3= ptr-oper -> obj-name DCOLON TIMES cv-spec-seq-opt
+
+obj-a-direct-dcl -> obj-b-direct-dcl
+obj-a-direct-dcl -> obj-dcl-id
+
+direct_dcl_1= obj-b-direct-dcl -> obj-b-direct-dcl param-decl-1-body > RPAREN cv-spec-seq-opt throw-spec-opt
+direct_dcl_2= obj-b-direct-dcl -> obj-a-direct-dcl LBRACK block-opt 5 RBRACK
+direct_dcl_3= obj-b-direct-dcl -> LPAREN obj-b-dcl RPAREN
+
+obj-dcl-id -> obj-id
+direct_dcl_3: obj-dcl-id -> LPAREN obj-dcl-id RPAREN
+
+id= obj-id -> obj-name
+
+# throw spec
+throw-spec-opt ->
+throw-spec-opt -> throw-spec
+
+ThrowSpec: throw-spec -> THROW LPAREN type-id-list-opt RPAREN
+
+# type id
+type-id-list-opt -> 
+type-id-list-opt -> type-id-list
+
+TypeIdList1: type-id-list -> type-id
+TypeIdList2: type-id-list -> type-id-list COMMA type-id
+
+TypeId: type-id -> abstract-decl
+
+block-opt ->
+block-opt -> block
+
+block -> BLOCK 
+
+################################################################################
+#
+# abstract declarator
+#
+################################################################################
+
+abstract-dcl-opt -> abstract-dcl
+abstract-dcl-opt ->
+
+ptr_dcl: abstract-dcl -> ptr-oper abstract-dcl-opt
+abstract-dcl -> abstract-direct-dcl
+
+direct_dcl_1: abstract-direct-dcl -> abstract-direct-dcl-opt param-decl-1-body RPAREN cv-spec-seq-opt throw-spec-opt
+direct_dcl_2: abstract-direct-dcl -> abstract-direct-dcl-opt LBRACK block-opt 5 RBRACK
+# on LPAREN try nested abstract declarator before parameter decl body
+direct_dcl_3: abstract-direct-dcl -> LPAREN > abstract-dcl RPAREN
+        
+abstract-direct-dcl-opt -> abstract-direct-dcl
+abstract-direct-dcl-opt ->
+
+################################################################################
+#
+# parameter declarator
+#
+################################################################################
+
+param-dcl -> param-a-dcl
+
+ptr_dcl: param-a-dcl -> ptr-oper param-a-dcl
+param-a-dcl -> param-a-direct-dcl
+
+# param b dcl
+ptr_dcl: param-b-dcl -> ptr-oper param-a-dcl
+param-b-dcl -> param-b-direct-dcl
+
+# param a direct dcl
+param-a-direct-dcl -> param-b-direct-dcl
+param-a-direct-dcl -> obj-dcl-id
+
+# param b direct dcl
+direct_dcl_1: param-b-direct-dcl -> param-a-direct-dcl param-decl-1-body RPAREN cv-spec-seq-opt throw-spec-opt
+direct_dcl_2: param-b-direct-dcl -> param-a-direct-dcl LBRACK block-opt 5 RBRACK
+direct_dcl_3: param-b-direct-dcl -> LPAREN param-b-dcl RPAREN
+
+################################################################################
+#
+# parameter declaration body 
+#
+################################################################################
+
+# param decl body 1
+param_decl_body_1= param-decl-1-body -> param-decl-1-list ellipse-opt
+param_decl_body_2= param-decl-1-body -> param-decl-1-list COMMA ELLIPSE
+param_decl_body_3= param-decl-1-body -> LPAREN ellipse-opt
+param_decl_body_4= param-decl-1-body -> LPAREN VOID
+
+# param decl body 2
+param_decl_body_1: param-decl-2-body -> param-decl-2-list ellipse-opt
+param_decl_body_2: param-decl-2-body -> param-decl-2-list COMMA ELLIPSE
+param_decl_body_3: param-decl-2-body -> SEMI ellipse-opt
+param_decl_body_4: param-decl-2-body -> SEMI VOID
+
+# accept on first param declaration, don't backtrack and parse LPAREN as start of direct initializer
+param_decl_list_1= param-decl-1-list <* -> LPAREN > param-init-decl
+param_decl_list_2= param-decl-1-list -> param-decl-1-list COMMA param-init-decl
+
+param_decl_list_1: param-decl-2-list -> SEMI param-init-decl
+param_decl_list_2: param-decl-2-list -> param-decl-2-list COMMA param-init-decl
+
+ellipse-opt -> 
+ellipse-opt -> ELLIPSE
+
+# param init decl, block can end with ')' or ','
+param_decl_1=	param-init-decl <* -> param-decl
+param_decl_2=	param-init-decl <* -> param-decl ASSIGN block 4
+
+# same semantics as above but block can end with '>' or ','
+param_decl_1:	tmpl-param-init-decl <* -> param-decl 
+param_decl_2:	tmpl-param-init-decl <* -> param-decl ASSIGN block 8
+
+# nested name
+nested_name_1= nested-name -> DCOLON
+nested_name_2= nested-name -> obj-name DCOLON >!
+nested-name-opt -> nested-name
+nested-name-opt -> 
+
+# object name
+name_1=	obj-name -> nested-name-opt obj-base-name
+name_2=	obj-name -> nested-name-opt obj-base-name LT >! block-opt 1 GT
+name_3=	obj-name -> nested-name TEMPLATE obj-base-name LT >! block-opt 1 GT
+
+# function name
+name_1: fun-name -> nested-name-opt fun-base-name
+name_2: fun-name -> nested-name-opt fun-base-name LT block-opt 1 GT
+
+# base name
+base_name_1= obj-base-name -> IDENT
+base_name_2= fun-base-name -> BITNOT IDENT
+base_name_3= fun-base-name -> OPERATOR oper
+base_name_4= fun-base-name -> OPERATOR abstract-decl >
+
+# operator
+oper_1= oper -> LPAREN RPAREN
+oper_2= oper -> LBRACK RBRACK
+oper_3= oper -> NEW LBRACK RBRACK
+oper_4= oper -> DELETE LBRACK RBRACK
+oper_5= oper -> token-oper
+
+token-oper -> AND
+token-oper -> ASSIGN
+token-oper -> BITAND
+token-oper -> BITAND_ASSIGN
+token-oper -> BITNOT
+token-oper -> BITOR
+token-oper -> BITOR_ASSIGN
+token-oper -> COMMA
+token-oper -> DEC
+token-oper -> DELETE
+token-oper -> DIVIDE
+token-oper -> DIVIDE_ASSIGN
+token-oper -> EQ
+token-oper -> GT
+token-oper -> GTEQ
+token-oper -> INC
+token-oper -> LSHIFT
+token-oper -> LSHIFT_ASSIGN
+token-oper -> LT
+token-oper -> LTEQ
+token-oper -> MINUS
+token-oper -> MINUS_ASSIGN
+token-oper -> MOD
+token-oper -> MOD_ASSIGN
+token-oper -> NEW
+token-oper -> NOT
+token-oper -> NOTEQ
+token-oper -> OR
+token-oper -> PLUS
+token-oper -> PLUS_ASSIGN
+token-oper -> PTR
+token-oper -> PTR_TIMES
+token-oper -> RSHIFT
+token-oper -> RSHIFT_ASSIGN
+token-oper -> TIMES
+token-oper -> TIMES_ASSIGN
+token-oper -> XOR
+token-oper -> XOR_ASSIGN
+
+#
+# object initializer
+#
+
+obj-init-opt -> obj-init
+obj-init-opt ->
+
+obj_init_1= obj-init -> ASSIGN block 3
+obj_init_2= obj-init -> DINIT LPAREN block 2 RPAREN
+obj_init_3= obj-init -> LBRACE block 7 RBRACE
+
+# can't use block here as already lexed token after LPAREN (in context of param-decl) and it'll never be a block
+#obj_init_3= obj-init -> LPAREN block 2 RPAREN 
+
+ExprList1= expr-list -> block 4
+ExprList2= expr-list -> expr-list COMMA block 4
+
+#expr_list_3= direct-expr-list -> LPAREN block 2 RPAREN
+#expr_list_2: direct-expr-list -> direct-expr-list COMMA block 4
+
+expr-list-opt ->
+ExprListOpt= expr-list-opt -> expr-list
+
+#
+# function declarator 
+#
+
+fun_dcl= fun-dcl -> fun-ptr-dcl pure-opt
+
+pure-opt -> pure
+pure-opt ->
+
+pure= pure -> ASSIGN ZERO
+
+ptr_dcl: fun-ptr-dcl -> ptr-oper fun-ptr-dcl
+fun-ptr-dcl -> fun-a-direct-dcl
+
+direct_dcl_4= fun-a-direct-dcl -> obj-dcl-id param-decl-1-body RPAREN cv-spec-seq-opt throw-spec-opt
+direct_dcl_4: fun-a-direct-dcl -> fun-dcl-id param-decl-1-body RPAREN cv-spec-seq-opt throw-spec-opt
+direct_dcl_1: fun-a-direct-dcl -> fun-a-direct-dcl param-decl-1-body RPAREN cv-spec-seq-opt throw-spec-opt
+direct_dcl_2: fun-a-direct-dcl -> fun-a-direct-dcl LBRACK block-opt 5 RBRACK
+direct_dcl_3: fun-a-direct-dcl -> LPAREN fun-ptr-dcl RPAREN
+
+# function id
+fun-dcl-id -> fun-id
+direct_dcl_3: fun-dcl-id -> LPAREN fun-dcl-id RPAREN
+id: fun-id -> fun-name
+
+#
+# functor declarator
+#
+
+fun_dcl: functor-dcl -> functor-ptr-dcl pure-opt
+
+ptr_dcl: functor-ptr-dcl -> ptr-oper functor-ptr-dcl
+functor-ptr-dcl -> functor-direct-dcl
+
+direct_dcl_5= functor-direct-dcl -> obj-dcl-id param-decl-1-body param-decl-2-body RPAREN cv-spec-seq-opt throw-spec-opt
+direct_dcl_1: functor-direct-dcl -> functor-direct-dcl param-decl-1-body RPAREN cv-spec-seq-opt throw-spec-opt
+direct_dcl_2: functor-direct-dcl -> functor-direct-dcl LBRACK block-opt 5 RBRACK
+direct_dcl_3: functor-direct-dcl -> LPAREN functor-dcl RPAREN
+
+#
+# simple declaration
+#
+simple-decl * -> simple-a-decl SEMI
+
+simple-a-decl -> simple-b-decl
+simple-a-decl -> simple-c-decl
+
+# object and function
+
+simple_decl1=	simple-b-decl -> nested-obj-decl obj-init-opt
+simple_decl2=	simple-b-decl -> nested-fun-decl
+
+nested_decl=	nested-obj-decl -> simple-b-decl COMMA obj-dcl
+nested_decl:	nested-fun-decl -> simple-b-decl COMMA fun-dcl
+
+		nested-obj-decl -> obj-decl
+		nested-fun-decl -> fun-decl
+
+# typedef
+
+simple_decl2:	simple-c-decl *< -> nested-tdef-decl
+nested_decl:	nested-tdef-decl -> simple-c-decl COMMA param-dcl
+		nested-tdef-decl -> tdef-decl
+
+################################################################################
+#
+# namespace
+#
+################################################################################
+
+namespace= namespace * -> open-namespace decl-seq-opt RBRACE
+open_namespace_1= open-namespace -> NAMESPACE obj-name LBRACE
+open_namespace_2= open-namespace -> NAMESPACE LBRACE
+
+################################################################################
+#
+# function definition
+#
+################################################################################
+
+# try obj-name as user-name before obj-id
+fun_def= fun-def * -> fun-decl * try-opt ctor-init-opt LBRACE block-opt 7 RBRACE handler-seq-opt
+
+# ctor init
+ctor-init-opt -> ctor-init
+ctor-init-opt -> 
+
+ctor_init= ctor-init -> COLON mbr-init-list
+mbr_init_list1= mbr-init-list -> mbr-init
+mbr_init_list2= mbr-init-list -> mbr-init-list COMMA mbr-init
+
+mbr_init1= mbr-init * -> obj-name LPAREN BLOCK 2 RPAREN
+mbr_init2= mbr-init * -> obj-name LBRACE BLOCK 7 RBRACE
+
+# handler
+try-opt -> TRY
+try-opt ->
+
+Seq= handler-seq-opt -> handler-seq
+handler-seq-opt ->
+
+Seq1= handler-seq -> handler
+Seq2= handler-seq -> handler-seq handler
+
+Handler= handler * -> CATCH LPAREN catch-decl RPAREN LBRACE block-opt 7 RBRACE
+
+CatchDecl1= catch-decl -> param-decl
+CatchDecl2= catch-decl -> ELLIPSE
+
+# class declaration
+class_decl= class-decl -> xEVS-decl-spec-seq SEMI
+
+# friend class decl
+friend_class_decl= friend-class-decl -> FEVS-decl-spec-seq SEMI
+
+# class definition
+class_def= class-def -> class-head <* LBRACE mbr-decl-seq-opt RBRACE semi-opt
+
+# class head
+class_head= class-head -> class-key obj-name base-clause-opt
+
+semi-opt ->
+semi-opt -> SEMI
+
+base-clause-opt -> base-clause
+base-clause-opt ->
+
+# base clause
+base_clause= base-clause -> COLON base-spec-list
+
+# base spec list
+base_spec_list1= base-spec-list -> base-spec
+base_spec_list2= base-spec-list -> base-spec-list COMMA base-spec
+
+# base spec
+base_spec1= base-spec * -> obj-name
+base_spec2= base-spec * -> VIRTUAL access-opt obj-name
+base_spec3= base-spec * -> access virtual-opt obj-name
+
+# access opt
+access-opt -> 
+access-opt -> access
+
+# access
+access -> PUBLIC
+access -> PROTECTED
+access -> PRIVATE
+
+# virtual opt
+virtual-opt -> VIRTUAL
+virtual-opt ->
+
+# mbr decl seq opt
+mbr-decl-seq-opt -> mbr-decl-seq
+mbr-decl-seq-opt ->
+
+mbr-decl-seq -> mbr-decl-seq mbr-decl
+mbr-decl-seq -> mbr-decl
+
+# mbr decl
+mbr-decl -> access-spec
+mbr-decl -> simple-decl
+mbr-decl -> fun-def semi-opt
+mbr-decl -> class-decl
+mbr-decl -> friend-class-decl
+mbr-decl -> class-def
+mbr-decl -> tmpl-decl
+mbr-decl -> enum-def
+mbr-decl -> lazy-class
+mbr-decl -> functor-def
+mbr-decl -> using-decl
+
+# access spec
+access_spec= access-spec * -> access COLON
+
+##
+## template declaration
+##
+
+# tmpl decl
+tmpl_decl= tmpl-decl * -> tmpl-spec tmpl-spec-decl
+# tmpl spec
+tmpl_spec= tmpl-spec * -> TEMPLATE LT tmpl-params GT
+
+# tmpl params
+tmpl_params= tmpl-params -> tmpl-param-list-opt
+
+# tmpl param list opt
+tmpl-param-list-opt -> tmpl-param-list
+tmpl-param-list-opt -> 
+
+# tmpl param list
+tmpl_param_list1= tmpl-param-list -> tmpl-param
+tmpl_param_list2= tmpl-param-list -> tmpl-param-list COMMA tmpl-param
+
+# tmpl param
+tmpl-param -> type-param
+tmpl-param -> tmpl-param-init-decl
+tmpl-param -> tmpl-tmpl-param
+
+# type param
+type_param1= type-param <* -> type-key ++ obj-name
+type_param2= type-param <* -> type-key obj-name ASSIGN abstract-decl
+
+# type key
+type-key -> CLASS
+type-key -> TYPENAME
+
+# tmpl tmpl param
+TmplTmplParam1= tmpl-tmpl-param <* -> TEMPLATE LT tmpl-params GT CLASS obj-name
+TmplTmplParam2= tmpl-tmpl-param <* -> TEMPLATE LT tmpl-params GT CLASS obj-name ASSIGN obj-name
+
+# tmpl spec decl
+tmpl-spec-decl -> class-def
+tmpl-spec-decl -> fun-def
+tmpl-spec-decl -> lazy-class
+tmpl-spec-decl -> functor-def
+
+#tmpl-spec-decl -> simple-decl
+#tmpl-spec-decl -> class-decl
+#tmpl-spec-decl -> friend-class-decl
+#tmpl-spec-decl -> tmpl-decl
+#tmpl-spec-decl -> lazy-ctor
+#tmpl-spec-decl -> functor-def
+#tmpl-spec-decl -> simple-functor-decl
+
+##
+## enum def
+##
+enum_def= enum-def -> ENUM obj-name-opt LBRACE enum-body-opt RBRACE semi-opt
+
+obj-name-opt -> obj-name
+obj-name-opt ->
+
+enum-body-opt -> enum-body
+enum-body-opt ->
+
+enum_body= enum-body -> enumtor-list comma-opt
+
+comma-opt -> COMMA
+comma-opt -> 
+
+enumtor_list1= enumtor-list -> enumtor-list COMMA enumtor
+enumtor_list2= enumtor-list -> enumtor
+
+# enumtor decl
+enumtor1= enumtor < * -> obj-name
+enumtor2= enumtor < * -> obj-name ASSIGN BLOCK 9
+
+#
+# lazy class
+#
+
+LazyClass= lazy-class -> lazy-class-head LBRACE mbr-decl-seq-opt RBRACE semi-opt
+
+LazyClassHead= lazy-class-head -> class-key obj-name param-decl-1-body RPAREN lazy-base-clause-opt
+
+lazy-base-clause-opt -> lazy-base-clause
+lazy-base-clause-opt ->
+
+BaseClause: lazy-base-clause -> COLON lazy-base-spec-list
+
+BaseSpecList1: lazy-base-spec-list -> lazy-base-spec
+BaseSpecList2: lazy-base-spec-list -> lazy-base-spec-list COMMA lazy-base-spec
+
+LazyBaseSpec: lazy-base-spec -> base-spec base-init-opt
+
+base-init-opt -> 
+base-init-opt -> base-init
+
+# only support parens in base spec init list as LBRACE conflicts with class body
+BaseInit: base-init -> LPAREN expr-list-opt RPAREN
+
+# functor def
+functor_def= functor-def -> functor-decl lazy-base-clause-opt try-opt LBRACE block-opt 7 RBRACE handler-seq-opt
+
+#
+# explicit template instantiation
+#
+
+TmplInst= tmpl-inst -> tmpl-inst-begin tmpl-inst-decl
+
+TmplInstBegin= tmpl-inst-begin -> TEMPLATE
+
+tmpl-inst-decl -> simple-decl
+tmpl-inst-decl -> class-decl
+
+#
+# using
+#
+
+# declaration
+UsingDecl= using-decl -> USING obj-name SEMI
+
+# directive
+UsingDir= using-dir -> USING NAMESPACE obj-name SEMI

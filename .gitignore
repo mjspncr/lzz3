@@ -27,3 +27,7 @@
 *.exe
 *.out
 *.app
+
+*.fsm
+*_nodes.lua
+*_states.txt

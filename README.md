@@ -1,1 +1,1 @@
-# lzz3
+# Lzz3 - Lazy C++ 3

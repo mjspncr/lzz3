@@ -4,3 +4,5 @@ OPTSUFFIX := _opt
 else
 DEBUGFLAG := -g
 endif
+# dynamic load lib
+DL := dl
