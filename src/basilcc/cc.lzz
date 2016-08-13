@@ -46,24 +46,23 @@ namespace basilcc
       return m_strings.insert (str).first->c_str ();
     }
 
-    // run CC, return number of conflicts, if no conflicts write nodes and serialize
-    int run (std::string const & states_filename, std::string const & nodes_filename, std::string const & fsm_filename)
+    // generate parser, print fsm, nodes and states file, return number of states and conflicts
+    IntPair run (std::string const & out_fsm, std::string const & out_nodes, std::string const & out_states)
+    //IntPair run (std::string const & states_filename, std::string const & nodes_filename, std::string const & fsm_filename)
     {
       freezeKeywords (* this);
       checkRules (* this);
       setFirst (* this);
       int num_conflicts = closure (* this);
-      if (! states_filename.empty ())
-      {
-        printStates (* this, 0, states_filename); 
-      }
+      printStates (* this, 0, out_states); 
+      // fsm and nodes only if no shift/reduce conflicts 
       if (num_conflicts == 0)
       {
         setGoto (* this);
-        printNodes (* this, nodes_filename);
-        serialize (* this, fsm_filename);
+        printNodes (* this, out_nodes);
+        serialize (* this, out_fsm);
       }
-      return num_conflicts;
+      return IntPair (int (getStates (* this).size ()), num_conflicts);
     }
 
   private:
@@ -104,6 +103,7 @@ using namespace std;
 #include <basilcc/table_number.h>
 #include <basilcc/table_ptr.h>
 #include <util/string_set.h>
+#include <util/int_pair.h>
 #include <assert.h>
 #include <string>
 #end
@@ -116,9 +116,11 @@ using namespace std;
 #include <basilcc/serialize.h>
 #include <basilcc/set_first.h>
 #include <basilcc/set_goto.h>
+#include <basilcc/state_api.h>
 #include <basilcc/symbol_api.h>
 #include <basilcc/table.h>
 #include <basilcc/util.h>
 #include <util/array_size.h>
 #include <algorithm>
+//#include <iostream>
 #end

@@ -1,19 +1,24 @@
 // bootstrap compiler
 void bootstrap (std::string const & scripts_dir)
 {
-  (Bootstrap (scripts_dir) ());
+  IntPair res = Bootstrap (scripts_dir) ();
+  cout << "bootstrapped rule parser: " << res.first << " states, " << res.second << " conflicts" << endl;
 }
 
 // compile basil
 void compileBasil (std::string const & scripts_dir)
 {
-  compile (scripts_dir, rule_lexer::token_numbers, rule_lexer::token_numbers_end, BASIL_RULES, BASIL_STATES, BASIL_NODES, BASIL_FSM);
+  using namespace rule_lexer;
+  IntPair res = compile (scripts_dir, token_numbers, token_numbers_end, BASIL_RULES, BASIL_STATES, BASIL_NODES, BASIL_FSM);
+  cout << "compiled rule parser: " << res.first << " states, " << res.second << " conflicts" << endl;
 }
 
 // compile lzz
 void compileLzz (std::string const & scripts_dir)
 {
-  compile (scripts_dir, cpp::token_numbers, cpp::token_numbers_end, LZZ_RULES, LZZ_STATES, LZZ_NODES, LZZ_FSM);
+  using namespace cpp; 
+  IntPair res = compile (scripts_dir, token_numbers, token_numbers_end, LZZ_RULES, LZZ_STATES, LZZ_NODES, LZZ_FSM);
+  cout << "compiled lzz parser: " << res.first << " states, " << res.second << " conflicts" << endl;
 }
 
 using namespace std;
@@ -30,15 +35,15 @@ namespace
     {
       basilcc::addTokens (cc, beg, end);
     }
-    void runcc (string const & states_filename, string const & nodes_filename, string const & fsm_filename)
+    IntPair runcc (string const & states_filename, string const & nodes_filename, string const & fsm_filename)
     {
-      cc.run (states_filename, nodes_filename, fsm_filename);
+      return cc.run (fsm_filename, nodes_filename, states_filename);
     }
     basilcc::CC cc;
   };
 
-  // bootstrap compiler
-  void Bootstrap (string const & scripts_dir;) : LuaEnv (scripts_dir), CCApp (L)
+  // bootstrap grammar parser
+  IntPair Bootstrap (string const & scripts_dir;) : LuaEnv (scripts_dir), CCApp (L)
   {
     addTokens (rule_lexer::token_numbers, rule_lexer::token_numbers_end);
     string boostrap_filename = path (BASIL_BOOTSTRAP);
@@ -48,11 +53,11 @@ namespace
       lua_pop (L, 1);
       ThrowException () << errmsg;
     }
-    runcc (path (BASIL_STATES), path (BASIL_NODES), path (BASIL_FSM));
+    return runcc (path (BASIL_STATES), path (BASIL_NODES), path (BASIL_FSM));
   }
 
-  // grammar compiler
-  void Compiler (string const & scripts_dir;
+  // compile grammar
+  IntPair Compiler (string const & scripts_dir;
       basilcc::TokenNumberPtr tokens_beg, basilcc::TokenNumberPtr tokens_end,
       char const * rules_filename, char const * states_filename, char const * nodes_filename, char const * fsm_filename)
     : basil::App (scripts_dir, BASIL_FSM, BASIL_APP), CCApp (L)
@@ -61,12 +66,16 @@ namespace
     rule_lexer::RuleLexer lexer (cc, path (rules_filename));
     Logger logger (cout);
     run (lexer, logger);
-    runcc (path (states_filename), path (nodes_filename), path (fsm_filename));
+    if (logger.hasError ())
+    {
+      throw Exception ("aborted");
+    }
+    return runcc (path (states_filename), path (nodes_filename), path (fsm_filename));
   }
-  inline void compile (string const & scripts_dir, basilcc::TokenNumberPtr tokens_beg, basilcc::TokenNumberPtr tokens_end,
+  inline IntPair compile (string const & scripts_dir, basilcc::TokenNumberPtr tokens_beg, basilcc::TokenNumberPtr tokens_end,
       char const * rules, char const *states, char const * nodes, char const * fsm)
   {
-    (Compiler (scripts_dir) (tokens_beg, tokens_end, rules, states, nodes, fsm));
+    return Compiler (scripts_dir) (tokens_beg, tokens_end, rules, states, nodes, fsm);
   }
 }
 

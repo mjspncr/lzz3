@@ -5,21 +5,13 @@ namespace basilcc
   // closure on all states, return number of conflicts
   int closure (CC & cc)
   {
-    // create start states
     createStartStates (cc);
-    cout << "computing states" << endl;
     StatePtrVector const & states = getStates (cc);
     int num_conflicts = 0;
-    for (int i = 0; i < int (states.size ()); ++ i)
+    for (unsigned i = 0; i < states.size (); ++ i)
     {
-      if (i % 40 == 0)
-      {
-        cout << i << ' ' << states.size () << endl;
-      }
       num_conflicts += states [i]->closure (cc);
     }
-    cout << states.size () << " states" << endl;
-    cout << num_conflicts << " conflicts" << endl;
     return num_conflicts;
   }
 }
@@ -99,6 +91,5 @@ namespace
 #include <basilcc/symbol.h>
 #include <basilcc/symbol_api.h>
 #include <algorithm>
-#include <iostream>
 #include <memory>
 #end

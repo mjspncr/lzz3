@@ -3,34 +3,33 @@ namespace config
   // print version to standard output
   void printVersion (std::ostream & os)
   {
-    os << version_text;
+    os << version << copyright;
     os.flush ();
   }
 
   // print help to standard output
   void printHelp (std::ostream & os)
   {
-    os << version_text;
-    os << usage_text;
+    os << version << usage << copyright;
     os.flush ();
   }
 }
 
 namespace
 {
-  char const version_text [] =
+  char const version [] =
   {
     "Lazy C++ " LZZ_VERSION
     "\n"
   };
 
-  char const usage_text [] =
+  char const usage [] =
   {
     "Usage: lzz [options] filenames ...\n"
     "options:\n"
-    " -z       Boostrap parser\n"
-    " -y       Compile parser grammar\n" 
-    " -g       Compile lzz grammar\n"
+    " -z       Boostrap rule parser\n"
+    " -y       Compile rule parser (only req if changed rule syntax)\n" 
+    " -g       Compile lzz parser\n"
     " -i       Output inline definitions to inline file\n"
     " -t       Output template definitions to template file\n"
     " -n       Output inline template definitions to template inline file\n"
@@ -68,10 +67,15 @@ namespace
     " -tr      Print parse trace\n"
     */
     "Options can also be specified in the environment variable LZZ_OPTIONS\n"
-    "To turn off a boolean option precede the option with '-no'\n"
+    /* no info yet on version 3
     "For further help, see http://www.lazycplusplus.com\n"
+    */
+  };
+
+  char const copyright [] =
+  {
     "Copyright (C) 2001-2016, Mike Spencer (mike@lazycplusplus.com)\n"
-    "Lua 5.3 Copyright (C) 1994-2016 Lua.org, PUC-Rio\n"
+    "Lua Copyright (C) 1994-2016 Lua.org, PUC-Rio\n"
   };
 }
 
