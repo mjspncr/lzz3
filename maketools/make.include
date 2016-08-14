@@ -55,7 +55,7 @@ CPPFLAGS  := $(DEFFLAGS) $(INCFLAGS) $(DEBUGFLAG) -Wno-deprecated -Wall
 OUTDIRS   := $(SRCDIR) $(OBJDIR)
 # binary
 ifdef BIN
-BINFILE   := $(BINDIR)/$(BIN)$(OPTSUFFIX)
+BINFILE   := $(BINDIR)/$(BIN)$(OPTSUFFIX)$(BINEXT)
 LIBFILES  := $(addprefix $(LIBDIR)/,$(LIBS:%=lib%$(OPTSUFFIX).a))
 LOADLIBES := -L$(LIBDIR) $(MORELIBDIRS:%=-L%)
 LDLIBS    := $(LIBS:%=-l%$(OPTSUFFIX)) $(MORELIBS:%=-l%)

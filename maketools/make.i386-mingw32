@@ -1,0 +1,12 @@
+CXX := /usr/local/mingw/bin/i386-mingw32-c++
+AR := /usr/local/mingw/bin/i386-mingw32-ar
+STRIP := /usr/local/mingw/bin/i386-mingw32-strip
+ifeq ($(BUILD),OPT)
+DEBUGFLAG := -O3
+OPTSUFFIX := _opt
+else
+DEBUGFLAG := -g
+endif
+CONFIGDEFS := WINDOWS WIN32
+DL :=
+BINEXT := .exe

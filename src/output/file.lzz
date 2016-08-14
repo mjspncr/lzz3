@@ -425,7 +425,6 @@ namespace
 #src
 #include <output/section.h>
 #include <util/file_op.h>
-#include <util/get_temp_file.h>
 #include <util/throw_exception.h>
 #include <algorithm>
 #include <functional>
