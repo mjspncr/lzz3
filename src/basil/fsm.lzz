@@ -1,6 +1,6 @@
 namespace basil
 {
-  // parser finate state machine, data and loader in FSMImpl
+  // parser finite state machine, data and loader in FSMImpl
   class FSM (std::string const & filename) : public FSMImpl (filename)
   {
   public:
