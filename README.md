@@ -1,18 +1,18 @@
 # Lazy C++
 
-Lazy C++ is C++ without header files. You just write definitions and the Lazy C++ compiler will generate your header and source files.
+Lazy C++ is C++ without header files. Write code in one file and the Lazy C++ compiler will generate your header and source files.
 
-Lazy C++ is written in Lazy C++, so just browse the source tree for examples.
+Just browse the source tree for examples. The Lazy C++ compiler is writen in Lazy C++ (and Lua)!
 
-Still some work to do on version 3, but at least it can build itself. Version 2 is available at <http://www.lazycplusplus.com>. You'll need use version 2 to bootstrap version 3.
+Still some work to do on version 3, but it can build itself. Version 2 is available at <http://www.lazycplusplus.com>. You'll need version 2 to bootstrap version 3.
 
-This version is only superficially similar to earlier versions. Under the hood it's different animal. Version 3 is designed to be extensible. It acheives this in two ways:
+Version 3 is designed to be extensible--it acheives this in two ways:
 
-1. The compiler (lzz) has a built-in parser generator. In fact, you need lzz to build the Lazy C++ parser! The Lazy C++ parser is loaded at runtime.
+1. The compiler, lzz, has a built-in parser generator. You'll use lzz to build the Lazy C++ parser. The parser FSM (Finite State Machine) is loaded at runtime.
 
 2. Semantic actions are coded in Lua. 
 
-So language support, excluding the C++ preprocessor, is a runtime exercise! The compiler proper (the C++ coded portion) is composed of the following parts:
+So language support is now a scripting exercise :) The compiler (the C++ portion) is composed of the following parts:
 
 1. C++ preprocessor
 2. Parser generator
@@ -21,9 +21,9 @@ So language support, excluding the C++ preprocessor, is a runtime exercise! The 
 5. Low level output handler
 6. Lua interpreter
 
-The parser generator produces a backtracking LR parser FSM (Finite State Machine). The FSM is interpreted by the parser runtime module.
+The parser generator produces a backtracking LR parser FSM.
 
-Bottom up parsers are very nice as they reduce to a series of tables, and tables can be directly loaded at runtime. Coupled with a scripting langage the semantics too can be interpreted at runtime. It is very easy to write semantic actions in Lua. See lzzscripts/lzz/nodes for the actions on Lazy C++ rule reductions.
+Bottom up parsers are very nice as they reduce to a series of tables that can be loaded at runtime. Coupled with a scripting langage, the semantics too can be interpreted at runtime. Lua is very well suited for this task. Check under lzzscripts/lzz to see the code.
 
 Lzz is a bit tricky to build. Here's what you need to do (on Linux):
 
