@@ -5,8 +5,8 @@
 local NameToString = {}
 
 -- return name as string
-local function nameToString (name)
-   return name:accept (NameToString)
+local function nameToString(name)
+   return name:accept(NameToString)
 end
 
 -- on qualified name

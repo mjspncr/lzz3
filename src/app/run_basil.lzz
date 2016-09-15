@@ -1,24 +1,27 @@
 // bootstrap compiler
 void bootstrap (std::string const & scripts_dir)
 {
+  cout << "bootstrapping grammar parser" << endl; 
   IntPair res = Bootstrap (scripts_dir) ();
-  cout << "bootstrapped rule parser: " << res.first << " states, " << res.second << " conflicts" << endl;
+  cout << res.first << " states, " << res.second << " conflicts" << endl;
 }
 
 // compile basil
 void compileBasil (std::string const & scripts_dir)
 {
   using namespace rule_lexer;
+  cout << "compiling grammar parser" << endl; 
   IntPair res = compile (scripts_dir, token_numbers, token_numbers_end, BASIL_RULES, BASIL_STATES, BASIL_NODES, BASIL_FSM);
-  cout << "compiled rule parser: " << res.first << " states, " << res.second << " conflicts" << endl;
+  cout << res.first << " states, " << res.second << " conflicts" << endl;
 }
 
 // compile lzz
 void compileLzz (std::string const & scripts_dir)
 {
-  using namespace cpp; 
+  using namespace cpp;
+  cout << "compiling Lzz parser" << endl; 
   IntPair res = compile (scripts_dir, token_numbers, token_numbers_end, LZZ_RULES, LZZ_STATES, LZZ_NODES, LZZ_FSM);
-  cout << "compiled lzz parser: " << res.first << " states, " << res.second << " conflicts" << endl;
+  cout << res.first << " states, " << res.second << " conflicts" << endl;
 }
 
 using namespace std;

@@ -9,31 +9,31 @@ local nodes               = require 'lzz_nodes'
 -----------------------------------------------------------------------------
 
 --
--- get params
+-- get array of params from param-decl-list
 --
 
 local GetParams = {}
 
 -- param-decl-1-list <* -> LPAREN param-init-decl
-function GetParams:onParamDeclList1 (node)
-   return {node:getParamInitDecl ()}
+function GetParams:onParamDeclList1(node)
+   return {node[2]}
 end
 -- param-decl-1-list -> param-decl-1-list COMMA param-init-decl
-function GetParams:onParamDeclList2 (node)
-   return append (node:getParamDecl1List ():accept (self), node:getParamInitDecl ())
+function GetParams:onParamDeclList2(node)
+   return append(node[1]:accept(self), node[3])
 end
 
 -- tmpl-param-list -> tmpl-param
-function GetParams:onTmplParamList1 (node)
-   return {node:getTmplParam ()}
+function GetParams:onTmplParamList1(node)
+   return {node[1]}
 end
 -- tmpl-param-list -> tmpl-param-list COMMA tmpl-param
-function GetParams:onTmplParamList2 (node)
-   return append (node:getTmplParamList ():accept (self), node:getTmplParam ())
+function GetParams:onTmplParamList2(node)
+   return append(node[1]:accept(self), node[3])
 end
 
-local function getParams (node)
-   return node:accept (GetParams)
+local function getParams(node)
+   return node:accept(GetParams)
 end
 
 --
@@ -41,16 +41,16 @@ end
 --
 
 -- param-init-decl <* -> param-decl
-function nodes.ParamDecl1:onNode ()
+function nodes.ParamDecl1:onNode()
    local dcl = self[1][2]
-   return getFuncParam (dcl)
+   return getFuncParam(dcl)
 end
 
 -- param-init-decl <* -> param-decl ASSIGN block 4
-function nodes.ParamDecl2:onNode ()
+function nodes.ParamDecl2:onNode()
    local dcl = self[1][2]
    dcl.default = self[3].lexeme
-   return getFuncParam (dcl)
+   return getFuncParam(dcl)
 end
 
 --
@@ -58,29 +58,29 @@ end
 --
 
 -- helper func
-local function onParamDeclBody (params, has_ellipse)
+local function onParamDeclBody(params, has_ellipse)
    params.has_ellipse = has_ellipse
    return params
 end
 
 -- param-decl-1-body -> param-decl-1-list ellipse-opt
-function nodes.ParamDeclBody1:onNode ()
-   return onParamDeclBody (getParams (self:getParamDecl1List ()), self:getEllipseOpt () ~= nil)
+function nodes.ParamDeclBody1:onNode()
+   return onParamDeclBody(getParams(self[1]), self[2] ~= nil)
 end
 
 -- param-decl-1-body -> param-decl-1-list COMMA ELLIPSE
-function nodes.ParamDeclBody2:onNode ()
-   return onParamDeclBody (getParams (self:getParamDecl1List ()), true)
+function nodes.ParamDeclBody2:onNode()
+   return onParamDeclBody(getParams(self[1]), true)
 end
 
 -- param-decl-1-body -> LPAREN ellipse-opt
-function nodes.ParamDeclBody3:onNode ()
-   return onParamDeclBody ({}, self:getEllipseOpt () ~= nil)
+function nodes.ParamDeclBody3:onNode()
+   return onParamDeclBody({}, self[2] ~= nil)
 end
 
 -- param-decl-1-body -> LPAREN VOID
-function nodes.ParamDeclBody4:onNode ()
-   return onParamDeclBody ({}, false)
+function nodes.ParamDeclBody4:onNode()
+   return onParamDeclBody({}, false)
 end
 
 --
@@ -88,31 +88,31 @@ end
 --
 
 -- tmpl-params -> tmpl-param-list-opt
-function nodes.TmplParams:onNode ()
-   local param_list = self:getTmplParamListOpt ()
+function nodes.TmplParams:onNode()
+   local param_list = self[1]
    if param_list then
-      return getParams (param_list)
+      return getParams(param_list)
    else
       return {}
    end
 end
 
 -- type-param <* -> type-key + obj-name
-function nodes.TypeParam1:onNode ()
-   return getTypeParam {name=self:getObjName ()}
+function nodes.TypeParam1:onNode()
+   return getTypeParam {name=self[2]}
 end
 
 -- type-param <* -> type-key + obj-name ASSIGN abstract-decl
-function nodes.TypeParam2:onNode ()
+function nodes.TypeParam2:onNode()
    return getTypeParam {name=self[2], default=self[4][2].tp}
 end
 
 -- tmpl-tmpl-param <* -> TEMPLATE LT tmpl-params GT CLASS obj-name
-function nodes.TmplTmplParam1:onNode ()
+function nodes.TmplTmplParam1:onNode()
    return getTmplParam {params=self[3], name=self[6]}
 end
 
 -- tmpl-tmpl-param <* -> TEMPLATE LT tmpl-params GT CLASS obj-name ASSIGN obj-name
-function nodes.TmplTmplParam2:onNode ()
+function nodes.TmplTmplParam2:onNode()
    return getTmplParam {params=self[3], name=self[6], default=self[8]}
 end

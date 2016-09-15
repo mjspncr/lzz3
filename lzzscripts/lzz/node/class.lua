@@ -18,16 +18,16 @@ local setAccess           = require 'lzz/scope/set_access'
 
 -- base-spec * -> obj-name
 function nodes.BaseSpec1:onNode()
-   return BaseSpec(false, false, self:getObjName())
+   return BaseSpec(false, false, self[1])
 end
 -- base-spec * -> VIRTUAL access-opt obj-name
 function nodes.BaseSpec2:onNode()
-   local access_opt = self:getAccessOpt()
-   return BaseSpec(access_opt and access_opt.lexeme, true, self:getObjName())
+   local access_opt = self[2]
+   return BaseSpec(access_opt and access_opt.lexeme, true, self[3])
 end
 -- base-spec * -> access virtual-opt obj-name
 function nodes.BaseSpec3:onNode()
-   return BaseSpec(self:getAccess().lexeme, self:getVirtualOpt() ~= nil, self:getObjName())
+   return BaseSpec(self[1].lexeme, self[2]~=nil, self[3])
 end
 -- lazy-base-spec -> base-spec base-init-opt
 function nodes.LazyBaseSpec:onNode()
@@ -47,22 +47,20 @@ end
 local GetBaseSpecs = {}
 -- base-spec-list -> base-spec
 function GetBaseSpecs:onBaseSpecList1(node)
-   return append({}, node:getBaseSpec())
+   return append({}, node[1])
 end
 -- base-spec-list -> base-spec-list COMMA base-spec
 function GetBaseSpecs:onBaseSpecList2(node)
-   return append(node:getBaseSpecList():accept(self), node:getBaseSpec())
+   return append(node[1]:accept(self), node[3])
 end
 -- base-clause -> COLON base-spec-list
 function nodes.BaseClause:onNode()
-   return self:getBaseSpecList():accept(GetBaseSpecs)
+   return self[2]:accept(GetBaseSpecs)
 end
 
 -- class-head -> class-key obj-name base-clause-opt
 function nodes.ClassHead:onNode(app)
-   local cls_def = {cls_key = self[1].lexeme,
-                    name = self[2],
-                    base_specs = self[3]}
+   local cls_def = {cls_key=self[1].lexeme, name=self[2], base_specs=self[3]}
    app:pushScope(defineClass(app:getCurrentScope(), cls_def))
 end
 
@@ -81,66 +79,42 @@ end
 
 -- access-spec * -> access COLON
 function nodes.AccessSpec:onNode(app)
-   local ACCESS = self[1]
-   setAccess(app:getCurrentScope(), ACCESS.loc, ACCESS.lexeme)
+   local access = self[1]
+   setAccess(app:getCurrentScope(), access.loc, access.lexeme)
 end
-
---
--- get elab type from xEVS-decl-spec-seq
---
-
-local GetElabType = {}
--- xxVx-decl-spec-seq -> cv-spec
-function GetElabType:onVDeclSpecSeq1(node)
-   lzz.error(node[1].loc, 'discarding cv specifier')
-end   
--- xxVx-decl-spec-seq -> xxVx-decl-spec-seq cv-spec
-function GetElabType:onVDeclSpecSeq2(node)
-   lzz.error(node[2].loc, 'discarding cv specifier')
-   return node[1]:accept(self)
-end   
--- xxxS-decl-spec-seq -> ftor-spec
-function GetElabType:onSDeclSpecSeq1(node)
-   lzz.error(node[1].loc, 'discarding function or storage specifier')
-end   
--- xxxS-decl-spec-seq -> xxxS-decl-spec-seq ftor-spec
-function GetElabType:onSDeclSpecSeq2(node)
-   lzz.error(node[2].loc, 'discarding function or storage specifier')
-   return node[1]:accept(self)
-end   
--- xEVS-decl-spec-seq -> elab-type >!
-function GetElabType:onEDeclSpecSeq1(node)
-   return node[1]
-end
--- xEVS-decl-spec-seq -> xxVS-decl-spec-seq elab-type
-function GetElabType:onEDeclSpecSeq2(node)
-   node[1]:accept(self)
-   return node[2]
-end
--- FxVS-decl-spec-seq -> FRIEND >!
-function GetElabType:onFDeclSpecSeq1(node)
-   -- do nothing
-end   
--- FxVS-decl-spec-seq -> xxVS-decl-spec-seq FRIEND
-function GetElabType:onFDeclSpecSeq2(node)
-   return node[1]:accept(self)
-end   
 
 --
 -- on class decl
 --
 
-local function onClassDecl(app, decl_spec_seq, is_frnd)
-   local elab_type = decl_spec_seq:accept(GetElabType)
-   declareClass(app:getCurrentScope(), elab_type[1].lexeme, elab_type[2], is_frnd)
+local GetElabType = class()
+-- xExx-decl-spec-seq -> elab-type
+function GetElabType:onEDeclSpecSeq1(node)
+   return self:result(node[1])
 end
--- class-decl -> xEVS-decl-spec-seq SEMI
+-- FExx-decl-spec-seq -> Fxxx-decl-spec-seq elab-type
+function GetElabType:onEDeclSpecSeq2(node)
+   node[1]:accept(self)
+   return self:result(node[2])
+end
+-- Fxxx-decl-spec-seq -> FRIEND
+function GetElabType:onFDeclSpecSeq1(node)
+   self.is_frnd = true
+end   
+-- FExx-decl-spec-seq -> xExx-decl-spec-seq FRIEND
+function GetElabType:onFDeclSpecSeq2(node)
+   self.is_frnd = true
+   return node[1]:accept(self)
+end
+-- return result
+function GetElabType:result(elab_type)
+   self.cls_key, self.name = table.unpack(elab_type)
+   return setmetatable(self, nil)
+end
+
+-- class-decl -> xExx-decl-spec-seq SEMI
 function nodes.ClassDecl:onNode(app)
-   onClassDecl(app, self[1])
-end
--- friend-class-decl -> FEVS-decl-spec-seq SEMI
-function nodes.FriendClassDecl:onNode(app)
-   onClassDecl(app, self[1], true)
+   declareClass(app:getScope(), self[1]:accept(GetElabType()))
 end
 
 --
@@ -181,11 +155,7 @@ end
 
 -- lazy-class-head -> class-key obj-name param-decl-1-body RPAREN lazy-base-clause-opt
 function nodes.LazyClassHead:onNode(app)
-   local cls_def = {
-      cls_key    = self[1].lexeme,
-      name       = self[2],
-      base_specs = self[5],
-   }
+   local cls_def = {cls_key=self[1].lexeme, name=self[2], base_specs=self[5]}
    app:pushScope(defineLazyClass(app:getScope(), cls_def, self[3]))
 end
 
