@@ -1,7 +1,10 @@
--- add entity to array and return entity
+-----------------------------------------------------------------------------
+-- add entity to container
+-----------------------------------------------------------------------------
 
-local function addEntity (array, entity)
-   table.insert (array, entity)
+-- and return entity
+local function addEntity(array, entity)
+   table.insert(array, entity)
    return entity
 end
 
