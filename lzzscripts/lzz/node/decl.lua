@@ -8,6 +8,7 @@ local FunctionType        = require 'lzz/type/function_type'
 local PointerToMemberType = require 'lzz/type/pointer_to_member_type'
 local PointerType         = require 'lzz/type/pointer_type'
 local ReferenceType       = require 'lzz/type/reference_type'
+local RvalueReferenceType = require 'lzz/type/rvalue_reference_type'
 local UserType            = require 'lzz/type/user_type'
 local append              = require 'util/append'
 local getFuncParamTypes   = require 'lzz/param/get_func_param_types'
@@ -125,6 +126,11 @@ end
 -- ptr-oper -> BITAND
 function GetPtrType:onPtrOper2(node)
    return ReferenceType(self.to_tp)
+end
+
+-- ptr-oper -> AND
+function GetPtrType:onPtrOper4(node)
+   return RvalueReferenceType(self.to_tp)
 end
 
 -- ptr-oper -> obj-name DCOLON TIMES cv-spec-seq-opt

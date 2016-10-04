@@ -20,6 +20,7 @@ IsTypeConst.onUserType = IsTypeConst.onBuiltinType
 function IsTypeConst:onReferenceType (type)
    return false
 end
+IsTypeConst.onRvalueReferenceType = IsTypeConst.onReferenceType
 IsTypeConst.onFunctionType = IsTypeConst.onReferenceType
 IsTypeConst.onArrayType = IsTypeConst.onReferenceType
 
