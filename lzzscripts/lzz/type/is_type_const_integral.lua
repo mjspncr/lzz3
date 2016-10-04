@@ -25,6 +25,7 @@ end
 IsTypeConstIntegral.onPointerType = no
 IsTypeConstIntegral.onPointerToMemberType = no
 IsTypeConstIntegral.onReferenceType = no
+IsTypeConstIntegral.onRvalueReferenceType = no
 IsTypeConstIntegral.onFunctionType = no
 IsTypeConstIntegral.onElabType = no
 IsTypeConstIntegral.onUserType = no

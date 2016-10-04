@@ -369,6 +369,7 @@ obj-b-dcl -> obj-b-direct-dcl
 
 ptr_oper_1: ptr-oper -> TIMES cv-spec-seq-opt
 ptr_oper_2: ptr-oper -> BITAND
+ptr_oper_4: ptr-oper -> AND # rvalue-reference
 ptr_oper_3: ptr-oper -> obj-name DCOLON TIMES cv-spec-seq-opt
 
 obj-a-direct-dcl -> obj-b-direct-dcl

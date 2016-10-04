@@ -75,6 +75,11 @@ function TypeToString:onReferenceType (tp)
    return self:helper2 (tp.to_tp, '&')
 end
 
+-- on rvalue reference
+function TypeToString:onRvalueReferenceType (tp)
+   return self:helper2 (tp.to_type, '&&')
+end
+
 -- on array
 function TypeToString:onArrayType (tp)
    return self:helper3 (tp.to_tp, '['..tp.arg..']')
