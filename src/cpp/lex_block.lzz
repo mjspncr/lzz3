@@ -199,13 +199,12 @@ namespace
         else
         {
           // check if special character
-          int number = 0; 
+          int number = 0;
           switch (ch)
           {
-            case '>':
             case '<':
             {
-              // make sure the token isn't left or right shift
+              // don't care about left shift
               if (lexer.peekChar (next_ch, 1) && next_ch == ch)
               {
                 lexer.nextChar (ch);
@@ -213,8 +212,14 @@ namespace
               }
               else
               {
-                number = (ch == '<') ? TOKEN_LT : TOKEN_GT;
+                number = TOKEN_LT;
               }
+              break;
+            }
+            case '>':
+            {
+              // here, where we care about >, we never want to treat >> as right shift 
+              number = TOKEN_GT;
               break;
             }
             case '(':
@@ -289,6 +294,10 @@ namespace
     int expr_nest = 0;
     // tmpl nest
     int tmpl_nest = 0;
+
+    // example
+    // vector<pair<int,double>> x;
+
     // true if end char
     bool isEndToken (int number)
     {
@@ -301,7 +310,7 @@ namespace
       {
         ++ expr_nest;
       }
-      else if (number == TOKEN_RPAREN)
+      else if (number == TOKEN_RPAREN && expr_nest > 0)
       {
         -- expr_nest;
       }
@@ -424,17 +433,27 @@ namespace
   {
   }
  
-  // block 8: tmpl param default arg 
-  struct LexBlock8 (int gt = TOKEN_GT) : LexBlock ()
+  // block 8: tmpl param default arg
+  struct LexBlock8 (int close_ch = TOKEN_GT) : LexBlock ()
   {
-    // expr nesting
+    // expr and template nesting -- assume < outside of parens is start of template arg
     int expr_nest = 0;
+    int tmpl_nest = 0;
+
+    // examples:
+    //   template <int t = X<Z<int>>::x>
+    //   class A { }
+    //
+    //   enum A
+    //   {
+    //     M = X<Z<int>>::M
+    //   }
 
     // true if end token
     bool isEndToken (int number)
     {
       bool result = false;
-      if (expr_nest == 0 && (number == gt || number == TOKEN_COMMA))
+      if (tmpl_nest == 0 && expr_nest == 0 && (number == close_ch || number == TOKEN_COMMA))
       {
         result = true;
       }
@@ -445,6 +464,17 @@ namespace
       else if (number == TOKEN_RPAREN && expr_nest > 0)
       {
         -- expr_nest;
+      }
+      else if (expr_nest == 0)
+      {
+        if (number == TOKEN_LT)
+        {
+          ++ tmpl_nest;
+        }
+        else if (number == TOKEN_GT)
+        {
+          -- tmpl_nest;
+        }
       }
       return result;
     }
