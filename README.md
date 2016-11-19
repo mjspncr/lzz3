@@ -8,7 +8,7 @@ Version 3 can build itself, though work is still in progress. Version 2 is avail
 
 The big feature in this version is extensibility. The Lazy C++ grammar and semantic actions are _not_ hardcoded. They can be extended without recompiling Lzz.
 
-Now you need mjspncr/basilcc to build the Lzz grammar. And of course you need Lzz to build basilcc :)
+Now you need mjspncr/basilcc to build the Lzz parser. And of course you need Lzz to build basilcc :)
 
 Here's how to build Lzz on Linux:
 
