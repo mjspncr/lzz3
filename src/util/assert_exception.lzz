@@ -3,16 +3,19 @@
 
 void throwAssertException (char const * exp, char const * file, int line)
 {
-  std::string path, name;
+  string path, name;
   file_op::getPathAndName (file, path, name);
-  ThrowException (name.c_str ()) << "line " << line << ": unexpected: " << exp;
+  throw runtime_error (Message ("%:%: unexpected %") << name << line << exp);
 }
 
+using namespace std;
+
 #hdr
-#define AssertException(exp) (void) ( (exp) || (throwAssertException (#exp, __FILE__, 0), 0) )
+#define AssertException(exp) (void) ( (exp) || (throwAssertException (#exp, __FILE__, __LINE__), 0) )
 #end
 
 #src
 #include <util/file_op.h>
-#include <util/throw_exception.h>
+#include <util/message.h>
+#include <stdexcept>
 #end

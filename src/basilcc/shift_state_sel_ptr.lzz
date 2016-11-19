@@ -1,4 +1,0 @@
-namespace basilcc
-{
-  typedef class ShiftStateSel * ShiftStateSelPtr;
-}

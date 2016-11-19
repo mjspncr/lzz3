@@ -1,14 +1,5 @@
 namespace config
 {
-  // bootstrap basil parser
-  BoolOption opt_bootstrap_basil;
-
-  // compile basil grammar
-  BoolOption opt_compile_basil;
-
-  // compile lzz grammar
-  BoolOption opt_compile_lzz;
-
   // -inl, create inline file
   BoolOption opt_inl _dinit (false);
 

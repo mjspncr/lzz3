@@ -1,11 +1,10 @@
 // output_lua.lzz
 //
 
-class Logger;
 class Output;
 
 // register output and logger functions in new table, return ref to table
-int registerOutput (lua_State * L, Output & output, Logger & logger)
+int registerOutput (lua_State * L, Output & output, basil::Logger & logger)
 {
   // metatable for FileSection
   luaL_newmetatable (L, META_FILE_SECTION);
@@ -20,6 +19,8 @@ int registerOutput (lua_State * L, Output & output, Logger & logger)
   return luaL_ref (L, LUA_REGISTRYINDEX);
 }
 
+using namespace basil;
+
 namespace
 {
   // warning
@@ -28,7 +29,7 @@ namespace
     Logger & logger = * static_cast <Logger *> (lua_touserdata (L, lua_upvalueindex (1)));
     Loc const & loc = checkLoc (L, 1);
     char const * msg = luaL_checkstring (L, 2);
-    logger.warning (loc) << msg << '\n';
+    logger.warning (Message (loc) << msg);
     return 0;
   }
 
@@ -38,7 +39,7 @@ namespace
     Logger & logger = * static_cast <Logger *> (lua_touserdata (L, lua_upvalueindex (1)));
     Loc const & loc = checkLoc (L, 1);
     char const * msg = luaL_checkstring (L, 2);
-    logger.error (loc) <<  msg << '\n';
+    logger.error (Message (loc) <<  msg);
     return 0;
   }
 
@@ -155,6 +156,7 @@ namespace
 }
 
 #hdr
+#include <basil/logger.h>
 #include <lua.hpp>
 #end
 
@@ -162,6 +164,6 @@ namespace
 #include <output/file.h>
 #include <output/output.h>
 #include <util/loc_lua.h>
-#include <util/logger.h>
+#include <util/message.h>
 #include <cstring>
 #end

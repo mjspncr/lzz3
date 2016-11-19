@@ -1,2 +1,2 @@
-SUBDIRS := util config basil basilcc output cpp app
+SUBDIRS := util config output cpp app
 include $(MAKETOOLS)/make.include

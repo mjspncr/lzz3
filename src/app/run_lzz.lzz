@@ -1,21 +1,24 @@
 // run lzz over all lzz files
 void runLzz (std::string const & scripts_dir, StringVector const & filenames)
 {
-  basil::App app (scripts_dir, LZZ_FSM, LZZ_APP);
+  LuaEnv env (scripts_dir);
+  basil::FSM fsm (env.path (LZZ_FSM), cpp::token_numbers, cpp::token_numbers_end);
+  StringIntVector const & keywords = fsm.getKeywords ();
+  basil::ParserApp app (env.L, fsm);
+  app.load (env.path (LZZ_APP));
   for (StringVectorConstIter i = filenames.begin (), endi = filenames.end (); i != endi; ++ i)
   {
     string const & filename (* i);
-    StringTable strings;
+    StringSet strings;
     Output output (filename);
     Logger logger (cout);
     try
     {
-      Lzz (app).run (strings, filename, output, logger);
+      Lzz (env.L).run (strings, app, keywords, filename, output, logger);
     }
-    // catch parse exceptions only
-    catch (ParseException const & e)
+    catch (ParseError const & e)
     {
-      logger.error (e.where (), e.what ());
+      logger.error (e.what ());
     }
     output.close (! logger.hasError ());
   }
@@ -27,27 +30,31 @@ namespace
 {
   struct Lzz
   {
-    Lzz (basil::App & app)
-      : app (app)
+    Lzz (lua_State * L)
+      : L (L)
     {}
     ~ Lzz ()
     {
-      lua_pushnil (app.L);
-      lua_setglobal (app.L, "lzz");
-      luaL_unref (app.L, LUA_REGISTRYINDEX, lzz_ref);
+      lua_pushnil (L);
+      lua_setglobal (L, "lzz");
+      luaL_unref (L, LUA_REGISTRYINDEX, lzz_ref);
     }
-    void run (StringTable & strings, string const & filename, Output & output, Logger & logger)
+    void run (StringSet & strings, basil::ParserApp & app, StringIntVector const & keywords,
+        string const & filename, Output & output, Logger & logger)
     {
-      lzz_ref = registerOutput (app.L, output, logger);
-      lua_rawgeti (app.L, LUA_REGISTRYINDEX, lzz_ref);
-      lua_setglobal (app.L, "lzz");
-      cpp::Session session (strings, app.getKeywords (), output, logger);
+      lzz_ref = registerOutput (L, output, logger);
+      lua_rawgeti (L, LUA_REGISTRYINDEX, lzz_ref);
+      lua_setglobal (L, "lzz");
+      cpp::Session session (strings, keywords, output, logger);
       cpp::Preprocessor preprocessor (session, filename);
       app.run (preprocessor, logger);
     }
-    basil::App & app;
+    lua_State * L;
     int lzz_ref;
   }
+
+  char const LZZ_APP [] = "lzz_app.lua";
+  char const LZZ_FSM [] = "lzz.fsm";
 }
 
 
@@ -56,14 +63,16 @@ namespace
 #end
 
 #src
-#include <app/filenames.h>
-#include <basil/app.h>
 #include <cpp/preprocessor.h>
 #include <cpp/session.h>
 #include <cpp/token_numbers.h>
 #include <output/output.h>
 #include <output/output_lua.h>
-#include <util/parse_exception.h>
-#include <util/string_table.h>
+#include <util/logger.h>
+#include <util/lua_env.h>
+#include <util/parse_error.h>
+#include <util/string_set.h>
+#include <basil/fsm.h>
+#include <basil/parser_app.h>
 #include <iostream>
 #end
