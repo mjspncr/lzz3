@@ -23,7 +23,7 @@ namespace
     {
       nextToken ();
       ValueType value = parseExpr ();
-      if (kind != EOT)
+      if (kind != TOKEN_EOT)
       {
         error ();
       }
@@ -40,7 +40,7 @@ namespace
     {
       if (beg == end)
       {
-        kind = EOT;
+        kind = TOKEN_EOT;
       }
       else
       {
@@ -324,7 +324,7 @@ namespace
           ValueType divisor = parseUnaryExpr ();
           if (divisor == 0)
           {
-            throw ParseException (op_loc, "divide by zero");
+            throw ParseError (op_loc, "divide by zero");
           }
           value = is_divide ? value / divisor : value % divisor;
         }
@@ -467,13 +467,13 @@ namespace
     // throw syntax error
     void error ()
     {
-      if (kind == EOT)
+      if (kind == TOKEN_EOT)
       {
-        throw ParseException (eol_loc, "unexpected end of expression");
+        throw ParseError (eol_loc, "unexpected end of expression");
       }
       else
       {
-        throw ParseException (token->getLoc (), Message ("syntax error before %") << token->getLexeme ());
+        throw ParseError (token->getLoc (), Message ("syntax error before %") << token->getLexeme ());
       }
     }
   }
@@ -494,6 +494,6 @@ namespace
 #include <cpp/token.h>
 #include <cpp/token_numbers.h>
 #include <util/message.h>
-#include <util/parse_exception.h>
+#include <util/parse_error.h>
 #include <stdlib.h>
 #end

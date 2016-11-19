@@ -41,7 +41,7 @@ function Lzz:popScope ()
   table.remove (self.scopes)
 end
 
--- finish
-function Lzz:onTree ()
+-- called when file parsed w/o errors
+function Lzz:finalize ()
    printNs (self:getCurrentScope ().ns)
 end

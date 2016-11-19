@@ -20,7 +20,7 @@ namespace cpp
 #undef LEX_BLOCK
       default:
       {
-        throw ParseException (Message ("% is not a supported lexical state") << lex_state);
+        throw ParseError (Message ("% is not a supported lexical state") << lex_state);
       }
     }
   }
@@ -82,7 +82,7 @@ namespace
           // error if lexing from file 
           if (lexer.fromFile ())
           {
-            throw ParseException (start_loc, "unexpected end of file in literal block");
+            throw ParseError (start_loc, "unexpected end of file in literal block");
           }
           // otherwise lexing BLOCK so must have found end
           found_end = true;
@@ -108,7 +108,7 @@ namespace
               // should not be end of file
               if (! lexer.nextChar (ch))
               {
-                throw ParseException (temp_loc, "unexpected end of file in C-style comment");
+                throw ParseError (temp_loc, "unexpected end of file in C-style comment");
               }
               ss << ch;
               if (ch == '*' && lexer.peekChar (next_ch) && next_ch == '/')
@@ -142,14 +142,14 @@ namespace
           // next character must not be a quote
           if (lexer.peekChar (ch) && ch == '\'')
           {
-            throw ParseException (temp_loc, "empty literal character");
+            throw ParseError (temp_loc, "empty literal character");
           }
           for (bool esc = false;;)
           {
             lexer.nextChar (ch);
             if (ch == '\n')
             {
-              throw ParseException (temp_loc, "newline in literal character");
+              throw ParseError (temp_loc, "newline in literal character");
             }
             ss << ch;
             if (esc)
@@ -179,7 +179,7 @@ namespace
             lexer.nextChar (ch);
             if (ch == '\n')
             {
-              throw ParseException (loc, "newline in literal string");
+              throw ParseError (loc, "newline in literal string");
             }
             ss << ch;
             if (esc)
@@ -499,7 +499,7 @@ namespace
 #include <cpp/preprocessor.h>
 #include <cpp/token.h>
 #include <cpp/token_numbers.h>
-#include <util/parse_exception.h>
+#include <util/parse_error.h>
 #include <util/message.h>
 #include <util/trim.h>
 #include <sstream>

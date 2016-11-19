@@ -8,7 +8,7 @@ namespace cpp
     char ch = * str ++;
     if (ch == 0)
     {
-      throw ParseException (loc, "empty literal character"); 
+      throw ParseError (loc, "empty literal character"); 
     }
     unsigned out_ch = ch;
     if (ch == '\\')
@@ -17,7 +17,7 @@ namespace cpp
       ch = * str ++;
       if (ch == 0)
       {
-        throw ParseException (loc, "missing escape character");
+        throw ParseError (loc, "missing escape character");
       }
       switch (ch)
       {
@@ -73,7 +73,7 @@ namespace cpp
           char out [128];
           if (readHexDigits (str, 128, out, & str) == 0)
           {
-            throw ParseException (loc, "missing hex digits"); 
+            throw ParseError (loc, "missing hex digits"); 
           }
           out_ch = strtoul (out, 0, 16);
           break;
@@ -105,7 +105,7 @@ namespace cpp
           char out [12];
           if (readHexDigits (str, num_digits, out, & str) != num_digits)
           {
-            throw ParseException (loc, "invalid universal character");
+            throw ParseError (loc, "invalid universal character");
           }
           else
           {
@@ -136,6 +136,6 @@ namespace cpp
 #include <cpp/read_hex_digits.h>
 #include <cpp/read_octal_digits.h>
 #include <cpp/session.h>
-#include <util/parse_exception.h>
+#include <util/parse_error.h>
 #include <stdlib.h>
 #end

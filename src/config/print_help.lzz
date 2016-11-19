@@ -27,9 +27,6 @@ namespace
   {
     "Usage: lzz [options] filenames ...\n"
     "options:\n"
-    " -z       Boostrap rule parser\n"
-    " -y       Compile rule parser (only req if changed rule syntax)\n" 
-    " -g       Compile lzz parser\n"
     " -i       Output inline definitions to inline file\n"
     " -t       Output template definitions to template file\n"
     " -n       Output inline template definitions to template inline file\n"

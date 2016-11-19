@@ -71,7 +71,7 @@ namespace cpp
         // save file position
         if (fgetpos (fp_, & file_pos_) != 0)
         {
-          throw ParseException (Message ("failed to get current file position: %") << filename_);
+          throw ParseError (Message ("failed to get current file position: %") << filename_);
         }
         fclose (fp_);
         state_ = FILE_CLOSED;
@@ -89,7 +89,7 @@ namespace cpp
           fp_ = fopen (filename_, "r");
           if (! fp_)
           {
-            throw ParseException (Message ("failed to open file: %") << filename_);
+            throw ParseError (Message ("failed to open file: %") << filename_);
           }
           // advance file pointer if closed
           if (state_ == FILE_CLOSED)
@@ -97,7 +97,7 @@ namespace cpp
             // set file position
             if (fsetpos (fp_, & file_pos_) != 0)
             {
-              throw ParseException (Message ("failed to set file position: %") << filename_);
+              throw ParseError (Message ("failed to set file position: %") << filename_);
             }
           }
         }
@@ -115,7 +115,7 @@ namespace cpp
           // otherwise make sure some characters were read
           if (num_read == 0)
           {
-            throw ParseException (Message ("failed to read file: %") << filename_);
+            throw ParseError (Message ("failed to read file: %") << filename_);
           }
           // file is now open
           state_ = FILE_OPEN;
@@ -181,5 +181,5 @@ namespace
 
 #src
 #include <util/message.h>
-#include <util/parse_exception.h>
+#include <util/parse_error.h>
 #end

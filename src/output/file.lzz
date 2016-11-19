@@ -149,7 +149,7 @@ public:
       }
       else
       {
-        ThrowException () << "failed to open " << m_fullname;
+        throw runtime_error (Message ("failed to read %") << m_fullname);
       }
     }
     if (write_file)
@@ -161,7 +161,7 @@ public:
       }
       else
       {
-        ThrowException () << "failed to open " << m_fullname;
+        throw runtime_error (Message ("failed to write %") << m_fullname);
       }
     }
   }
@@ -425,7 +425,8 @@ namespace
 #src
 #include <output/section.h>
 #include <util/file_op.h>
-#include <util/throw_exception.h>
+#include <util/message.h>
 #include <algorithm>
 #include <functional>
+#include <stdexcept>
 #end

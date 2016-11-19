@@ -2,7 +2,7 @@ namespace cpp
 {
   enum
   {
-    EOT = 0,
+    TOKEN_EOT = 0,
     TOKEN_LPAREN,
     TOKEN_RPAREN,
     TOKEN_ASSIGN,
@@ -72,8 +72,9 @@ namespace cpp
   };
 
   // numbers for parser
-  basilcc::TokenNumber const token_numbers [] =
+  basil::TokenNumber const token_numbers [] =
   {
+    { "EOT", TOKEN_EOT },
     { "LPAREN", TOKEN_LPAREN },
     { "RPAREN", TOKEN_RPAREN },
     { "ASSIGN", TOKEN_ASSIGN },
@@ -136,11 +137,11 @@ namespace cpp
     { "IDENT", TOKEN_IDENT },
     { "BLOCK", TOKEN_BLOCK },
   };
-  basilcc::TokenNumberPtr token_numbers_end = ARRAY_END (token_numbers);
+  basil::TokenNumberPtr token_numbers_end = ARRAY_END (token_numbers);
 }
 
 #hdr
-#include <basilcc/token_number.h>
+#include <basil/token_number.h>
 #end
 
 #src

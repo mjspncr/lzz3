@@ -39,7 +39,7 @@ else # no SUBDIRS
 # read platform specific defines
 include $(MAKETOOLS)/make.$(CONFIG)
 # vars
-BUILDDIR  := $(DEVDIR)/build.$(CONFIG)
+BUILDDIR  := $(ROOT)/build.$(CONFIG)
 SRCDIR    := $(BUILDDIR)/src/$(DIR)
 OBJDIR    := $(BUILDDIR)/obj/$(DIR)$(OPTSUFFIX)
 LIBDIR    := $(BUILDDIR)/lib

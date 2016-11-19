@@ -145,7 +145,7 @@ namespace cpp
               string const & macro_name = func_macro->getName ();
               if (num_args != num_params)
               {
-                throw ParseException (macro_loc, Message ("% arguments in macro, % expected") << num_args << num_params);
+                throw ParseError (macro_loc, Message ("% arguments in macro, % expected") << num_args << num_params);
               }
               TokenPtrVector rep_tokens;
               static_cast <FuncMacro const &> (* func_macro).getRepTokens (rep_tokens);
@@ -212,7 +212,7 @@ namespace cpp
       if (state == FUNC_ARG_STATE)
       {
         // eof in arg list, can't continue
-        throw ParseException (func_macro_token->getLoc (), "incomplete function macro call expression");
+        throw ParseError (func_macro_token->getLoc (), "incomplete function macro call expression");
       }
       if (state == MAYBE_FUNC_STATE)
       {
@@ -508,6 +508,6 @@ using namespace std;
 #include <cpp/token_numbers.h>
 #include <util/int_to_string.h>
 #include <util/message.h>
-#include <util/parse_exception.h>
+#include <util/parse_error.h>
 #include <algorithm>
 #end

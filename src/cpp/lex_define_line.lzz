@@ -89,7 +89,7 @@ namespace
     // read parameter, must not be end of line
     if (! lexer.getNextToken (loc, token))
     {
-      session.error (loc, "unexpected end of function macro parameter list"); 
+      session.error (loc, "unexpected end of function macro parameter list");
       return false;
     }
     if (token->getNumber () != TOKEN_RPAREN)
@@ -113,7 +113,7 @@ namespace
         string const & lexeme = token->getLexeme ();
         if (lexeme == "__VA_ARGS__")
         {
-          session.error (loc, "__VA_ARGS__ can not be a parameter name"); 
+          session.error (loc, "__VA_ARGS__ can not be a parameter name");
           discardRestOfLine (lexer);
           return false;
         }
@@ -126,7 +126,7 @@ namespace
         params.push_back (lexeme);
         if (! lexer.getNextToken (loc, token))
         {
-          session.error (loc, "unexpected end of function macro parameter list"); 
+          session.error (loc, "unexpected end of function macro parameter list");
           return false;
         }
         // expect comma or ellipse
@@ -142,19 +142,19 @@ namespace
         }
         if (! lexer.getNextToken (loc, token))
         {
-          session.error (loc, "unexpected end of function macro parameter list"); 
+          session.error (loc, "unexpected end of function macro parameter list");
           return false;
         }
       }
       // if var then last token was an ellipse so get next token
       if (var && ! lexer.getNextToken (loc, token))
       {
-        session.error (loc, "unexpected end of function macro parameter list"); 
+        session.error (loc, "unexpected end of function macro parameter list");
         return false;
       }
       if (token->getNumber () != TOKEN_RPAREN)
       {
-        session.error (loc, Message ("syntax error before %") << token->getLexeme ()); 
+        session.error (loc, Message ("syntax error before %") << token->getLexeme ());
         discardRestOfLine (lexer);
         return false;
       }

@@ -307,7 +307,7 @@ namespace cpp
                 case C_EOF:
                 {
                   lexeme = "end of file";
-                  token_number = EOT;
+                  token_number = TOKEN_EOT;
                   break;
                 }
                 // new line
@@ -321,7 +321,7 @@ namespace cpp
                 // nac
                 case C_NAC:
                 {
-                  throw ParseException (loc, "invalid character");
+                  throw ParseError (loc, "invalid character");
                 }
               }
               break;
@@ -1243,6 +1243,6 @@ namespace
 #include <cpp/session.h>
 #include <cpp/token.h>
 #include <cpp/token_numbers.h>
-#include <util/parse_exception.h>
+#include <util/parse_error.h>
 #include <stdio.h>
 #end

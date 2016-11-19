@@ -1,6 +1,8 @@
 DIR  := app
 BIN  := lzz3
-LIBS := cpp output basilcc basil config util
+LIBS := cpp output config util
 # DL defined in make.$CONFIG
-MORELIBS = lua $(DL)
+MORELIBS = basil$(OPTSUFFIX) lua $(DL)
+MORELIBDIRS = $(BASILLIBDIR)
+INCDIRS = $(BASILSRCDIR)
 include $(MAKETOOLS)/make.include

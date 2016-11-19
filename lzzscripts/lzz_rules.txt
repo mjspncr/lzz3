@@ -636,7 +636,7 @@ nested-tdef-decl -> tdef-decl
 #
 #================================================================================
 
-namespace= namespace * -> open-namespace decl-seq-opt RBRACE
+namespace: namespace * -> open-namespace decl-seq-opt RBRACE
 open_namespace_1: open-namespace -> NAMESPACE obj-name LBRACE
 open_namespace_2: open-namespace -> NAMESPACE LBRACE
 

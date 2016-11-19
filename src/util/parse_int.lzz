@@ -9,13 +9,11 @@ long int parseInt (std::string const & str)
   {
     if (str.empty ())
     {
-      throw Exception ("parseInt: string is empty");
+      throw runtime_error ("parseInt: string is empty");
     }
     else
     {
-      ostringstream ss;
-      ss << "parseInt: invalid integer: " << str;
-      throw Exception (ss.str ());
+      throw runtime_error (Message ("parseInt: invalid integer: %") << str);
     }
   }
   return value;
@@ -78,8 +76,9 @@ using namespace std;
 #end
 
 #src
-#include <util/exception.h>
+#include <util/message.h>
 #include <util/strip.h>
 #include <cstdlib>
 #include <sstream>
+#include <stdexcept>
 #end

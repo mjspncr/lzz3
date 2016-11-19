@@ -82,7 +82,7 @@ namespace cpp
       if (p == opers.end ())
       {
         // this shouldn't happen
-        throw ParseException (Message ("unexpected operator: %") << name); 
+        throw std::runtime_error (Message ("unexpected operator: %") << name); 
       }
       return p->second;
     }
@@ -101,5 +101,5 @@ using namespace std;
 #include <cpp/token_numbers.h>
 #include <util/array_size.h>
 #include <util/message.h>
-#include <util/parse_exception.h>
+#include <stdexcept>
 #end

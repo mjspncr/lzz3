@@ -38,7 +38,7 @@ namespace cpp
           }
           else
           {
-            throw ParseException (loc, Message ("invalid pp-number: %") << lexeme);
+            throw ParseError (loc, Message ("invalid pp-number: %") << lexeme);
           }
           break;
         }
@@ -95,7 +95,7 @@ namespace cpp
           }
           else
           {
-            throw ParseException (loc, "missing hex digit after 0x");
+            throw ParseError (loc, "missing hex digit after 0x");
           }
           break;
         }
@@ -324,7 +324,7 @@ namespace cpp
           else
           {
             // missing exponent, append 0 to make valid and continue
-            throw ParseException (loc, "missing exponent in floating point literal");
+            throw ParseError (loc, "missing exponent in floating point literal");
           }
           break;
         }
@@ -337,7 +337,7 @@ namespace cpp
           }
           else
           {
-            throw ParseException (loc, "missing exponent in floating point literal");
+            throw ParseError (loc, "missing exponent in floating point literal");
           }
           break;
         }
@@ -369,7 +369,7 @@ namespace cpp
         {
           if (! (ch >= '0' && ch <= '9'))
           {
-            throw ParseException (loc, "expect digit after '.'");
+            throw ParseError (loc, "expect digit after '.'");
           }
           state = S_FLOAT;
           break;
@@ -384,13 +384,13 @@ namespace cpp
 
     if (kind == TOKEN_LITERAL_INT && octal_error)
     {
-      throw ParseException (loc, Message ("octal literal has digit beyond radix: %") << lexeme);
+      throw ParseError (loc, Message ("octal literal has digit beyond radix: %") << lexeme);
     }
 
     // any chars remaining?
     if (* s != 0)
     {
-      throw ParseException (loc, Message ("extra characters following pp-number: %") << s);
+      throw ParseError (loc, Message ("extra characters following pp-number: %") << s);
     }
 
     // and set it's real kind 
@@ -470,6 +470,6 @@ namespace
 #include <cpp/token.h>
 #include <cpp/token_numbers.h>
 #include <util/message.h>
-#include <util/parse_exception.h>
+#include <util/parse_error.h>
 #include <cassert>
 #end

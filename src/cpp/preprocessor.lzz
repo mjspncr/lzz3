@@ -82,12 +82,12 @@ namespace cpp
           while (! fs.lexer.getNextToken (token)) {}
           // check end of file
           int number = token->getNumber ();
-          if (number == EOT)
+          if (number == TOKEN_EOT)
           {
             // should be outside any #if blocks
             if (is.ss != IFS_NONE)
             {
-              throw ParseException (is.loc, "end of file before matching #endif");
+              throw ParseError (is.loc, "end of file before matching #endif");
             }
             fs_stack.pop_back ();
             if (fs_stack.empty ())
@@ -304,7 +304,7 @@ namespace cpp
       string filename;
       if (! findIncludeFile (name_loc.getFullname (), name, is_system, filename))
       {
-        throw ParseException (name_loc, Message ("file not found: %") << name);
+        throw ParseError (name_loc, Message ("file not found: %") << name);
       }
       char const * fullname = session.intern (file_op::realPath (filename));
       if (! (hasPragmaOnce (fullname)))
@@ -407,7 +407,7 @@ namespace cpp
       }
       if (is.ss != IFS_IF)
       {
-        session.error (dir_loc, "#else without preceeding #if");
+        session.error (dir_loc, Message ("#else without preceeding #if"));
         return;
       }
       // if waiting then if state is live, otherwise off
@@ -492,7 +492,7 @@ namespace cpp
       fs.lexer.readRestOfLine (str);
       if (is.rs == IFR_ON)
       {
-        throw ParseException (dir_loc, str);
+        throw ParseError (dir_loc, str);
       }
     }
 
@@ -513,7 +513,7 @@ namespace cpp
           has_lzz = true;
           if (++ beg == end)
           {
-            throw ParseException (dir_loc, "missing lzz pragma");
+            throw ParseError (dir_loc, "missing lzz pragma");
           }
         }
         string const & name = (* beg ++)->getLexeme ();
@@ -531,11 +531,11 @@ namespace cpp
         }
         else if (has_lzz)
         {
-          throw ParseException (dir_loc, Message ("pragma % not supported") << name);
+          throw ParseError (dir_loc, Message ("pragma % not supported") << name);
         }
         if (beg != end)
         {
-          session.warning (dir_loc, "extra characters after #pragma");
+          session.warning (Message (dir_loc, "extra characters after #pragma"));
         }
       }
     }
@@ -693,7 +693,7 @@ namespace
     {
       if (live)
       {
-        session.error   (dir_loc, "missing characters after #if");
+        session.error (dir_loc, "missing characters after #if");
       }
       else
       {
@@ -907,7 +907,7 @@ namespace
 #include <output/output.h>
 #include <util/file_op.h>
 #include <util/message.h>
-#include <util/parse_exception.h>
+#include <util/parse_error.h>
 #include <util/parse_yes_no.h>
 #include <util/string_icompare.h>
 #include <util/trim.h>

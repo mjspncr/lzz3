@@ -92,69 +92,6 @@ public:
     m_use_tpl = true;
   }
 
-  // where needed?
-#if 0
-  // true if has hdr file
-  bool hasHdrFile (FilePtr & file) const
-  {
-    bool result = false;
-    if (m_hdr_file.isSet ())
-    {
-      file = m_hdr_file;
-      result = true;
-    }
-    return result;
-  }
-
-  // true if has src file
-  bool hasSrcFile (FilePtr & file) const
-  {
-    bool result = false;
-    if (m_src_file.isSet ())
-    {
-      file = m_src_file;
-      result = true;
-    }
-    return result;
-  }
-
-  // true if has inl file
-  bool hasInlFile (FilePtr & file) const
-  {
-    bool result = false;
-    if (m_inl_file.isSet ())
-    {
-      file = m_inl_file;
-      result = true;
-    }
-    return result;
-  }
-
-  // true if has tpl file
-  bool hasTplFile (FilePtr & file) const
-  {
-    bool result = false;
-    if (m_tpl_file.isSet ())
-    {
-      file = m_tpl_file;
-      result = true;
-    }
-    return result;
-  }
-
-  // true if has tnl file
-  bool hasTnlFile (FilePtr & file) const
-  {
-    bool result = false;
-    if (m_tnl_file.isSet ())
-    {
-      file = m_tnl_file;
-      result = true;
-    }
-    return result;
-  }
-#endif
-
 private:
   // create file
   FilePtr createFile (config::StringOption const & opt_ext, config::BoolOption const & opt_line, config::BoolOption const & opt_smart_write)
@@ -538,17 +475,15 @@ namespace
 #hdr
 #include <config/option_fwd.h>
 #include <output/file_ptr.h>
-#include <util/loc.h>
 #include <string>
-#include <iostream>
 #end
 
 #src
 #include <config/options.h>
 #include <output/file.h>
 #include <util/file_op.h>
-#include <util/loc_to_string.h>
-#include <cstring>
 #include <cassert>
 #include <cctype>
+#include <cstring>
+#include <iostream>
 #end

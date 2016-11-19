@@ -28,9 +28,6 @@ namespace
   // option records
   OptionRec option_rec_set [] =
   {
-    { "z", 0, & opt_bootstrap_basil },
-    { "y", 0, & opt_compile_basil },
-    { "g", 0, & opt_compile_lzz },
     { "i", "inl", & opt_inl },
     { "t", "tpl", & opt_tpl },
     { "n", "tnl", & opt_tnl },
@@ -113,7 +110,7 @@ namespace
         ++ opt;
         if (opt [0] == '\0' || opt [0] == ' ')
         {
-          ThrowException () << "option expected after dash";
+          throw runtime_error ("option expected after dash");
         }
       }
       // check if single letter option
@@ -126,7 +123,7 @@ namespace
         Option * option = getOption (opt1);
         if (! option)
         {
-          ThrowException () << "invalid option: " << opt1;
+          throw runtime_error (Message ("invalid option: % ") << opt1);
         }
         option->setValue (opt + 1);
       }
@@ -143,7 +140,7 @@ namespace
         Option * option = getOption (opt);
         if (! option)
         {
-          ThrowException () << "invalid option: " << opt;
+          throw runtime_error (Message ("invalid option: % ") << opt);
         }
         if (option->isBoolOption ())
         {
@@ -152,14 +149,14 @@ namespace
         }
         else if (has_no)
         {
-          ThrowException () << "option cannot take a 'no' prefix: " << opt;
+          throw runtime_error (Message ("option cannot take a 'no' prefix: %") << opt);
         }
         else
         {
           string value = getNextWord (skipWs (str_beg, str_end, ws), str_end, ws, str_beg);
           if (value.empty ())
           {
-            ThrowException () << "value expected after option " << opt;
+            throw runtime_error (Message ("value expected after option %") << opt);
           }
           option->setValue (value);
         }
@@ -195,7 +192,7 @@ namespace
         // check if has opt
         if (* opt == '\0')
         {
-          ThrowException () << "option expected after '-'";
+          throw runtime_error ("option expected after '-'");
         }
         // check if single letter option, eg: -D or -I
         if (isupper (opt [0]) && opt [1] != '\0')
@@ -207,7 +204,7 @@ namespace
           Option * option = getOption (opt1);
           if (! option)
           {
-            ThrowException () << opt1 << " is not a valid option";
+            throw runtime_error (Message ("% is not a valid option") << opt1);;
           }
           option->setValue (opt + 1);
         }
@@ -224,7 +221,7 @@ namespace
           Option * option = getOption (opt);
           if (! option)
           {
-            ThrowException () << opt << " is not a valid option";
+            throw runtime_error (Message ("% is not a valid option") << opt);
           }
           // bool option has no value
           if (option->isBoolOption ())
@@ -237,11 +234,11 @@ namespace
           {
             if (has_no)
             {
-              ThrowException () << opt << " is not a yes/no option";
+              throw runtime_error (Message ("% is not a yes/no option") << opt);
             }
             if (i + 1 == argc)
             {
-              ThrowException () << "valid expected after option " << opt;
+              throw runtime_error (Message ("valid expected after option %") << opt);
             }
             char const * value = argv [++ i];
             option->setValue (value);
@@ -263,7 +260,8 @@ namespace
 #include <util/file_op.h>
 #include <util/get_env.h>
 #include <util/get_next_word.h>
+#include <util/message.h>
 #include <util/skip_ws.h>
-#include <util/throw_exception.h>
-#include <string.h>
+#include <cstring>
+#include <stdexcept>
 #end

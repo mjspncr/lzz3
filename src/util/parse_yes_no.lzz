@@ -29,7 +29,7 @@ bool parseYesNo (char const * context, std::string const & str)
   }
   else if (! isNo (str))
   {
-    ThrowException (context) << '\'' << str << "' is not a yes/no string";
+    throw runtime_error (Message ("'%' is not a yes/no string") << str);
   }
   return res;
 }
@@ -68,5 +68,6 @@ using namespace std;
 
 #src
 #include <util/down_case.h>
-#include <util/throw_exception.h>
+#include <util/message.h>
+#include <stdexcept>
 #end

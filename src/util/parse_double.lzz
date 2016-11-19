@@ -9,13 +9,11 @@ double parseDouble (std::string const & str)
   {
     if (str.empty ())
     {
-      throw Exception ("parseDouble: string is empty");
+      throw runtime_error ("parseDouble: string is empty");
     }
     else
     {
-      ostringstream ss;
-      ss << "parseDouble: invalid double: " << str;
-      throw Exception (ss.str ());
+      throw runtime_error (Message ("parseDouble: invalid double: %") << str);
     }
   }
   return value;
@@ -45,7 +43,8 @@ using namespace std;
 #end
 
 #src
-#include <util/exception.h>
+#include <util/message.h>
 #include <cstdlib>
 #include <sstream>
+#include <stdexcept>
 #end
