@@ -1,3 +1,5 @@
+typedef std::string::const_iterator StringConstIter;
+
 // skip ws, return iterator to end of white space
 StringConstIter skipWs (StringConstIter str_beg, StringConstIter str_end, char const * ws)
 {
@@ -18,7 +20,7 @@ StringConstIter skipWs (StringConstIter str_beg, StringConstIter str_end)
 using namespace std;
 
 #hdr
-#include <util/string.h>
+#include <string>
 #end
 
 #src

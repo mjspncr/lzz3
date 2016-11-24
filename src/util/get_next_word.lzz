@@ -1,3 +1,5 @@
+typedef std::string::const_iterator StringConstIter;
+
 // get next word, return iterator to end of word
 StringConstIter getNextWord (StringConstIter str_beg, StringConstIter str_end, char const * end_chars)
 {
@@ -14,11 +16,13 @@ StringConstIter getNextWord (StringConstIter str_beg, StringConstIter str_end, c
 std::string getNextWord (StringConstIter str_beg, StringConstIter str_end, char const * end_chars, StringConstIter & word_end)
 {
   word_end = getNextWord (str_beg, str_end, end_chars);
-  return String (str_beg, word_end);
+  return std::string (str_beg, word_end);
 }
 
+using namespace std;
+
 #hdr
-#include <util/string.h>
+#include <string>
 #end
 
 #src

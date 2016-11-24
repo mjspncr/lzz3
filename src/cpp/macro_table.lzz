@@ -158,7 +158,6 @@ using namespace std;
 #hdr
 #include <cpp/session_fwd.h>
 #include <cpp/string_macro_ptr_map.h>
-#include <util/string.h>
 #end
 
 #src
