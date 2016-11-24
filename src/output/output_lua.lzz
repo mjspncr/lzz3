@@ -2,9 +2,10 @@
 //
 
 class Output;
+class ErrorSink;
 
 // register output and logger functions in new table, return ref to table
-int registerOutput (lua_State * L, Output & output, basil::Logger & logger)
+int registerOutput (lua_State * L, Output & output, ErrorSink & error_sink)
 {
   // metatable for FileSection
   luaL_newmetatable (L, META_FILE_SECTION);
@@ -12,7 +13,7 @@ int registerOutput (lua_State * L, Output & output, basil::Logger & logger)
   lua_setfield (L, -1, "__index");
   // lzz functions
   lua_newtable (L);
-  lua_pushlightuserdata (L, & logger);
+  lua_pushlightuserdata (L, & error_sink);
   luaL_setfuncs (L, logger_fns, 1);
   lua_pushlightuserdata (L, & output);
   luaL_setfuncs (L, output_fns, 1);
@@ -26,20 +27,20 @@ namespace
   // warning
   int lzz_warning (lua_State * L)
   {
-    Logger & logger = * static_cast <Logger *> (lua_touserdata (L, lua_upvalueindex (1)));
+    ErrorSink & sink = * static_cast <ErrorSink *> (lua_touserdata (L, lua_upvalueindex (1)));
     Loc const & loc = checkLoc (L, 1);
     char const * msg = luaL_checkstring (L, 2);
-    logger.warning (Message (loc) << msg);
+    sink.warning (loc, msg);
     return 0;
   }
 
   // error
   int lzz_error (lua_State * L)
   {
-    Logger & logger = * static_cast <Logger *> (lua_touserdata (L, lua_upvalueindex (1)));
+    ErrorSink & sink = * static_cast <ErrorSink *> (lua_touserdata (L, lua_upvalueindex (1)));
     Loc const & loc = checkLoc (L, 1);
     char const * msg = luaL_checkstring (L, 2);
-    logger.error (Message (loc) <<  msg);
+    sink.error (loc, msg);
     return 0;
   }
 
@@ -156,14 +157,13 @@ namespace
 }
 
 #hdr
-#include <basil/logger.h>
 #include <lua.hpp>
 #end
 
 #src
 #include <output/file.h>
 #include <output/output.h>
+#include <util/error_sink.h>
 #include <util/loc_lua.h>
-#include <util/message.h>
 #include <cstring>
 #end

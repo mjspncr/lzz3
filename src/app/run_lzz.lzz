@@ -1,27 +1,29 @@
 // run lzz over all lzz files
-void runLzz (std::string const & scripts_dir, StringVector const & filenames)
+int runLzz (std::string const & scripts_dir, StringVector const & filenames)
 {
   LuaEnv env (scripts_dir);
-  basil::FSM fsm (env.path (LZZ_FSM), cpp::token_numbers, cpp::token_numbers_end);
-  StringIntVector const & keywords = fsm.getKeywords ();
-  basil::ParserApp app (env.L, fsm);
-  app.load (env.path (LZZ_APP));
+  lua_State * L = env.L;
+  basil::Engine engine (L, env.path (LZZ_FSM), cpp::token_numbers, cpp::token_numbers_end, env.path (LZZ_APP));
+  StringIntVector const & keywords = engine.getKeywords ();
+  int rc = 0;
   for (StringVectorConstIter i = filenames.begin (), endi = filenames.end (); i != endi; ++ i)
   {
     string const & filename (* i);
     StringSet strings;
     Output output (filename);
-    Logger logger (cout);
+    ErrorSink error_sink (cout);
     try
     {
-      Lzz (env.L).run (strings, app, keywords, filename, output, logger);
+      Lzz (L).run (strings, engine, keywords, filename, output, error_sink);
     }
     catch (ParseError const & e)
     {
-      logger.error (e.what ());
+      error_sink.error (e.what ());
+      rc = 1;
     }
-    output.close (! logger.hasError ());
+    output.close (! error_sink.has_error);
   }
+  return rc;
 }
 
 using namespace std;
@@ -39,15 +41,20 @@ namespace
       lua_setglobal (L, "lzz");
       luaL_unref (L, LUA_REGISTRYINDEX, lzz_ref);
     }
-    void run (StringSet & strings, basil::ParserApp & app, StringIntVector const & keywords,
-        string const & filename, Output & output, Logger & logger)
+    void run (StringSet & strings, basil::Engine & engine, StringIntVector const & keywords,
+        string const & filename, Output & output, ErrorSink & error_sink)
     {
-      lzz_ref = registerOutput (L, output, logger);
+      lzz_ref = registerOutput (L, output, error_sink);
       lua_rawgeti (L, LUA_REGISTRYINDEX, lzz_ref);
       lua_setglobal (L, "lzz");
-      cpp::Session session (strings, keywords, output, logger);
+      cpp::Session session (strings, keywords, output, error_sink);
       cpp::Preprocessor preprocessor (session, filename);
-      app.run (preprocessor, logger);
+      basil::App app (engine);
+      app.parse (preprocessor, error_sink);
+      if (! error_sink.has_error)
+      {
+        app.finalize ();
+      }
     }
     lua_State * L;
     int lzz_ref;
@@ -68,11 +75,12 @@ namespace
 #include <cpp/token_numbers.h>
 #include <output/output.h>
 #include <output/output_lua.h>
-#include <util/logger.h>
+#include <util/error_sink.h>
 #include <util/lua_env.h>
 #include <util/parse_error.h>
 #include <util/string_set.h>
+#include <basil/app.h>
+#include <basil/engine.h>
 #include <basil/fsm.h>
-#include <basil/parser_app.h>
 #include <iostream>
 #end

@@ -475,6 +475,7 @@ namespace
 #hdr
 #include <config/option_fwd.h>
 #include <output/file_ptr.h>
+#include <basil/error_stream.h>
 #include <string>
 #end
 

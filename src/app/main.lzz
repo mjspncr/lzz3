@@ -1,5 +1,6 @@
 int main (int argc, char ** argv)
 {
+  int rc = 0;
   try
   {
     StringVector filenames;
@@ -26,22 +27,23 @@ int main (int argc, char ** argv)
     {
       throw runtime_error (Message ("% does not exist") << scripts_dir);
     }
-    if (! filenames.empty ())
+    if (filenames.empty ())
     {
-      runLzz (scripts_dir, filenames);
+      throw runtime_error ("missing filenames");
     }
+    rc = runLzz (scripts_dir, filenames);
   }
   catch (exception const & e)
   {
     cout << e.what () << endl;
-    return 1;
+    rc = 1;
   }
   catch (...)
   {
     cout << "unknown exception" << endl;
-    return 1;
+    rc = 1;
   }
-  return 0;
+  return rc;
 }
 
 using namespace std;

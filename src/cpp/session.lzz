@@ -1,12 +1,13 @@
 class Output;
+class ErrorSink;
 
 namespace cpp
 {
   class Session
   {
   public:
-    Session (StringSet & strings, StringIntVector const & keywords, Output & output, Logger & logger)
-      : m_strings (strings), m_keywords (keywords), m_output (output), m_logger (logger) 
+    Session (StringSet & strings, StringIntVector const & keywords, Output & output, ErrorSink & error_sink)
+      : m_strings (strings), m_keywords (keywords), m_output (output), m_error_sink (error_sink)
     {
       m_macro_table.init (* this); 
     }
@@ -33,22 +34,22 @@ namespace cpp
       return res;
     }
 
-    // pass warning and error messages through to logger
+    // pass warning and error messages through to error sink
     void warning (std::string const & msg) const
     {
-      m_logger.warning (msg);
+      m_error_sink.warning (msg);
     }
     void warning (Loc const & loc, std::string const & msg) const
     {
-      m_logger.warning (loc, msg);
+      m_error_sink.warning (loc, msg);
     }
     void error (std::string const & msg) const
     {
-      m_logger.error (msg);
+      m_error_sink.error (msg);
     }
     void error (Loc const & loc, std::string const & msg) const
     {
-      m_logger.error (loc, msg);
+      m_error_sink.error (loc, msg);
     }
 
     // print (#hdr, #src, etc) block to file
@@ -84,7 +85,7 @@ namespace cpp
     // preprocessor keywords
     KeywordTable m_keyword_table;
     Output & m_output;
-    Logger & m_logger;
+    ErrorSink & m_error_sink;
   };
 }
 
@@ -98,12 +99,12 @@ using namespace std;
 #include <util/loc.h>
 #include <util/string_int_vector.h>
 #include <util/string_set.h>
-#include <util/logger.h>
 #include <iosfwd>
 #end
 
 #src
 #include <output/output.h>
+#include <util/error_sink.h>
 #include <algorithm>
 #include <iostream>
 #end

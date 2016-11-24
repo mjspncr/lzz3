@@ -1,9 +1,0 @@
-// logger.lzz
-
-#hdr
-#include <basil/logger.h>
-using basil::Logger;
-#end
-
-#src
-#end
