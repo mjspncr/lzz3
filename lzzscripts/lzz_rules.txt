@@ -4,55 +4,6 @@
 #
 #================================================================================
 
-%keyword AUTO      "auto"
-%keyword BOOL      "bool"
-%keyword CATCH     "catch"
-%keyword CHAR      "char"
-%keyword CLASS     "class"
-%keyword CONST     "const"
-%keyword DELETE    "delete"
-%keyword DINIT     "_dinit"
-%keyword DLL_API   "dll_api"
-%keyword DOUBLE    "double"
-%keyword ENUM      "enum"
-%keyword EXPLICIT  "explicit"
-%keyword EXTERN    "extern"
-%keyword FLOAT     "float"
-%keyword FRIEND    "friend"
-%keyword INLINE    "inline"
-%keyword INT       "int"
-%keyword LONG      "long"
-%keyword MUTABLE   "mutable"
-%keyword NAMESPACE "namespace"
-%keyword NEW       "new"
-%keyword OPERATOR  "operator"
-%keyword PRIVATE   "private"
-%keyword PROTECTED "protected"
-%keyword PUBLIC    "public"
-%keyword REGISTER  "register"
-%keyword SHORT     "short"
-%keyword SIGNED    "signed"
-%keyword STATIC    "static"
-%keyword STRUCT    "struct"
-%keyword TEMPLATE  "template"
-%keyword THROW     "throw"
-%keyword TRY       "try"
-%keyword TYPEDEF   "typedef"
-%keyword TYPENAME  "typename"
-%keyword UNION     "union"
-%keyword UNSIGNED  "unsigned"
-%keyword USING     "using"
-%keyword VIRTUAL   "virtual"
-%keyword VOID      "void"
-%keyword VOLATILE  "volatile"
-%keyword WCHAR     "wchar"
-
-#================================================================================
-#
-# start
-#
-#================================================================================
-
 start -> decl-seq-opt
 
 decl-seq-opt -> decl-seq
@@ -865,3 +816,58 @@ using_decl: using-decl -> USING obj-name SEMI
 
 # directive
 using_dir: using-dir -> USING NAMESPACE obj-name SEMI
+
+###
+### Keywords (these directives can be anywhere)
+###
+
+%keyword AUTO      "auto"
+%keyword BOOL      "bool"
+%keyword CATCH     "catch"
+%keyword CHAR      "char"
+%keyword CLASS     "class"
+%keyword CONST     "const"
+%keyword DELETE    "delete"
+%keyword DINIT     "_dinit"
+%keyword DLL_API   "dll_api"
+%keyword DOUBLE    "double"
+%keyword ENUM      "enum"
+%keyword EXPLICIT  "explicit"
+%keyword EXTERN    "extern"
+%keyword FLOAT     "float"
+%keyword FRIEND    "friend"
+%keyword INLINE    "inline"
+%keyword INT       "int"
+%keyword LONG      "long"
+%keyword MUTABLE   "mutable"
+%keyword NAMESPACE "namespace"
+%keyword NEW       "new"
+%keyword OPERATOR  "operator"
+%keyword PRIVATE   "private"
+%keyword PROTECTED "protected"
+%keyword PUBLIC    "public"
+%keyword REGISTER  "register"
+%keyword SHORT     "short"
+%keyword SIGNED    "signed"
+%keyword STATIC    "static"
+%keyword STRUCT    "struct"
+%keyword TEMPLATE  "template"
+%keyword THROW     "throw"
+%keyword TRY       "try"
+%keyword TYPEDEF   "typedef"
+%keyword TYPENAME  "typename"
+%keyword UNION     "union"
+%keyword UNSIGNED  "unsigned"
+%keyword USING     "using"
+%keyword VIRTUAL   "virtual"
+%keyword VOID      "void"
+%keyword VOLATILE  "volatile"
+%keyword WCHAR     "wchar"
+
+###
+### Syntax error recover strategies
+###
+
+%recover insert SEMI
+%recover insert RPAREN
+%recover discard 5
