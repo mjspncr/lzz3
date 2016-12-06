@@ -19,7 +19,7 @@ namespace
 {
   char const version [] =
   {
-    "Lazy C++ " LZZ_VERSION
+    "Lazy C++ Compiler " LZZ_VERSION
     "\n"
   };
 
