@@ -509,6 +509,8 @@ namespace cpp
               break;
             }
             // .. next . or %:% next :
+            case S_LZZHASH:
+            // // next #
             case S_DOT_DOT:
             {
               state = S_OP;
@@ -813,23 +815,25 @@ namespace cpp
             // / next * or /
             case S_COMMENT_BEG:
             {
-              if (ch_kind == C_TIMES)
+              if (ch_kind == C_DIVIDE)
               {
-                state = S_C_COMMENT_BEG;
+                if (peekCharKind (reader_, 1) == C_HASH)
+                {
+                  state = S_LZZHASH;
+                }
+                else
+                {
+                  state = S_CPP_COMMENT;
+                }
               }
               else
               {
-                state = S_CPP_COMMENT_BEG;
+                state = S_C_COMMENT;
               }
               break;
             }
             // /* ...
-            case S_C_COMMENT_BEG:
-            {
-              state = S_C_COMMENT_BODY;
-              // fall through 
-            }
-            case S_C_COMMENT_BODY:
+            case S_C_COMMENT:
             {
               if (ch_kind == C_EOF)
               {
@@ -850,12 +854,7 @@ namespace cpp
               break;
             }
             // // ...
-            case S_CPP_COMMENT_BEG:
-            {
-              state = S_CPP_COMMENT_BODY;
-              // fall through
-            }
-            case S_CPP_COMMENT_BODY:
+            case S_CPP_COMMENT:
             {
               if (ch_kind == C_LF)
               {
@@ -890,7 +889,7 @@ namespace cpp
           // consume next char and if not comment or whitespace add to lexeme
           char ch;
           reader_.nextChar (ch);
-          if (state <= S_UNKNOWN)
+          if (state < S_WS)
           {
             // push ident char
             lexeme += ch;
@@ -1145,6 +1144,9 @@ namespace
     // #
     S_HASH,
 
+    // //#
+    S_LZZHASH,
+
     // !
     S_BANG,
 
@@ -1208,25 +1210,17 @@ namespace
     // unknown token (non-whitespace char not start of other token)
     S_UNKNOWN,
 
-    // ** comments **
-
-    // c and c++ comment bodies
-    S_CPP_COMMENT_BODY,
-    S_C_COMMENT_BODY,
+    // // or /*
+    S_COMMENT_BEG,
 
     // ** whitespace **
 
     // whitespace
     S_WS,
     
-    // / next * or /
-    S_COMMENT_BEG,
-
-    // c++ comment begin
-    S_CPP_COMMENT_BEG,
-
-    // c begin and end
-    S_C_COMMENT_BEG,
+    // c and c++ comments
+    S_CPP_COMMENT,
+    S_C_COMMENT,
     S_C_COMMENT_END,
   }
 }

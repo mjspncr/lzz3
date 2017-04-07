@@ -98,7 +98,7 @@ namespace cpp
             }
           }
           // if not hash then it's code
-          else if (number != TOKEN_HASH)
+          else if (! (number == TOKEN_HASH || number == TOKEN_LZZHASH))
           {
             // if inserting file and live send token through macro filter and lex rest of line
             if ((real_mode || fs.insert) && is.rs == IFR_ON)
@@ -112,121 +112,130 @@ namespace cpp
               fs.lexer.discardRestOfLine ();
             }
           }
-          // found # on start of line
-          // if by itself then discard
-          else if (! fs.lexer.getNextToken (token))
-          {
-            // harmless, do nothing
-          }
-          // token must be an identifier
-          else if (token->getNumber () != TOKEN_IDENT)
-          {
-            // error but discard rest of line and continue
-            session.error (token->getLocation (), "invalid directive");
-            fs.lexer.discardRestOfLine ();
-          }
           else
           {
-            // directive name and location
-            Loc const & dir_loc = token->getLocation ();
-            string const & dir_name = token->getLexeme ();
-            DirKind dir_kind;
-            // must be real directive, in real mode don't accept lzz directives
-            if (! isDir (session, dir_name, dir_kind) || (real_mode && isLzzDir (dir_kind)))
+            // # on start of line
+            bool lzzhash = number == TOKEN_LZZHASH;
+            if (! fs.lexer.getNextToken (token))
             {
-              session.error (dir_loc, Message ("#% is not a valid directive") << dir_name);
+              // hash by itself on line, harmless
+            }
+            // token must be an identifier
+            else if (token->getNumber () != TOKEN_IDENT)
+            {
+              // error if real hash, discard rest of line and continue
+              if (! lzzhash)
+              {
+                session.error (token->getLocation (), "invalid directive");
+              }
               fs.lexer.discardRestOfLine ();
             }
             else
             {
-              switch (dir_kind)
+              // directive name and location
+              Loc const & dir_loc = token->getLocation ();
+              string const & dir_name = token->getLexeme ();
+              DirKind dir_kind;
+              // must be real directive, in real mode don't accept lzz directives
+              if (!isDir (session, dir_name, dir_kind) || (real_mode && isLzzDir (dir_kind)) || (lzzhash && !isLzzDir (dir_kind)))
               {
-                case DEFINE_DIR:
+                if (! lzzhash)
                 {
-                  prepDefine (dir_loc);
-                  break;
+                  session.error (dir_loc, Message ("#% is not a valid directive") << dir_name);
                 }
-                case INCLUDE_DIR:
-                case INSERT_DIR:
+                fs.lexer.discardRestOfLine ();
+              }
+              else
+              {
+                switch (dir_kind)
                 {
-                  prepInclude (dir_loc, dir_name, dir_kind == INSERT_DIR);
-                  break;
-                }
-                case IF_DIR:
-                {
-                  prepIf (dir_loc, dir_name);
-                  break;
-                }
-                case IFNDEF_DIR:
-                case IFDEF_DIR:
-                {
-                  prepIfdef (dir_loc, dir_name, dir_kind == IFNDEF_DIR);
-                  break;
-                }
-                case ELIF_DIR:
-                {
-                  prepElif (dir_loc, dir_name);
-                  break;
-                }
-                case ELSE_DIR:
-                {
-                  prepElse (dir_loc, dir_name);
-                  break;
-                }
-                case ENDIF_DIR:
-                {
-                  prepEndif (dir_loc, dir_name);
-                  break;
-                }
-                case UNDEF_DIR:
-                {
-                  prepUndef (dir_loc, dir_name);
-                  break;
-                }
-                case LINE_DIR:
-                {
-                  prepLine (dir_loc);
-                  break;
-                }
-                case ERROR_DIR:
-                {
-                  prepError (dir_loc);
-                  break;
-                }
-                case PRAGMA_DIR:
-                {
-                  prepPragma (dir_loc);
-                  break;
-                }
-                case WARNING_DIR:
-                {
-                  prepWarning (dir_loc);
-                  break;
-                }
-                case HDR_DIR:
-                {
-                  prepFileBlock (dir_loc, dir_name, session.getOutput ().getHdrFile ());
-                  break;
-                }
-                case SRC_DIR:
-                {
-                  prepFileBlock (dir_loc, dir_name, session.getOutput ().getSrcFile ());
-                  break;
-                }
-                case INL_DIR:
-                {
-                  prepFileBlock (dir_loc, dir_name, session.getOutput ().getInlFile ());
-                  break;
-                }
-                case TPL_DIR:
-                {
-                  prepFileBlock (dir_loc, dir_name, session.getOutput ().getTplFile ());
-                  break;
-                }
-                case TNL_DIR:
-                {
-                  prepFileBlock (dir_loc, dir_name, session.getOutput ().getTnlFile ());
-                  break;
+                  case DEFINE_DIR:
+                  {
+                    prepDefine (dir_loc);
+                    break;
+                  }
+                  case INCLUDE_DIR:
+                  case INSERT_DIR:
+                  {
+                    prepInclude (dir_loc, dir_name, dir_kind == INSERT_DIR);
+                    break;
+                  }
+                  case IF_DIR:
+                  {
+                    prepIf (dir_loc, dir_name);
+                    break;
+                  }
+                  case IFNDEF_DIR:
+                  case IFDEF_DIR:
+                  {
+                    prepIfdef (dir_loc, dir_name, dir_kind == IFNDEF_DIR);
+                    break;
+                  }
+                  case ELIF_DIR:
+                  {
+                    prepElif (dir_loc, dir_name);
+                    break;
+                  }
+                  case ELSE_DIR:
+                  {
+                    prepElse (dir_loc, dir_name);
+                    break;
+                  }
+                  case ENDIF_DIR:
+                  {
+                    prepEndif (dir_loc, dir_name);
+                    break;
+                  }
+                  case UNDEF_DIR:
+                  {
+                    prepUndef (dir_loc, dir_name);
+                    break;
+                  }
+                  case LINE_DIR:
+                  {
+                    prepLine (dir_loc);
+                    break;
+                  }
+                  case ERROR_DIR:
+                  {
+                    prepError (dir_loc);
+                    break;
+                  }
+                  case PRAGMA_DIR:
+                  {
+                    prepPragma (dir_loc);
+                    break;
+                  }
+                  case WARNING_DIR:
+                  {
+                    prepWarning (dir_loc);
+                    break;
+                  }
+                  case HDR_DIR:
+                  {
+                    prepFileBlock (dir_loc, dir_name, session.getOutput ().getHdrFile ());
+                    break;
+                  }
+                  case SRC_DIR:
+                  {
+                    prepFileBlock (dir_loc, dir_name, session.getOutput ().getSrcFile ());
+                    break;
+                  }
+                  case INL_DIR:
+                  {
+                    prepFileBlock (dir_loc, dir_name, session.getOutput ().getInlFile ());
+                    break;
+                  }
+                  case TPL_DIR:
+                  {
+                    prepFileBlock (dir_loc, dir_name, session.getOutput ().getTplFile ());
+                    break;
+                  }
+                  case TNL_DIR:
+                  {
+                    prepFileBlock (dir_loc, dir_name, session.getOutput ().getTnlFile ());
+                    break;
+                  }
                 }
               }
             }
@@ -818,7 +827,6 @@ namespace
   void readFileBlock (Session & session, Lexer & lexer, Loc const & dir_loc, string const & dir_name, Loc & loc, string & str)
   {
     loc = lexer.getLoc ();
-    char ws [] = " \t";
     ostringstream os;
     for (;;)
     {
@@ -829,14 +837,13 @@ namespace
         session.error (dir_loc, Message ("end of file before end of #%") << dir_name);
         break;
       }
-      // check for terminating '#end' ('%:' is a digraph for '#')
-      string::size_type p = line.find_first_not_of (ws);
-      if (p != string::npos && (line [p] == '#' || (line [p] == '%' && p + 1 < line.length () && line [++ p] == ':')))
+      string::size_type p;
+      if (isEndHash (line, p))
       {
-        p = line.find_first_not_of (ws, p + 1);
+        p = line.find_first_not_of (WS, p);
         if (p != string::npos)
         {
-          string::size_type q = line.find_first_of (ws, p);
+          string::size_type q = line.find_first_of (WS, p);
           if (q == string::npos)
           {
             q = line.length ();
@@ -856,6 +863,40 @@ namespace
     str = os.str ();
     trimBack (str);
   }
+
+  // if line start with # or //# (for end directive), set index of next char and return true
+  bool isEndHash (string const & line, string::size_type & next)
+  {
+    string::size_type p = line.find_first_not_of (WS);
+    if (p == string::npos)
+    {
+      return false;
+    }
+    if (line [p] == '/')
+    {
+      if (! (p + 1 < line.length () && line [++ p] == '/'))
+      {
+        return false;
+      }
+      // lzzhash
+      ++ p;
+    }
+    if (line [p] == '%')
+    {
+      // '%:' is a digraph for '#'
+      if (! (p + 1 < line.length () && line [++ p] == ':'))
+      {
+        return false;
+      }
+    }
+    else if (line [p] != '#')
+    {
+      return false;
+    }
+    next = p + 1;
+    return true;
+  }    
+  char const WS [] = " \t";
 
   // return header file name without delimiters, set is_system true if delimited by < and >
   string removeIncludeFileDelimiters (string const & str, bool & is_system)
