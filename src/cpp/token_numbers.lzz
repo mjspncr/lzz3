@@ -33,6 +33,7 @@ namespace cpp
     TOKEN_BITNOT,
     TOKEN_DBLHASH,
     TOKEN_HASH,
+    TOKEN_LZZHASH, /* //# for lzz-only directives */
     TOKEN_ELLIPSE,
     TOKEN_COMMA,
     TOKEN_DOT,

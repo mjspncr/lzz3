@@ -15,6 +15,7 @@ namespace cpp
         { "!=",     TOKEN_NOTEQ }, 
         { "#",      TOKEN_HASH },
         { "##",     TOKEN_DBLHASH },
+        { "//#",    TOKEN_LZZHASH },
         { "%",      TOKEN_MOD },
         { "%=",     TOKEN_MOD_ASSIGN },
         { "&",      TOKEN_BITAND }, 
