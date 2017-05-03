@@ -4,7 +4,9 @@
 
 local integral_types = {
    ['int'] = true,
-   ['long int'] = true,
+   ['int long'] = true,
+   ['int unsigned'] = true,
+   ['int long unsigned'] = true,
 }
 
 local IsTypeConstIntegral = {}
@@ -18,11 +20,12 @@ function IsTypeConstIntegral:onBuiltinType (tp)
    return tp.cv == 'const' and integral_types [tp.builtin]
 end
 
--- on other types
-local function no ()
+-- other types
+local function no()
    return false
 end
 IsTypeConstIntegral.onPointerType = no
+IsTypeConstIntegral.onArrayType = no
 IsTypeConstIntegral.onPointerToMemberType = no
 IsTypeConstIntegral.onReferenceType = no
 IsTypeConstIntegral.onRvalueReferenceType = no
