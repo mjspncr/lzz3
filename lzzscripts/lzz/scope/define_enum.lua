@@ -11,8 +11,9 @@ function DefineEnum:__init (enum)
 end
 
 -- define entity
-local function defineEnum (scope, loc, name, body)
-   body.loc  = loc
+local function defineEnum (scope, loc, class_key, name, body)
+   body.loc = loc
+   body.class_key = class_key
    body.name = name
    return scope:accept (DefineEnum (body))
 end

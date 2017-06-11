@@ -743,7 +743,11 @@ tmpl-spec-decl -> functor-def
 #
 #================================================================================
 
-enum_def: enum-def -> ENUM obj-name-opt LBRACE enum-body-opt RBRACE semi-opt
+enum_def1: enum-def -> ENUM obj-name-opt LBRACE enum-body-opt RBRACE semi-opt
+enum_def2: enum-def -> ENUM enum-scope obj-name LBRACE enum-body-opt RBRACE semi-opt
+
+enum-scope -> CLASS
+enum-scope -> STRUCT
 
 obj-name-opt -> obj-name
 obj-name-opt ->
