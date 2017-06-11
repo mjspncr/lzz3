@@ -12,7 +12,11 @@ local function printEnum (file, enum, ns)
    local n = printNsOpen (ns, file)
    local name = enum.name
    if name then
-      file:print (getNameLoc (name), 'enum ' .. nameToString (name))
+      if enum.class_key then
+         file:print (getNameLoc (name), 'enum ' .. enum.class_key .. ' ' .. nameToString (name))
+      else
+         file:print (getNameLoc (name), 'enum ' .. nameToString (name))
+      end
    else
       file:print (enum.loc, 'enum')
    end

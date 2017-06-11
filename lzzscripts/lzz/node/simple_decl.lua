@@ -115,8 +115,15 @@ function nodes.EnumBody:onNode()
 end
 
 -- enum-def -> ENUM obj-name-opt LBRACE enum-body-opt RBRACE semi-opt
-function nodes.EnumDef:onNode(app)
-   defineEnum(app:getCurrentScope(), self[1].loc, self[2], self[4])
+function nodes.EnumDef1:onNode(app)
+   -- unscoped enum
+   defineEnum(app:getCurrentScope(), self[1].loc, nil, self[2], self[4])
+end
+
+-- enum-def -> ENUM enum-scope obj-name LBRACE enum-body-opt RBRACE semi-opt
+function nodes.EnumDef2:onNode(app)
+   -- scoped enum
+   defineEnum(app:getCurrentScope(), self[1].loc, self[2].lexeme, self[3], self[5])
 end
 
 --
