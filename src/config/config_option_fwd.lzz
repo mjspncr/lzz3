@@ -1,0 +1,10 @@
+// config_option_fwd
+//
+
+namespace config
+{
+   class StringOption;
+   class BoolOption;
+   class IntOption;
+   class StringsOption;
+}

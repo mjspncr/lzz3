@@ -1,3 +1,6 @@
+// util_get_env
+//
+
 // get the value of the environment variable name, return true if variable is set, false otherwise
 bool getEnv(char const *name, std::string &value)
 {
