@@ -7,11 +7,12 @@ export MAKETOOLS ?= $(ROOT)/maketools
 # target build, must have make.$CONFIG in maketools, gcc or i386-mingw32
 export CONFIG ?= gcc
 # need lzz to build lzz
-export LZZ ?= lzz3
+export LZZ ?= lzz
+
 # basilcc lib and src directories
-BASILCC_ROOT ?= missing_path_to_basilcc
-export BASILCC_LIB ?= $(BASILCC_ROOT)/$(CONFIG)/lib
-export BASILCC_SRC ?= $(BASILCC_ROOT)/$(CONFIG)/src
+BASILCC_ROOT ?= /usr/local/release/basilcc/x100
+export BASILCC_LIB ?= $(BASILCC_ROOT)/build.gcc/lib
+export BASILCC_SRC ?= $(BASILCC_ROOT)/build.gcc/src
 
 SUBDIRS=src
 include $(MAKETOOLS)/make.include
