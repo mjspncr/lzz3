@@ -1,0 +1,62 @@
+class Message
+{
+public:
+   Message (Loc const & loc, char const * fmt = 0)
+      : fmt (fmt)
+   {
+      ss << loc << ' '; 
+      next ();
+   }
+   Message (char const * fmt = 0)
+      : fmt (fmt)
+   {
+      next ();
+   }
+   // add arg
+   template <class T>
+   inline Message & operator << (T t)
+   {
+      ss << t;
+      next ();
+      return * this;
+   }
+   // conversion to string
+   operator std::string () const
+   {
+      return ss.str ();
+   }
+private:
+   // advance to next '%' or end of fmt string
+   void next ()
+   {
+      if (fmt)
+      {        
+         for (;;)
+         {
+            char c = * fmt;
+            if (! c)
+            {
+               break;
+            }
+            ++ fmt;
+            if (c == '%')
+            {
+               break;
+            }
+            ss << c;
+         }
+      }
+   }
+private:
+   char const * fmt;
+   std::ostringstream ss;
+};
+
+#hdr
+#include <util_loc.h>
+#include <sstream>
+#include <string>
+#end
+
+#src
+#end

@@ -1,4 +1,0 @@
-#hdr
-#include <basil/lua_env.h>
-using basil::LuaEnv;
-#end

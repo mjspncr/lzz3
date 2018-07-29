@@ -1,4 +1,4 @@
 #hdr
-#include <basil/loc.h>
+#include <basil_loc.h>
 using basil::Loc;
 #end
