@@ -1,20 +1,18 @@
-// down_case.lzz
+// util_down_case.lzz
 //
 
 // convert string to lower case
-std::string downCase (std::string const & str)
+std::string downCase(std::string const &str)
 {
-  string res;
-  res.reserve (str.size ());
-  for (string::const_iterator i = str.begin (), end = str.end (); i != end; ++ i)
-  {
-    char ch = tolower (* i);
-    res += ch;
-  }
-  return res;
+   std::string res;
+   res.reserve(str.size());
+   for (std::string::const_iterator i = str.begin(), endi = str.end(); i != endi; ++i)
+   {
+      char ch = tolower(*i);
+      res += ch;
+   }
+   return res;
 }
-
-using namespace std;
 
 #hdr
 #include <string>

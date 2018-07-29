@@ -1,4 +1,0 @@
-#hdr
-#include <basil/parse_error.h>
-using basil::ParseError;
-#end

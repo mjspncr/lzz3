@@ -1,44 +1,47 @@
+// util_message.lzz
+//
+
 class Message
 {
 public:
-   Message (Loc const & loc, char const * fmt = 0)
-      : fmt (fmt)
+   Message(Loc const &loc, char const *fmt = 0)
+      : fmt(fmt)
    {
       ss << loc << ' '; 
-      next ();
+      next();
    }
-   Message (char const * fmt = 0)
-      : fmt (fmt)
+   Message(char const *fmt = 0)
+      : fmt(fmt)
    {
-      next ();
+      next();
    }
    // add arg
    template <class T>
-   inline Message & operator << (T t)
+   inline Message &operator <<(T t)
    {
       ss << t;
-      next ();
-      return * this;
+      next();
+      return *this;
    }
    // conversion to string
-   operator std::string () const
+   operator std::string() const
    {
-      return ss.str ();
+      return ss.str();
    }
 private:
    // advance to next '%' or end of fmt string
-   void next ()
+   void next()
    {
       if (fmt)
       {        
          for (;;)
          {
-            char c = * fmt;
-            if (! c)
+            char c = *fmt;
+            if (!c)
             {
                break;
             }
-            ++ fmt;
+            ++fmt;
             if (c == '%')
             {
                break;
@@ -48,7 +51,7 @@ private:
       }
    }
 private:
-   char const * fmt;
+   char const *fmt;
    std::ostringstream ss;
 };
 
@@ -56,7 +59,4 @@ private:
 #include <util_loc.h>
 #include <sstream>
 #include <string>
-#end
-
-#src
 #end

@@ -1,48 +1,45 @@
-// append.lzz
+// util_append.lzz
 //
 
 // append with one space if str1 non-empty
-void appendWithSpace (std::string & str1, std::string const & str2)
+void appendWithSpace(std::string &str1, std::string const &str2)
 {
-  if (! str2.empty ())
-  {
-    if (! str1.empty ())
-    {
-      str1 += ' ';
-    }
-    str1 += str2;
-  }
+   if (! str2.empty())
+   {
+      if (! str1.empty())
+      {
+         str1 += ' ';
+      }
+      str1 += str2;
+   }
 }
 
 // same but using char const *
-void appendWithSpace (std::string & str1, char const * str2)
+void appendWithSpace(std::string &str1, char const *str2)
 {
-  if (str2 [0] != '\0')
-  {
-    if (! str1.empty ())
-    {
-      str1 += ' ';
-    }
-    str1 += str2;
-  }
+   if (str2[0] != '\0')
+   {
+      if (!str1.empty())
+      {
+         str1 += ' ';
+      }
+      str1 += str2;
+   }
 }
 
 // same but using char
-void appendWithSpace (std::string & str1, char ch)
+void appendWithSpace(std::string &str1, char ch)
 {
-  if (ch != ' ')
-  {
-    if (! str1.empty ())
-    {
-      str1 += ' ';
-    }
-    str1 += ch;
-  }
+   if (ch != ' ')
+   {
+      if (!str1.empty())
+      {
+         str1 += ' ';
+      }
+      str1 += ch;
+   }
 }
 
 #hdr
 #include <string>
-#end
-
-#src
 #end

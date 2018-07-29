@@ -1,25 +1,26 @@
+// util_get_next_word.lzz
+//
+
 typedef std::string::const_iterator StringConstIter;
 
 // get next word, return iterator to end of word
-StringConstIter getNextWord (StringConstIter str_beg, StringConstIter str_end, char const * end_chars)
+StringConstIter getNextWord(StringConstIter str_beg, StringConstIter str_end, char const *end_chars)
 {
-  StringConstIter i = str_beg;
-  while (i != str_end && strchr (end_chars, * i) == NULL)
-  {
-    ++ i;
-  }
-  return i;
+   StringConstIter i = str_beg;
+   while (i != str_end && strchr(end_chars, * i) == NULL)
+   {
+      ++i;
+   }
+   return i;
 }
 
 // get next word, set word and return 
 // return next word and set word end, or empty string if no words left
-std::string getNextWord (StringConstIter str_beg, StringConstIter str_end, char const * end_chars, StringConstIter & word_end)
+std::string getNextWord(StringConstIter str_beg, StringConstIter str_end, char const *end_chars, StringConstIter &word_end)
 {
-  word_end = getNextWord (str_beg, str_end, end_chars);
-  return std::string (str_beg, word_end);
+   word_end = getNextWord(str_beg, str_end, end_chars);
+   return std::string(str_beg, word_end);
 }
-
-using namespace std;
 
 #hdr
 #include <string>

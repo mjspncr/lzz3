@@ -1,3 +1,8 @@
+// util_loc.lzz
+//
+// Loc just an alias to basil::Loc
+//
+
 #hdr
 #include <basil_loc.h>
 using basil::Loc;

@@ -1,14 +1,11 @@
-// int_map.lzz
+// util_int_map.lzz
 //
 
-typedef std::map <int, int> IntMap;
+typedef std::map<int, int> IntMap;
 typedef IntMap::const_iterator IntMapConstIter;
 typedef IntMap::iterator IntMapIter;
 typedef IntMap::value_type IntMapValue;
 
 #hdr
 #include <map>
-#end
-
-#src
 #end

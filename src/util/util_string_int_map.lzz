@@ -1,4 +1,6 @@
-typedef std::map <std::string, int> StringIntMap;
+// util_string_int_map.lzz
+
+typedef std::map<std::string, int> StringIntMap;
 typedef StringIntMap::const_iterator StringIntMapConstIter;
 typedef StringIntMap::iterator StringIntMapIter;
 

@@ -1,149 +1,146 @@
-// ptr.lzz
+// util_ptr.lzz
 //
 
 // Ptr
 template <class T>
 class Ptr
 {
-  // pointer to data
-  T * m_t;
+   // pointer to data
+   T * m_t;
 
-  // pointer to number of references (or 0 if m_t is not reference counted) 
-  int * m_num_ref;
+   // pointer to number of references (or 0 if m_t is not reference counted) 
+   int * m_num_ref;
 
 public:
-  // default constructor
-  Ptr ()
-    : m_t (0), m_num_ref (0)
-  {
-  }
+   // default constructor
+   Ptr ()
+      : m_t (0), m_num_ref (0)
+   {
+   }
 
-  // constructor
-  Ptr (T * t)
-    : m_t (t), m_num_ref (new int)
-  {
-    * m_num_ref = 1;
-  }
+   // constructor
+   Ptr (T * t)
+      : m_t (t), m_num_ref (new int)
+   {
+      * m_num_ref = 1;
+   }
 
-  // copy constructor
-  inline Ptr (Ptr <T> const & bptr)
-    : m_t (bptr.m_t), m_num_ref (bptr.m_num_ref)
-  {
-    if (m_num_ref)
-    {
-      ++ * m_num_ref;
-    }
-  }
+   // copy constructor
+   inline Ptr (Ptr <T> const & bptr)
+      : m_t (bptr.m_t), m_num_ref (bptr.m_num_ref)
+   {
+      if (m_num_ref)
+      {
+         ++ * m_num_ref;
+      }
+   }
 
-  // destructor
-  ~ Ptr ()
-  {
-    if (m_num_ref && -- * m_num_ref == 0)
-    {
-      delete m_num_ref;
-      delete m_t;
-    }
-  }
+   // destructor
+   ~ Ptr ()
+   {
+      if (m_num_ref && -- * m_num_ref == 0)
+      {
+         delete m_num_ref;
+         delete m_t;
+      }
+   }
 
-  // copy assignment
-  Ptr <T> & operator = (Ptr <T> const & bptr)
-  {
-    if (bptr.m_num_ref)
-    {
-      ++ * bptr.m_num_ref;
-    }
-    if (m_num_ref && -- * m_num_ref == 0)
-    {
-      delete m_num_ref;
-      delete m_t;
-    }
-    m_t = bptr.m_t;
-    m_num_ref = bptr.m_num_ref;
-    return * this;
-  }
+   // copy assignment
+   Ptr <T> & operator = (Ptr <T> const & bptr)
+   {
+      if (bptr.m_num_ref)
+      {
+         ++ * bptr.m_num_ref;
+      }
+      if (m_num_ref && -- * m_num_ref == 0)
+      {
+         delete m_num_ref;
+         delete m_t;
+      }
+      m_t = bptr.m_t;
+      m_num_ref = bptr.m_num_ref;
+      return * this;
+   }
 
-  // operator ->
-  inline T * operator -> () const
-  {
-    AssertException (m_t != 0);
-    return m_t;
-  }
+   // operator ->
+   inline T * operator -> () const
+   {
+      AssertException (m_t != 0);
+      return m_t;
+   }
 
-  // operator *
-  inline T & operator * () const
-  {
-    AssertException (m_t != 0);
-    return * m_t;
-  }
+   // operator *
+   inline T & operator * () const
+   {
+      AssertException (m_t != 0);
+      return * m_t;
+   }
 
-  // operator <
-  inline bool operator < (Ptr <T> const & ptr) const
-  {
-    return pointer () < ptr.pointer ();
-  }
+   // operator <
+   inline bool operator < (Ptr <T> const & ptr) const
+   {
+      return pointer () < ptr.pointer ();
+   }
 
-  // operator ==
-  inline bool operator == (Ptr <T> const & ptr) const
-  {
-    return pointer () == ptr.pointer ();
-  }
+   // operator ==
+   inline bool operator == (Ptr <T> const & ptr) const
+   {
+      return pointer () == ptr.pointer ();
+   }
 
-  // operator !=
-  inline bool operator != (Ptr <T> const & ptr) const
-  {
-    return ! (* this == ptr);
-  }
+   // operator !=
+   inline bool operator != (Ptr <T> const & ptr) const
+   {
+      return ! (* this == ptr);
+   }
 
-  // true if set
-  inline bool isSet () const
-  {
-    return m_t != 0;
-  }
+   // true if set
+   inline bool isSet () const
+   {
+      return m_t != 0;
+   }
 
-  // true if set
-  inline operator bool () const
-  {
-    return m_t != 0;
-  }
+   // true if set
+   inline operator bool () const
+   {
+      return m_t != 0;
+   }
 
-  // get pointer
-  inline T * pointer () const
-  {
-    AssertException (m_t != 0);
-    return m_t;
-  }
+   // get pointer
+   inline T * pointer () const
+   {
+      AssertException (m_t != 0);
+      return m_t;
+   }
 
-  // get handle
-  inline size_t getHandle () const
-  {
-    return (size_t) m_t;
-  }
+   // get handle
+   inline size_t getHandle () const
+   {
+      return (size_t) m_t;
+   }
 
-  // get non-reference counted pointer from this pointer
-  Ptr <T> unref () const
-  {
-    Ptr <T> bptr;
-    bptr.m_t = m_t;
-    return bptr;
-  }
+   // get non-reference counted pointer from this pointer
+   Ptr <T> unref () const
+   {
+      Ptr <T> bptr;
+      bptr.m_t = m_t;
+      return bptr;
+   }
       
-  // get non-reference counted pointer from given pointer
-  static Ptr <T> unref (T * t)
-  {
-    Ptr <T> bptr;
-    bptr.m_t = t;
-    return bptr;
-  }
+   // get non-reference counted pointer from given pointer
+   static Ptr <T> unref (T * t)
+   {
+      Ptr <T> bptr;
+      bptr.m_t = t;
+      return bptr;
+   }
 }
 
 // send template definitions to tpl file
 #pragma tpl yes
 
 #hdr
-#include <util/assert_exception.h>
+#include <util_assert_exception.h>
 #include <functional>
 #include <stddef.h>
-#end
-
-#src
 #end

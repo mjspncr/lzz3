@@ -1,15 +1,13 @@
-// int_to_string.lzz
+// util_int_to_string.lzz
 //
 
 // return int as string
-std::string intToString (int v)
+std::string intToString(int v)
 {
-  ostringstream ss;
-  ss << v;
-  return ss.str ();
+   std::ostringstream ss;
+   ss << v;
+   return ss.str();
 }
-
-using namespace std;
 
 #hdr
 #include <string>

@@ -1,73 +1,65 @@
-// parse_yes_no.lzz
+// util_parse_yes_no.lzz
 //
 
 // if parsed sucessfully return true, otherwise false
 // if parsed succesfully, set yn to true if yes, false if no, otherwise yn is not touched
-bool parseYesNo (std::string const & str, bool & yn)
+bool parseYesNo(std::string const &str, bool &yn)
 {
-  bool res (false);
-  if (isYes (str))
-  {
-    res = true;
-    yn = true;
-  }
-  else if (isNo (str))
-  {
-    res = true;
-    yn = false;
-  }
-  return res;
+   bool res = false;
+   if (isYes(str))
+   {
+      res = true;
+      yn = true;
+   }
+   else if (isNo(str))
+   {
+      res = true;
+      yn = false;
+   }
+   return res;
 }
 
 // return true if yes, false if no, otherwise error 
-bool parseYesNo (char const * context, std::string const & str)
+bool parseYesNo(std::string const &str)
 {
-  bool res (false);
-  if (isYes (str))
-  {
-    res = true;
-  }
-  else if (! isNo (str))
-  {
-    throw runtime_error (Message ("'%' is not a yes/no string") << str);
-  }
-  return res;
-}
-
-// return true if yes, false if no, otherwise error 
-bool parseYesNo (std::string const & str)
-{
-  return parseYesNo ("parseYesNo", str);
+   bool res (false);
+   if (isYes(str))
+   {
+      res = true;
+   }
+   else if (!isNo(str))
+   {
+      throw std::runtime_error(Message("'%' is not a yes/no string") << str);
+   }
+   return res;
 }
 
 // return true if string is affirmative
-bool isYes (std::string const & str)
+bool isYes(std::string const &str)
 {
-  string tmp (downCase (str));
-  return tmp == "yes" || tmp == "true" || tmp == "y" || tmp == "t";
+   std::string tmp = downCase(str);
+   return tmp == "yes" || tmp == "true" || tmp == "y" || tmp == "t";
 }
 
 // return true if string is not yes
-bool isNo (std::string const & str)
+bool isNo (std::string const &str)
 {
-  string tmp (downCase (str));
-  return tmp == "no" || tmp == "false" || tmp == "n" || tmp == "f";
+   std::string tmp(downCase (str));
+   return tmp == "no" || tmp == "false" || tmp == "n" || tmp == "f";
 }
 
 // bool to string Yes or No
-char const * boolToYesNo (bool b)
+char const *boolToYesNo(bool b)
 {
-  return b ? "Yes" : "No";
+   return b ? "Yes" : "No";
 }
-
-using namespace std;
 
 #hdr
 #include <string>
 #end
 
 #src
-#include <util/down_case.h>
-#include <util/message.h>
+#include <util_down_case.h>
+#include <util_message.h>
 #include <stdexcept>
 #end

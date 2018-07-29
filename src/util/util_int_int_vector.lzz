@@ -1,14 +1,11 @@
-// int_int_vector.lzz
+// util_int_int_vector.lzz
 //
 
-typedef std::vector <IntPair> IntIntVector;
+typedef std::vector<IntPair> IntIntVector;
 typedef IntIntVector::iterator IntIntVectorIter;
 typedef IntIntVector::const_iterator IntIntVectorConstIter;
 
 #hdr
-#include <util/int_pair.h>
+#include <util_int_pair.h>
 #include <vector>
-#end
-
-#src
 #end

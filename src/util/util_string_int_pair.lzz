@@ -1,28 +1,25 @@
-// string_int_pair.lzz
+// util_string_int_pair.lzz
 //
 
-typedef std::pair <std::string, int> StringIntPair;
+typedef std::pair<std::string, int> StringIntPair;
 
 struct StringIntFirstLess
 {
-  inline bool operator () (StringIntPair const & p, StringIntPair const & q) const
-  {
-    return p.first < q.first;
-  }
-  inline bool operator () (StringIntPair const & p, std::string const & q) const
-  {
-    return p.first < q;
-  }
-  inline bool operator () (StringIntPair const & p, char const * q) const
-  {
-    return p.first < q;
-  }
+   inline bool operator()(StringIntPair const &p, StringIntPair const &q) const
+   {
+      return p.first < q.first;
+   }
+   inline bool operator()(StringIntPair const &p, std::string const &q) const
+   {
+      return p.first < q;
+   }
+   inline bool operator()(StringIntPair const &p, char const *q) const
+   {
+      return p.first < q;
+   }
 }
 
 #hdr
 #include <string>
 #include <utility>
-#end
-
-#src
 #end

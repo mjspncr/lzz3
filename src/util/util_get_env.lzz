@@ -1,26 +1,24 @@
 // get the value of the environment variable name, return true if variable is set, false otherwise
-bool getEnv (char const * name, std::string & value)
+bool getEnv(char const *name, std::string &value)
 {
-  bool result = false;
-  const char * env_str = getenv (name);
-  if (env_str)
-  {
-    value = env_str;
-    result = true;
-  }
-  return result;
+   bool result = false;
+   const char *env_str = getenv(name);
+   if (env_str)
+   {
+      value = env_str;
+      result = true;
+   }
+   return result;
 }
 
 // get the value of the environment variable name, return the value, an empty string if
 // not set or set to nothing
-std::string getEnv (char const * name)
+std::string getEnv (char const *name)
 {
-  string value;
-  getEnv (name, value);
-  return value;
+   std::string value;
+   getEnv (name, value);
+   return value;
 }
-
-using namespace std;
 
 #hdr
 #include <string>

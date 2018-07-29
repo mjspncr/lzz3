@@ -1,7 +1,7 @@
-// string_vector.lzz
+// util_string_vector.lzz
 //
 
-typedef std::vector <std::string> StringVector;
+typedef std::vector<std::string> StringVector;
 typedef StringVector::iterator StringVectorIter;
 typedef StringVector::const_iterator StringVectorConstIter;
 typedef StringVector::reverse_iterator StringVectorReverseIter;

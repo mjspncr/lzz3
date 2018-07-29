@@ -1,7 +1,7 @@
-// string_set.lzz
+// util_string_set.lzz
 //
 
-typedef std::set <std::string> StringSet;
+typedef std::set<std::string> StringSet;
 typedef StringSet::iterator StringSetIter;
 typedef StringSet::const_iterator StringSetConstIter;
 typedef StringSet::reverse_iterator StringSetReverseIter;

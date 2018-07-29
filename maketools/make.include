@@ -49,7 +49,7 @@ LZZFILES  := $(wildcard *.lzz)
 endif
 SRCFILES  := $(addprefix $(SRCDIR)/,$(LZZFILES:%.lzz=%.cpp))
 OBJFILES  := $(addprefix $(OBJDIR)/,$(LZZFILES:%.lzz=%.o))
-INCFLAGS  := $(INCDIRS:%=-I%) -I$(BUILDDIR)/src
+INCFLAGS  := $(INCDIRS:%=-I%) -I$(BUILDDIR)/src -I$(BUILDDIR)/src/$(DIR)
 DEFFLAGS  := $(DEFS:%=-D%) $(CONFIGDEFS:%=-D%)
 CPPFLAGS  := $(DEFFLAGS) $(INCFLAGS) $(DEBUGFLAG) -Wno-deprecated -Wall
 OUTDIRS   := $(SRCDIR) $(OBJDIR)
