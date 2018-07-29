@@ -6,7 +6,7 @@ namespace config
    // print version to standard output
    void printVersion(std::ostream &os)
    {
-      os << version << copyright < std::endl;
+      os << version << copyright << std::endl;
    }
 
    // print help to standard output
