@@ -1,55 +1,54 @@
 namespace cpp
 {
-  // find include file, if found set fullname and return true, sys true if file enclosed in '<' and '>'.
-  bool findIncludeFile (std::string const & inclname, std::string const & name, bool sys, std::string & fullname)
-  {
-    // if absolute then no need to search path
-    bool result = false;
-    if (isAbsolute (name))
-    {
-      if (exists (name))
+   // find include file, if found set fullname and return true, sys true if file enclosed in '<' and '>'.
+   bool findIncludeFile(std::string const &inclname, std::string const &name, bool sys, std::string &fullname)
+   {
+      // if absolute then no need to search path
+      bool result = false;
+      if (isAbsolute(name))
       {
-        result = true;
-        fullname = name;
+         if (exists(name))
+         {
+            result = true;
+            fullname = name;
+         }
       }
-    }
-    // otherwise search in curent dir if not sys 
-    else if (! sys && findInDir (getPath (inclname), name, fullname))
-    {
-      result = true;
-    }
-    else
-    {
-      StringVector const & path_set = config::getOptionValue (config::opt_incl_path_set);
-      result = find_if (path_set.begin (), path_set.end (), FindInDir (name, fullname)) != path_set.end ();
-    }
-    return result;
-  }
+      // otherwise search in curent dir if not sys 
+      else if (!sys && findInDir(getPath(inclname), name, fullname))
+      {
+         result = true;
+      }
+      else
+      {
+         StringVector const &path_set = config::getOptionValue(config::opt_incl_path_set);
+         result = std::find_if(path_set.begin(), path_set.end(), FindInDir(name, fullname)) != path_set.end();
+      }
+      return result;
+   }
 }
 
 using namespace file_op;
-using namespace std;
 
 namespace
 {
-  // true if in current dir
-  bool findInDir (string const & dir, string const & name, string & fullname)
-  {
-    bool result = false;
-    string file = join (dir, name);
-    if (exists (file) && ! isDirectory (file))
-    {
-      result = true;
-      fullname = file;
-    }
-    return result;
-  }
+   // true if in current dir
+   bool findInDir(std::string const &dir, std::string const &name, std::string &fullname)
+   {
+      bool result = false;
+      std::string file = join(dir, name);
+      if (exists(file) && ! isDirectory(file))
+      {
+         result = true;
+         fullname = file;
+      }
+      return result;
+   }
 
-  // find in dir
-  inline bool FindInDir (string const & name, string & fullname; string const & dir) const
-  {
-    return findInDir (dir, name, fullname);
-  }
+   // find in dir
+   inline bool FindInDir(std::string const &name, std::string &fullname; string const &dir) const
+   {
+      return findInDir(dir, name, fullname);
+   }
 }
 
 #hdr
@@ -57,7 +56,7 @@ namespace
 #end
 
 #src
-#include <config/options.h>
-#include <util/file_op.h>
+#include <config_options.h>
+#include <util_file_op.h>
 #include <algorithm>
 #end

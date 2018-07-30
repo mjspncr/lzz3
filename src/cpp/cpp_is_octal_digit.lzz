@@ -1,8 +1,8 @@
 namespace cpp
 {
-  // true if char is a octal digit
-  bool isOctalDigit (char ch)
-  {
-    return (ch >= '0' && ch <= '7');
-  }
+   // true if char is a octal digit
+   bool isOctalDigit(char ch)
+   {
+      return (ch >= '0' && ch <= '7');
+   }
 }

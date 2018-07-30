@@ -1,8 +1,8 @@
 namespace cpp
 {
-  // true if char is a hex digit
-  bool isHexDigit (char ch)
-  {
-    return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
-  }
+   // true if char is a hex digit
+   bool isHexDigit(char ch)
+   {
+      return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
+   }
 }

@@ -1,11 +1,11 @@
 namespace cpp
 {
-  enum FileType
-  {
-    FILE_HDR,
-    FILE_SRC,
-    FILE_INL,
-    FILE_TPL,
-    FILE_TNL, 
-  }
+   enum FileType
+   {
+      FILE_HDR,
+      FILE_SRC,
+      FILE_INL,
+      FILE_TPL,
+      FILE_TNL, 
+   }
 }

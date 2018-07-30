@@ -1,506 +1,504 @@
 namespace cpp
 {
-  class Preprocessor;
-  class Lexer;
+   class Preprocessor;
+   class Lexer;
 
-  // lex block token, return true if successful
-  bool lexBlock (Session & session, int lex_state, Lexer & lexer, TokenPtrDeque & tokens, Loc & loc, std::string & lexeme)
-  {
-    switch (lex_state)
-    {
-#define LEX_BLOCK(N) case N: return LexBlock##N ().lex (session, lexer, tokens, loc, lexeme);
-      LEX_BLOCK(1)
-      LEX_BLOCK(2)
-      LEX_BLOCK(3)
-      LEX_BLOCK(4)
-      LEX_BLOCK(5)
-      LEX_BLOCK(7)
-      LEX_BLOCK(8)
-      LEX_BLOCK(9)
-#undef LEX_BLOCK
-      default:
+   // lex block token, return true if successful
+   bool lexBlock(Session & session, int lex_state, Lexer &lexer, TokenPtrDeque &tokens, Loc &loc, std::string &lexeme)
+   {
+      switch (lex_state)
       {
-        throw ParseError (Message ("% is not a supported lexical state") << lex_state);
+#define LEX_BLOCK(N) \
+         case N: \
+         { \
+             return LexBlock##N().lex(session, lexer, tokens, loc, lexeme); \
+         }
+         LEX_BLOCK(1)
+         LEX_BLOCK(2)
+         LEX_BLOCK(3)
+         LEX_BLOCK(4)
+         LEX_BLOCK(5)
+         LEX_BLOCK(7)
+         LEX_BLOCK(8)
+         LEX_BLOCK(9)
+#undef LEX_BLOCK
+         default:
+         {
+            throw std::runtime_error(Message("% is not a supported lexical state") << lex_state);
+         }
       }
-    }
-  }
+   }
 }
 
 using namespace cpp;
-using namespace std;
 
 namespace
 {
-  struct LexBlock ()
-  {
-    // true if end token
-    virtual bool isEndToken (int number) = 0;
+   struct LexBlock()
+   {
+      // true if end token
+      virtual bool isEndToken(int number) = 0;
 
-    // true if found block
-    bool lex (Session & session, Lexer & lexer, TokenPtrDeque & tokens, Loc & loc, std::string & lexeme)
-    {
-      bool found_end = false;
-      Loc start_loc;
-      ostringstream ss;
-      // first use tokens
-      if (! tokens.empty ())
+      // true if found block
+      bool lex(Session &session, Lexer &lexer, TokenPtrDeque &tokens, Loc &loc, std::string &lexeme)
       {
-        while (! (tokens.empty () || found_end))
-        {
-          // check if terminating token
-          TokenPtr token = tokens.front ();
-          if (isEndToken (token->getNumber ()))
-          {
-            found_end = true;
-          }
-          else
-          {
-            // otherwise append lexeme and pop token
-            if (! start_loc.isSet ())
+         bool found_end = false;
+         Loc start_loc;
+         ostringstream ss;
+         // first use tokens
+         if (!tokens.empty())
+         {
+            while (!(tokens.empty() || found_end))
             {
-              start_loc = token->getLocation ();
+               // check if terminating token
+               TokenPtr token = tokens.front();
+               if (isEndToken(token->getNumber()))
+               {
+                  found_end = true;
+               }
+               else
+               {
+                  // otherwise append lexeme and pop token
+                  if (!start_loc.isSet())
+                  {
+                     start_loc = token->getLocation();
+                  }
+                  ss << token->getLexeme();
+                  ss << ' ';
+                  tokens.pop_front();
+               }
             }
-            ss << token->getLexeme ();
-            ss << ' ';
-            tokens.pop_front ();
-          }
-        }
-      }
-      // if not found end skip over whitespace
-      if (! found_end)
-      {
-        lexer.discardAllWs ();
-        start_loc = lexer.getLoc ();
-      }
-      // read from lexer if block not found end
-      while (! found_end)
-      {
-        // should not find end of file
-        char ch;
-        if (! lexer.peekChar (ch))
-        {
-          // error if lexing from file 
-          if (lexer.fromFile ())
-          {
-            throw ParseError (start_loc, "unexpected end of file in literal block");
-          }
-          // otherwise lexing BLOCK so must have found end
-          found_end = true;
-          break;
-        }
-        // check if start of comment
-        char next_ch;
-        if (ch == '/' && lexer.peekChar (next_ch, 1) && (next_ch == '*' || next_ch == '/'))
-        {
-          // save start of comment loc
-          Loc temp_loc = lexer.getLoc ();
-          // read and append '/'
-          lexer.nextChar (ch);
-          ss << ch;
-          // read and append second character
-          lexer.nextChar (ch);
-          ss << ch;
-          if (ch == '*')
-          {
-            // c-comment
-            for (;;)
+         }
+         // if not found end skip over whitespace
+         if (!found_end)
+         {
+            lexer.discardAllWs();
+            start_loc = lexer.getLoc();
+         }
+         // read from lexer if block not found end
+         while (!found_end)
+         {
+            // should not find end of file
+            char ch;
+            if (!lexer.peekChar(ch))
             {
-              // should not be end of file
-              if (! lexer.nextChar (ch))
-              {
-                throw ParseError (temp_loc, "unexpected end of file in C-style comment");
-              }
-              ss << ch;
-              if (ch == '*' && lexer.peekChar (next_ch) && next_ch == '/')
-              {
-                // read and append '/'
-                lexer.nextChar (ch);
-                ss << ch;
-                break;
-              }
+               // error if lexing from file 
+               if (lexer.fromFile())
+               {
+                  throw std::runtime_error(start_loc, "unexpected end of file in literal block");
+               }
+               // otherwise lexing BLOCK so must have found end
+               found_end = true;
+               break;
             }
-          }
-          else
-          {
-            // cpp comment
-            do
+            // check if start of comment
+            char next_ch;
+            if (ch == '/' && lexer.peekChar(next_ch, 1) && (next_ch == '*' || next_ch == '/'))
             {
-              lexer.nextChar (ch);
-              ss << ch;
+               // save start of comment loc
+               Loc temp_loc = lexer.getLoc();
+               // read and append '/'
+               lexer.nextChar(ch);
+               ss << ch;
+               // read and append second character
+               lexer.nextChar(ch);
+               ss << ch;
+               if (ch == '*')
+               {
+                  // c-comment
+                  for (;;)
+                  {
+                     // should not be end of file
+                     if (!lexer.nextChar(ch))
+                     {
+                        throw std::runtime_error(temp_loc, "unexpected end of file in C-style comment");
+                     }
+                     ss << ch;
+                     if (ch == '*' && lexer.peekChar(next_ch) && next_ch == '/')
+                     {
+                        // read and append '/'
+                        lexer.nextChar(ch);
+                        ss << ch;
+                        break;
+                     }
+                  }
+               }
+               else
+               {
+                  // cpp comment
+                  do
+                  {
+                     lexer.nextChar(ch);
+                     ss << ch;
+                  }
+                  while (ch != '\n');
+               }
             }
-            while (ch != '\n');
-          }
-        }
-        // check if start of char literal
-        else if (ch == '\'')
-        {
-          // save start of literal
-          Loc temp_loc = lexer.getLoc ();
-          // read and append quote
-          lexer.nextChar (ch);
-          ss << ch;
-          // next character must not be a quote
-          if (lexer.peekChar (ch) && ch == '\'')
-          {
-            throw ParseError (temp_loc, "empty literal character");
-          }
-          for (bool esc = false;;)
-          {
-            lexer.nextChar (ch);
-            if (ch == '\n')
-            {
-              throw ParseError (temp_loc, "newline in literal character");
-            }
-            ss << ch;
-            if (esc)
-            {
-              esc = false;
-            }
+            // check if start of char literal
             else if (ch == '\'')
             {
-              break;
+               // save start of literal
+               Loc temp_loc = lexer.getLoc();
+               // read and append quote
+               lexer.nextChar(ch);
+               ss << ch;
+               // next character must not be a quote
+               if (lexer.peekChar(ch) && ch == '\'')
+               {
+                  throw std::runtime_error(Message(temp_loc, "empty literal character"));
+               }
+               for (bool esc = false;;)
+               {
+                  lexer.nextChar (ch);
+                  if (ch == '\n')
+                  {
+                     throw std::runtime_error(Message(temp_loc, "newline in literal character"));
+                  }
+                  ss << ch;
+                  if (esc)
+                  {
+                     esc = false;
+                  }
+                  else if (ch == '\'')
+                  {
+                     break;
+                  }
+                  else if (ch == '\\')
+                  {
+                     esc = true;
+                  }
+               }
             }
-            else if (ch == '\\')
-            {
-              esc = true;
-            }
-          }
-        }
-        // check if start of string literal
-        else if (ch == '\"')
-        {
-          // save start of literal
-          Loc loc = lexer.getLoc ();
-          // read and append quote
-          lexer.nextChar (ch);
-          ss << ch;
-          for (bool esc = false;;)
-          {
-            lexer.nextChar (ch);
-            if (ch == '\n')
-            {
-              throw ParseError (loc, "newline in literal string");
-            }
-            ss << ch;
-            if (esc)
-            {
-              esc = false;
-            }
+            // check if start of string literal
             else if (ch == '\"')
             {
-              break;
+               // save start of literal
+               Loc loc = lexer.getLoc();
+               // read and append quote
+               lexer.nextChar(ch);
+               ss << ch;
+               for (bool esc = false;;)
+               {
+                  lexer.nextChar(ch);
+                  if (ch == '\n')
+                  {
+                     throw std::runtime_error(Message(loc, "newline in literal string"));
+                  }
+                  ss << ch;
+                  if (esc)
+                  {
+                     esc = false;
+                  }
+                  else if (ch == '\"')
+                  {
+                     break;
+                  }
+                  else if (ch == '\\')
+                  {
+                     esc = true;
+                  }
+               }
             }
-            else if (ch == '\\')
+            else
             {
-              esc = true;
+               // check if special character
+               int number = 0;
+               switch (ch)
+               {
+                  case '<':
+                  {
+                     // don't care about left shift
+                     if (lexer.peekChar(next_ch, 1) && next_ch == ch)
+                     {
+                        lexer.nextChar(ch);
+                        ss << ch;
+                     }
+                     else
+                     {
+                        number = TOKEN_LT;
+                     }
+                     break;
+                  }
+                  case '>':
+                  {
+                     // here, where we care about >, we never want to treat >> as right shift 
+                     number = TOKEN_GT;
+                     break;
+                  }
+                  case '(':
+                  {
+                     number = TOKEN_LPAREN;
+                     break;
+                  }
+                  case ')':
+                  {
+                     number = TOKEN_RPAREN;
+                     break;
+                  }
+                  case '[':
+                  {
+                     number = TOKEN_LBRACK;
+                     break;
+                  }
+                  case ']':
+                  {
+                     number = TOKEN_RBRACK;
+                     break;
+                  }
+                  case '{':
+                  {
+                     number = TOKEN_LBRACE;
+                     break;
+                  }
+                  case '}':
+                  {
+                     number = TOKEN_RBRACE;
+                     break;
+                  }
+                  case ';':
+                  {
+                     number = TOKEN_SEMI;
+                     break;
+                  }
+                  case ',':
+                  {
+                     number = TOKEN_COMMA;
+                     break;
+                  }
+               }
+               if (number > 0 && isEndToken(number))
+               {
+                  // found end of block
+                  found_end = true;
+               }
+               else
+               {
+                  // read and append char
+                  lexer.nextChar(ch);
+                  ss << ch;
+               }
             }
-          }
-        }
-        else
-        {
-          // check if special character
-          int number = 0;
-          switch (ch)
-          {
-            case '<':
+         }
+         if (start_loc.isSet())
+         {
+            loc = start_loc;
+            lexeme = ss.str();
+            trimBack(lexeme);
+            return true;
+         }
+         return false;
+      }
+   }
+
+   // block 1: template arg list
+   struct LexBlock1() : LexBlock()
+   {
+      // expr nest
+      int expr_nest = 0;
+      // tmpl nest
+      int tmpl_nest = 0;
+
+      // example
+      // vector<pair<int,double>> x;
+
+      // true if end char
+      bool isEndToken(int number)
+      {
+         bool result = false;
+         if (tmpl_nest == 0 && expr_nest == 0 && number == TOKEN_GT)
+         {
+            result = true;
+         }
+         else if (number == TOKEN_LPAREN)
+         {
+            ++expr_nest;
+         }
+         else if (number == TOKEN_RPAREN && expr_nest > 0)
+         {
+            --expr_nest;
+         }
+         else if (expr_nest == 0)
+         {
+            if (number == TOKEN_LT)
             {
-              // don't care about left shift
-              if (lexer.peekChar (next_ch, 1) && next_ch == ch)
-              {
-                lexer.nextChar (ch);
-                ss << ch;
-              }
-              else
-              {
-                number = TOKEN_LT;
-              }
-              break;
+               ++tmpl_nest;
             }
-            case '>':
+            else if (number == TOKEN_GT)
             {
-              // here, where we care about >, we never want to treat >> as right shift 
-              number = TOKEN_GT;
-              break;
+               --tmpl_nest;
             }
-            case '(':
+         }
+         return result;
+      }
+   }
+
+   // block 2: parenthesized expr
+   struct LexBlock2(int lparen = TOKEN_LPAREN, int rparen = TOKEN_RPAREN) : LexBlock()
+   {
+      // expr nesting
+      int expr_nest = 0;
+      // true if end token
+      bool isEndToken(int number)
+      {
+         bool result = false;
+         if (expr_nest == 0 && number == rparen)
+         {
+            result = true;
+         }
+         else if (number == lparen)
+         {
+            ++expr_nest;
+         }
+         else if (number == rparen)
+         {
+            --expr_nest;
+         }
+         return result;
+      }
+   }
+
+   // block 3: copy and brace init expr
+   struct LexBlock3() : LexBlock()
+   {
+      // brace nesting
+      int brac_nest = 0;
+
+      // expr nesting
+      int expr_nest = 0;
+
+      // true if end token
+      bool isEndToken(int number)
+      {
+         bool result = false;
+         if ((brac_nest == 0 && expr_nest == 0 && number == TOKEN_COMMA) || number == TOKEN_SEMI)
+         {
+            result = true;
+         }
+         else if (number == TOKEN_LBRACE)
+         {
+            ++brac_nest;
+            expr_nest = 0;
+         }
+         else if (number == TOKEN_RBRACE && brac_nest > 0)
+         {
+            --brac_nest;
+         }
+         else if (brac_nest == 0)
+         {
+            if (number == TOKEN_LPAREN)
             {
-              number = TOKEN_LPAREN;
-              break;
+               ++expr_nest;
             }
-            case ')':
+            else if (number == TOKEN_RPAREN && expr_nest > 0)
             {
-              number = TOKEN_RPAREN;
-              break;
+               --expr_nest;
             }
-            case '[':
-            {
-              number = TOKEN_LBRACK;
-              break;
-            }
-            case ']':
-            {
-              number = TOKEN_RBRACK;
-              break;
-            }
-            case '{':
-            {
-              number = TOKEN_LBRACE;
-              break;
-            }
-            case '}':
-            {
-              number = TOKEN_RBRACE;
-              break;
-            }
-            case ';':
-            {
-              number = TOKEN_SEMI;
-              break;
-            }
-            case ',':
-            {
-              number = TOKEN_COMMA;
-              break;
-            }
-          }
-          if (number > 0 && isEndToken (number))
-          {
-            // found end of block
-            found_end = true;
-          }
-          else
-          {
-            // read and append char
-            lexer.nextChar (ch);
-            ss << ch;
-          }
-        }
+         }
+         return result;
       }
-      if (start_loc.isSet ())
-      {
-        loc = start_loc;
-        lexeme = ss.str ();
-        trimBack (lexeme);
-        return true;
-      }
-      return false;
-    }
-  }
+   }
 
-  // block 1: template arg list
-  struct LexBlock1 () : LexBlock ()
-  {
-    // expr nest
-    int expr_nest = 0;
-    // tmpl nest
-    int tmpl_nest = 0;
+   // block 4: direct init expr or func default arg
+   struct LexBlock4() : LexBlock()
+   {
+      // expr nesting
+      int expr_nest = 0;
 
-    // example
-    // vector<pair<int,double>> x;
+      // true if end token
+      bool isEndToken (int number)
+      {
+         bool result = false;
+         // in functor def arg may end with ';'
+         if (expr_nest == 0 && (number == TOKEN_RPAREN || number == TOKEN_RBRACE || number == TOKEN_COMMA || number == TOKEN_SEMI))
+         {
+            result = true;
+         }
+         else if (number == TOKEN_LPAREN)
+         {
+            ++expr_nest;
+         }
+         else if (number == TOKEN_RPAREN)
+         {
+            --expr_nest;
+         }
+         return result;
+      }
+   }
 
-    // true if end char
-    bool isEndToken (int number)
-    {
-      bool result = false;
-      if (tmpl_nest == 0 && expr_nest == 0 && number == TOKEN_GT)
-      {
-        result = true;
-      }
-      else if (number == TOKEN_LPAREN)
-      {
-        ++ expr_nest;
-      }
-      else if (number == TOKEN_RPAREN && expr_nest > 0)
-      {
-        -- expr_nest;
-      }
-      else if (expr_nest == 0)
-      {
-        if (number == TOKEN_LT)
-        {
-          ++ tmpl_nest;
-        }
-        else if (number == TOKEN_GT)
-        {
-          -- tmpl_nest;
-        }
-      }
-      return result;
-    }
-  }
+   // block 5: array dimension
+   struct LexBlock5() : LexBlock2(TOKEN_LBRACK, TOKEN_RBRACK)
+   {}
 
-  // block 2: parenthesized expr
-  struct LexBlock2 (int lparen = TOKEN_LPAREN, int rparen = TOKEN_RPAREN) : LexBlock ()
-  {
-    // expr nesting
-    int expr_nest = 0;
-    // true if end token
-    bool isEndToken (int number)
-    {
-      bool result = false;
-      if (expr_nest == 0 && number == rparen)
-      {
-        result = true;
-      }
-      else if (number == lparen)
-      {
-        ++ expr_nest;
-      }
-      else if (number == rparen)
-      {
-        -- expr_nest;
-      }
-      return result;
-    }
-  }
-
-  // block 3: copy and brace init expr
-  struct LexBlock3 () : LexBlock ()
-  {
-    // brace nesting
-    int brac_nest = 0;
-
-    // expr nesting
-    int expr_nest = 0;
-
-    // true if end token
-    bool isEndToken (int number)
-    {
-      bool result = false;
-      if ((brac_nest == 0 && expr_nest == 0 && number == TOKEN_COMMA) || number == TOKEN_SEMI)
-      {
-        result = true;
-      }
-      else if (number == TOKEN_LBRACE)
-      {
-        ++ brac_nest;
-        expr_nest = 0;
-      }
-      else if (number == TOKEN_RBRACE && brac_nest > 0)
-      {
-        -- brac_nest;
-      }
-      else if (brac_nest == 0)
-      {
-        if (number == TOKEN_LPAREN)
-        {
-          ++ expr_nest;
-        }
-        else if (number == TOKEN_RPAREN && expr_nest > 0)
-        {
-          -- expr_nest;
-        }
-      }
-      return result;
-    }
-  }
-
-  // block 4: direct init expr or func default arg
-  struct LexBlock4 () : LexBlock ()
-  {
-    // expr nesting
-    int expr_nest = 0;
-
-    // true if end token
-    bool isEndToken (int number)
-    {
-      bool result = false;
-      // in functor def arg may end with ';'
-      if (expr_nest == 0 &&
-          (number == TOKEN_RPAREN || number == TOKEN_RBRACE || number == TOKEN_COMMA || number == TOKEN_SEMI))
-      {
-        result = true;
-      }
-      else if (number == TOKEN_LPAREN)
-      {
-        ++ expr_nest;
-      }
-      else if (number == TOKEN_RPAREN)
-      {
-        -- expr_nest;
-      }
-      return result;
-    }
-  }
-
-  // block 5: array dimension
-  struct LexBlock5 () : LexBlock2 (TOKEN_LBRACK, TOKEN_RBRACK)
-  {
-  }
-
-  // block 7: func body
-  struct LexBlock7 () : LexBlock2 (TOKEN_LBRACE, TOKEN_RBRACE)
-  {
-  }
+   // block 7: func body
+   struct LexBlock7() : LexBlock2(TOKEN_LBRACE, TOKEN_RBRACE)
+   {}
  
-  // block 8: tmpl param default arg
-  struct LexBlock8 (int close_ch = TOKEN_GT) : LexBlock ()
-  {
-    // expr and template nesting -- assume < outside of parens is start of template arg
-    int expr_nest = 0;
-    int tmpl_nest = 0;
+   // block 8: tmpl param default arg
+   struct LexBlock8(int close_ch = TOKEN_GT) : LexBlock()
+   {
+      // expr and template nesting -- assume < outside of parens is start of template arg
+      int expr_nest = 0;
+      int tmpl_nest = 0;
 
-    // examples:
-    //   template <int t = X<Z<int>>::x>
-    //   class A { }
-    //
-    //   enum A
-    //   {
-    //     M = X<Z<int>>::M
-    //   }
+      // examples:
+      //   template <int t = X<Z<int>>::x>
+      //   class A { }
+      //
+      //   enum A
+      //   {
+      //     M = X<Z<int>>::M
+      //   }
 
-    // true if end token
-    bool isEndToken (int number)
-    {
-      bool result = false;
-      if (tmpl_nest == 0 && expr_nest == 0 && (number == close_ch || number == TOKEN_COMMA))
+      // true if end token
+      bool isEndToken(int number)
       {
-        result = true;
+         bool result = false;
+         if (tmpl_nest == 0 && expr_nest == 0 && (number == close_ch || number == TOKEN_COMMA))
+         {
+            result = true;
+         }
+         else if (number == TOKEN_LPAREN)
+         {
+            ++expr_nest;
+         }
+         else if (number == TOKEN_RPAREN && expr_nest > 0)
+         {
+            --expr_nest;
+         }
+         else if (expr_nest == 0)
+         {
+            if (number == TOKEN_LT)
+            {
+               ++tmpl_nest;
+            }
+            else if (number == TOKEN_GT)
+            {
+               --tmpl_nest;
+            }
+         }
+         return result;
       }
-      else if (number == TOKEN_LPAREN)
-      {
-        ++ expr_nest;
-      }
-      else if (number == TOKEN_RPAREN && expr_nest > 0)
-      {
-        -- expr_nest;
-      }
-      else if (expr_nest == 0)
-      {
-        if (number == TOKEN_LT)
-        {
-          ++ tmpl_nest;
-        }
-        else if (number == TOKEN_GT)
-        {
-          -- tmpl_nest;
-        }
-      }
-      return result;
-    }
-  }
+   }
 
-  // block 9: enumerator init
-  struct LexBlock9 () : LexBlock8 (TOKEN_RBRACE)
-  {
-  }
+   // block 9: enumerator init
+   struct LexBlock9() : LexBlock8 (TOKEN_RBRACE)
+   {}
 }
 
 #hdr
-#include <cpp/session_fwd.h>
-#include <cpp/token_ptr_deque.h>
-#include <util/loc.h>
+#include <cpp_session_fwd.h>
+#include <cpp_token_ptr_deque.h>
+#include <util_loc.h>
 #include <string>
 #end
 
 #src
-#include <config/config.h>
-#include <cpp/lexer.h>
-#include <cpp/preprocessor.h>
-#include <cpp/token.h>
-#include <cpp/token_numbers.h>
-#include <util/parse_error.h>
-#include <util/message.h>
-#include <util/trim.h>
+#include <config_config.h>
+#include <cpp_lexer.h>
+#include <cpp_preprocessor.h>
+#include <cpp_token.h>
+#include <cpp_token_numbers.h>
+#include <util_message.h>
+#include <util_trim.h>
 #include <sstream>
 #end

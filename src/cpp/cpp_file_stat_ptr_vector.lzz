@@ -1,13 +1,13 @@
 namespace cpp
 {
-  typedef std::vector <FileStatPtr> FileStatPtrVector;
-  typedef std::vector <FileStatPtr>::iterator FileStatPtrVectorIter;
-  typedef std::vector <FileStatPtr>::const_iterator FileStatPtrVectorConstIter;
-  typedef std::vector <FileStatPtr>::reverse_iterator FileStatPtrVectorRevIter;
-  typedef std::vector <FileStatPtr>::const_reverse_iterator FileStatPtrVectorConstRevIter;
+   typedef std::vector<FileStatPtr> FileStatPtrVector;
+   typedef FileStatPtrVector::iterator FileStatPtrVectorIter;
+   typedef FileStatPtrVector::const_iterator FileStatPtrVectorConstIter;
+   typedef FileStatPtrVector::reverse_iterator FileStatPtrVectorRevIter;
+   typedef FileStatPtrVector::const_reverse_iterator FileStatPtrVectorConstRevIter;
 }
 
 #hdr
-#include <cpp/file_stat_ptr.h>
+#include <cpp_file_stat_ptr.h>
 #include <vector>
 #end

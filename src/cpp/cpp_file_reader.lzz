@@ -1,185 +1,182 @@
 namespace cpp
 {
-  class FileReader
-  {
-  public:
-    // read from file
-    FileReader (char const * filename)
-      : filename_ (filename), state_ (FILE_START), buf_beg_ (0), buf_end_ (0), peek_beg_ (0), peek_end_ (0)
-    {
-      // allocate file buffer
-      buf_ = new char [FILE_BUF_SIZE];
-    }
-    // read from string at location
-    FileReader (std::string const & str, Loc const & loc)
-      : filename_ (loc.getFilename ()), state_ (FILE_EOF), peek_beg_ (0), peek_end_ (0)
-    {
-      // save string in buffer
-      int len = str.length ();
-      buf_ = new char [len + 1];
-      buf_beg_ = buf_;
-      buf_end_ = buf_beg_ + len;
-      str.copy (buf_, len);
-    }
-    ~ FileReader ()
-    {
-      delete [] buf_;
-    }
-    // get filename
-    inline char const * getFilename () const
-    {
-      return filename_;
-    }
-    // peek n chars ahead, return true successful
-    bool peekChar (char & ch, int n = 0)
-    {
-      int i = (peek_beg_ + n) % MAX_PEEK;
-      if (i == peek_end_)
+   class FileReader
+   {
+   public:
+      // read from file
+      FileReader(char const *filename)
+         : filename_(filename), state_(FILE_START), buf_beg_(0), buf_end_(0), peek_beg_(0), peek_end_(0)
       {
-        if (! readChar (peek_buf_ [peek_end_]))
-        {
-          return false;
-        }
-        peek_end_ = (peek_end_ + 1) % MAX_PEEK;
+         // allocate file buffer
+         buf_ = new char [FILE_BUF_SIZE];
       }
-      ch = peek_buf_ [i]; 
-      return true;
-    }
-    // read char, return true if successful
-    bool nextChar (char & ch)
-    {
-      // check in peek buffer first
-      if (peek_beg_ == peek_end_)
+      // read from string at location
+      FileReader(std::string const & str, Loc const & loc)
+         : filename_(loc.getFilename()), state_(FILE_EOF), peek_beg_(0), peek_end_(0)
       {
-        if (! readChar (ch))
-        {
-          return false;
-        }
+         // save string in buffer
+         int len = str.length();
+         buf_ = new char[len + 1];
+         buf_beg_ = buf_;
+         buf_end_ = buf_beg_ + len;
+         str.copy(buf_, len);
       }
-      else
+      ~FileReader()
       {
-        ch = peek_buf_ [peek_beg_];
-        peek_beg_ = (peek_beg_ + 1) % MAX_PEEK;
+         delete[] buf_;
       }
-      return true;
-    }
-    // pause
-    void pause ()
-    {
-      if (state_ == FILE_OPEN)
+      // get filename
+      inline char const *getFilename() const
       {
-        // save file position
-        if (fgetpos (fp_, & file_pos_) != 0)
-        {
-          throw ParseError (Message ("failed to get current file position: %") << filename_);
-        }
-        fclose (fp_);
-        state_ = FILE_CLOSED;
+         return filename_;
       }
-    }
-  private:
-    // read char, return true if successful
-    bool readChar (char & ch)
-    {
-      // otherwise read from file
-      if (buf_beg_ == buf_end_ && state_ != FILE_EOF)
+      // peek n chars ahead, return true successful
+      bool peekChar(char &ch, int n = 0)
       {
-        if (state_ == FILE_CLOSED || state_ == FILE_START)
-        {
-          fp_ = fopen (filename_, "r");
-          if (! fp_)
-          {
-            throw ParseError (Message ("failed to open file: %") << filename_);
-          }
-          // advance file pointer if closed
-          if (state_ == FILE_CLOSED)
-          {
-            // set file position
-            if (fsetpos (fp_, & file_pos_) != 0)
+         int i = (peek_beg_ + n) % MAX_PEEK;
+         if (i == peek_end_)
+         {
+            if (!readChar(peek_buf_[peek_end_]))
             {
-              throw ParseError (Message ("failed to set file position: %") << filename_);
+               return false;
             }
-          }
-        }
-        // read characters into buffer
-        int num_read = fread (buf_, sizeof (char), FILE_BUF_SIZE, fp_);
-        // check if end of file
-        if (feof (fp_))
-        {
-          // close file
-          fclose (fp_);
-          state_ = FILE_EOF;
-        }
-        else
-        {
-          // otherwise make sure some characters were read
-          if (num_read == 0)
-          {
-            throw ParseError (Message ("failed to read file: %") << filename_);
-          }
-          // file is now open
-          state_ = FILE_OPEN;
-        }
-        // set buf bounds
-        buf_beg_ = buf_;
-        buf_end_ = buf_beg_ + num_read;
+            peek_end_ = (peek_end_ + 1) % MAX_PEEK;
+         }
+         ch = peek_buf_[i]; 
+         return true;
       }
-      // get next char
-      if (buf_beg_ == buf_end_)
+      // read char, return true if successful
+      bool nextChar(char & ch)
       {
-        return false;
+         // check in peek buffer first
+         if (peek_beg_ == peek_end_)
+         {
+            if (!readChar(ch))
+            {
+               return false;
+            }
+         }
+         else
+         {
+            ch = peek_buf_[peek_beg_];
+            peek_beg_ = (peek_beg_ + 1) % MAX_PEEK;
+         }
+         return true;
       }
-      ch = * buf_beg_ ++;
-      return true;
-    }
-  private:
-    enum { MAX_PEEK = 16 };
-    char const * filename_;
-    FILE * fp_;
-    // file read state
-    int state_;
-    // saved file position after pause
-    fpos_t file_pos_;
-    // file buffer
-    char * buf_;
-    // file buf begin
-    char * buf_beg_;
-    // file buf end
-    char * buf_end_;
-    // peek buffer
-    char peek_buf_ [MAX_PEEK];
-    int peek_beg_;
-    int peek_end_;
-  }
+      // pause
+      void pause()
+      {
+         if (state_ == FILE_OPEN)
+         {
+            // save file position
+            if (fgetpos(fp_, & file_pos_) != 0)
+            {
+               throw std::runtime_error(Message("failed to get current file position: %") << filename_);
+            }
+            fclose(fp_);
+            state_ = FILE_CLOSED;
+         }
+      }
+   private:
+      // read char, return true if successful
+      bool readChar(char &ch)
+      {
+         // otherwise read from file
+         if (buf_beg_ == buf_end_ && state_ != FILE_EOF)
+         {
+            if (state_ == FILE_CLOSED || state_ == FILE_START)
+            {
+               fp_ = fopen(filename_, "r");
+               if (! fp_)
+               {
+                  throw std::runtime_error(Message("failed to open file: %") << filename_);
+               }
+               // advance file pointer if closed
+               if (state_ == FILE_CLOSED)
+               {
+                  // set file position
+                  if (fsetpos(fp_, & file_pos_) != 0)
+                  {
+                     throw std::runtime_error(Message("failed to set file position: %") << filename_);
+                  }
+               }
+            }
+            // read characters into buffer
+            int num_read = fread(buf_, sizeof (char), FILE_BUF_SIZE, fp_);
+            // check if end of file
+            if (feof(fp_))
+            {
+               // close file
+               fclose(fp_);
+               state_ = FILE_EOF;
+            }
+            else
+            {
+               // otherwise make sure some characters were read
+               if (num_read == 0)
+               {
+                  throw std::runtime_error(Message("failed to read file: %") << filename_);
+               }
+               // file is now open
+               state_ = FILE_OPEN;
+            }
+            // set buf bounds
+            buf_beg_ = buf_;
+            buf_end_ = buf_beg_ + num_read;
+         }
+         // get next char
+         if (buf_beg_ == buf_end_)
+         {
+            return false;
+         }
+         ch = * buf_beg_ ++;
+         return true;
+      }
+   private:
+      enum { MAX_PEEK = 16 };
+      char const *filename_;
+      FILE * fp_;
+      // file read state
+      int state_;
+      // saved file position after pause
+      fpos_t file_pos_;
+      // file buffer
+      char * buf_;
+      // file buf begin
+      char * buf_beg_;
+      // file buf end
+      char * buf_end_;
+      // peek buffer
+      char peek_buf_[MAX_PEEK];
+      int peek_beg_;
+      int peek_end_;
+   }
 }
-
-using namespace std;
 
 namespace
 {
-  enum { FILE_BUF_SIZE = 4096 }
+   enum { FILE_BUF_SIZE = 4096 };
 
-  // file states
-  enum
-  {
-    // at start of file, file not open
-    FILE_START,
-    // file opened then closed
-    FILE_CLOSED,
-    // file open
-    FILE_OPEN,
-    // at end of file, file is closed
-    FILE_EOF,
-  };
+   // file states
+   enum
+   {
+      // at start of file, file not open
+      FILE_START,
+      // file opened then closed
+      FILE_CLOSED,
+      // file open
+      FILE_OPEN,
+      // at end of file, file is closed
+      FILE_EOF,
+   };
 }
 
 #hdr
-#include <util/loc.h>
+#include <util_loc.h>
 #include <string>
 #include <stdio.h>
 #end
 
 #src
-#include <util/message.h>
-#include <util/parse_error.h>
+#include <util_message.h>
 #end

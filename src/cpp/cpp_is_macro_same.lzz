@@ -1,57 +1,56 @@
 namespace cpp
 {
-  // true if macros are same, used to test if macro is redefined
-  bool isMacroSame (MacroPtr const & macro, bool is_func, StringVector const & params, bool var, TokenPtrVector const & tokens)
-  {
-    bool same = false;
-    int kind = is_func ? FUNC_MACRO : OBJ_MACRO;
-    if (kind == macro->getKind ())
-    {
-      bool same = true; 
-      if (kind == FUNC_MACRO)
+   // true if macros are same, used to test if macro is redefined
+   bool isMacroSame(MacroPtr const &macro, bool is_func, StringVector const &params, bool var, TokenPtrVector const &tokens)
+   {
+      bool same = false;
+      int kind = is_func ? FUNC_MACRO : OBJ_MACRO;
+      if (kind == macro->getKind())
       {
-        FuncMacro const & func_macro = static_cast <FuncMacro const &> (* macro);
-        same = size_t (func_macro.getNumParams ()) == params.size () && func_macro.hasVarArgs () == var && 
-          equal (params.begin (), params.end (), func_macro.getParams ().begin ());
+         bool same = true; 
+         if (kind == FUNC_MACRO)
+         {
+            FuncMacro const &func_macro = static_cast<FuncMacro const &> (*macro);
+            same = size_t(func_macro.getNumParams()) == params.size() && func_macro.hasVarArgs() == var && 
+               equal(params.begin(), params.end(), func_macro.getParams().begin());
+         }
+         TokenPtrVector const &macro_tokens = static_cast<RepMacro const &> (*macro).getRepTokens();
+         same = same && tokens.size () == macro_tokens.size() &&
+            equal(tokens.begin(), tokens.end(), macro_tokens.begin(), IsSame());
       }
-      TokenPtrVector const & macro_tokens = static_cast <RepMacro const &> (* macro).getRepTokens ();
-      same = same && tokens.size () == macro_tokens.size () &&
-        equal (tokens.begin (), tokens.end (), macro_tokens.begin (), IsSame ());
-    }
-    return same;
-  }
+      return same;
+   }
 }
 
 using namespace cpp;
-using namespace std;
 
 namespace
 {
-  // true if replacement token same
-  bool IsSame (bool first = true; TokenPtr const & a, TokenPtr const & b)
-  {
-    // token same if lexeme same and delimiting space same
-    bool result = a->getLexeme () == b->getLexeme ();
-    if (first)
-    {
-      first = false;
-    }
-    else
-    {
-      result = result && (a->hasSpaceBefore () == b->hasSpaceBefore ());
-    }
-    return result;
-  }
+   // true if replacement token same
+   bool IsSame(bool first = true; TokenPtr const &a, TokenPtr const &b)
+   {
+      // token same if lexeme same and delimiting space same
+      bool result = a->getLexeme() == b->getLexeme ();
+      if (first)
+      {
+         first = false;
+      }
+      else
+      {
+         result = result && (a->hasSpaceBefore () == b->hasSpaceBefore ());
+      }
+      return result;
+   }
 }
 
 #hdr
-#include <cpp/macro_ptr.h>
-#include <cpp/token_ptr_vector.h>
-#include <util/string_vector.h>
+#include <cpp_macro_ptr.h>
+#include <cpp_token_ptr_vector.h>
+#include <util_string_vector.h>
 #end
 
 #src
-#include <cpp/macro.h>
-#include <cpp/token.h>
+#include <cpp_macro.h>
+#include <cpp_token.h>
 #include <algorithm>
 #end

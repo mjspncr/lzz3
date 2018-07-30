@@ -1,67 +1,67 @@
 namespace cpp
 {
-  // if name is keyword set kind and return true
-  bool isKeyword (Session & session, std::string const & name, int & kind)
-  {
-    return session.getKeywordTable ().isKeyword (name, kind);
-  }
+   // if name is keyword set kind and return true
+   bool isKeyword(Session &session, std::string const &name, int &kind)
+   {
+      return session.getKeywordTable().isKeyword(name, kind);
+   }
 
-  // preprocessor keywords
-  struct KeywordTable
-  {
-    KeywordTable ()
-    {
-      struct
+   // preprocessor keywords
+   struct KeywordTable
+   {
+      KeywordTable()
       {
-        char const * name;
-        int kind;
+         struct
+         {
+            char const *name;
+            int kind;
+         }
+         tbl[] =
+         {
+            { "and",              TOKEN_AND },
+            { "bitor",            TOKEN_BITOR },
+            { "or",               TOKEN_OR },
+            { "xor",              TOKEN_XOR },
+            { "compl",            TOKEN_BITNOT },
+            { "bitand",           TOKEN_BITAND },
+            { "not",              TOKEN_NOT },
+            { "not_eq",           TOKEN_NOTEQ },
+            /* are these real keywords?
+            { "and_eq",           TOKEN_BITAND_ASSIGN },
+            { "or_eq",            TOKEN_BITOR_ASSIGN },
+            { "xor_eq",           TOKEN_XOR_ASSIGN },
+            */
+         };
+         for (int i = 0, n = ARRAY_SIZE(tbl); i < n; ++ i)
+         {
+            kwds.insert(StringIntMap::value_type(tbl[i].name, tbl[i].kind));
+         }
       }
-      tbl [] =
+      ~KeywordTable()
+      {}
+      // if name is keyword set kind and return true
+      bool isKeyword(std::string const &name, int &kind) const
       {
-        { "and",              TOKEN_AND },
-        { "bitor",            TOKEN_BITOR },
-        { "or",               TOKEN_OR },
-        { "xor",              TOKEN_XOR },
-        { "compl",            TOKEN_BITNOT },
-        { "bitand",           TOKEN_BITAND },
-        { "not",              TOKEN_NOT },
-        { "not_eq",           TOKEN_NOTEQ },
-        /* are these real keywords?
-        { "and_eq",           TOKEN_BITAND_ASSIGN },
-        { "or_eq",            TOKEN_BITOR_ASSIGN },
-        { "xor_eq",           TOKEN_XOR_ASSIGN },
-        */
-      };
-      for (int i = 0, n = ARRAY_SIZE (tbl); i < n; ++ i)
-      {
-        kwds.insert (StringIntMap::value_type (tbl [i].name, tbl [i].kind));
+         StringIntMapConstIter p = kwds.find(name);
+         if (p == kwds.end())
+         {
+            return false;
+         }
+         kind = p->second;
+         return true;
       }
-    }
-    ~ KeywordTable ()
-    {}
-    // if name is keyword set kind and return true
-    bool isKeyword (std::string const & name, int & kind) const
-    {
-      StringIntMapConstIter p = kwds.find (name);
-      if (p == kwds.end ())
-      {
-        return false;
-      }
-      kind = p->second;
-      return true;
-    }
-  private:
-    StringIntMap kwds;
-  }
+   private:
+      StringIntMap kwds;
+   }
 }
 
 #hdr
-#include <cpp/session_fwd.h>
-#include <util/string_int_map.h>
+#include <cpp_session_fwd.h>
+#include <util_string_int_map.h>
 #end
 
 #src
-#include <cpp/session.h>
-#include <cpp/token_numbers.h>
-#include <util/array_size.h>
+#include <cpp_session.h>
+#include <cpp_token_numbers.h>
+#include <util_array_size.h>
 #end
