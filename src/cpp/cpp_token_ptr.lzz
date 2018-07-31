@@ -1,15 +1,15 @@
 namespace cpp
 {
-  class Token;
-  typedef Ptr <Token> TokenPtr;
+   class Token;
+   typedef Ptr<Token> TokenPtr;
 }
-template class Ptr <cpp::Token>;
+template class Ptr<cpp::Token>;
 
 #hdr
-#include <util/ptr.h>
+#include <util_ptr.h>
 #end
 
 #src
-#include <cpp/token.h>
-#include <util/ptr.tpl>
+#include <cpp_token.h>
+#include <util_ptr.tpl>
 #end

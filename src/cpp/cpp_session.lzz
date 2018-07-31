@@ -1,110 +1,107 @@
 class Output;
-class ErrorSink;
 
 namespace cpp
 {
-  class Session
-  {
-  public:
-    Session (StringSet & strings, StringIntVector const & keywords, Output & output, ErrorSink & error_sink)
-      : m_strings (strings), m_keywords (keywords), m_output (output), m_error_sink (error_sink)
-    {
-      m_macro_table.init (* this); 
-    }
-    ~ Session ()
-    {}
-
-    // intern string
-    char const * intern (std::string const & str)
-    {
-      return m_strings.insert (str).first->c_str ();
-    }
-
-    // if lexeme is a keyword set token number and return true
-    bool isKeyword (std::string const & lexeme, int & number)
-    {
-      bool res = false;
-      // keywords sorted by name 
-      StringIntVectorConstIter p = lower_bound (m_keywords.begin (), m_keywords.end (), lexeme, StringIntFirstLess ());
-      if (p != m_keywords.end () && p->first == lexeme)
+   // State?
+   class Session
+   {
+   public:
+      Session(StringSet &strings, StringIntVector const &keywords, Output &output, std::ostream &out_stream)
+         : m_strings(strings), m_keywords(keywords), m_output(output), m_out_stream(out_stream)
       {
-        number = p->second;
-        res = true;
+         m_macro_table.init(*this); 
       }
-      return res;
-    }
+      ~Session()
+      {}
 
-    // pass warning and error messages through to error sink
-    void warning (std::string const & msg) const
-    {
-      m_error_sink.warning (msg);
-    }
-    void warning (Loc const & loc, std::string const & msg) const
-    {
-      m_error_sink.warning (loc, msg);
-    }
-    void error (std::string const & msg) const
-    {
-      m_error_sink.error (msg);
-    }
-    void error (Loc const & loc, std::string const & msg) const
-    {
-      m_error_sink.error (loc, msg);
-    }
+      // intern string
+      char const *intern(std::string const &str)
+      {
+         return m_strings.insert(str).first->c_str();
+      }
 
-    // print (#hdr, #src, etc) block to file
-    inline Output & getOutput () const
-    {
-      return m_output;
-    }
+      // if lexeme is a keyword set token number and return true
+      bool isKeyword(std::string const &lexeme, int &number)
+      {
+         bool res = false;
+         // keywords sorted by name 
+         StringIntVectorConstIter p = std::lower_bound(m_keywords.begin(), m_keywords.end(), lexeme, StringIntFirstLess());
+         if (p != m_keywords.end() && p->first == lexeme)
+         {
+            number = p->second;
+            res = true;
+         }
+         return res;
+      }
 
-    // get dir table
-    inline DirTable & getDirTable ()
-    {
-      return m_dir_table;
-    }
+      // pass warning and error messages through to error sink
+      void warning(std::string const &msg) const
+      {
+         m_out_stream << msg << std::endl;
+      }
+      void warning(Loc const & loc, std::string const & msg) const /* are these overloads used? */
+      {
+         m_out_stream << loc << msg << std::endl;
+      }
+      void error(std::string const &msg) const
+      {
+         m_out_stream << msg << std::endl;
+      }
+      void error(Loc const &loc, std::string const &msg) const
+      {
+         m_out_stream << loc << msg << std::endl;
+      }
 
-    // get macro table
-    inline MacroTable & getMacroTable ()
-    {
-      return m_macro_table;
-    }
+      // print (#hdr, #src, etc) block to file
+      inline Output &getOutput() const
+      {
+         return m_output;
+      }
 
-    // get keyword table
-    inline KeywordTable & getKeywordTable ()
-    {
-      return m_keyword_table;
-    }
+      // get dir table
+      inline DirTable &getDirTable()
+      {
+         return m_dir_table;
+      }
 
-  private:
-    StringSet & m_strings;
-    // keyword token numbers
-    StringIntVector const & m_keywords;
-    DirTable m_dir_table;
-    MacroTable m_macro_table;
-    // preprocessor keywords
-    KeywordTable m_keyword_table;
-    Output & m_output;
-    ErrorSink & m_error_sink;
-  };
+      // get macro table
+      inline MacroTable &getMacroTable()
+      {
+         return m_macro_table;
+      }
+
+      // get keyword table
+      inline KeywordTable &getKeywordTable()
+      {
+         return m_keyword_table;
+      }
+
+   private:
+      StringSet &m_strings;
+      // keyword token numbers
+      StringIntVector const &m_keywords;
+      DirTable m_dir_table;
+      MacroTable m_macro_table;
+      // preprocessor keywords
+      KeywordTable m_keyword_table;
+      Output &m_output;
+      std::ostream &m_out_stream;
+   };
 }
 
-using namespace std;
-
 #hdr
-#include <cpp/dir_table.h>
-#include <cpp/file_type.h>
-#include <cpp/keyword_table.h>
-#include <cpp/macro_table.h>
-#include <util/loc.h>
-#include <util/string_int_vector.h>
-#include <util/string_set.h>
+#include <cpp_dir_table.h>
+#include <cpp_file_type.h>
+#include <cpp_keyword_table.h>
+#include <cpp_macro_table.h>
+#include <util_loc.h>
+#include <util_string_int_vector.h>
+#include <util_string_set.h>
 #include <iosfwd>
 #end
 
 #src
-#include <output/output.h>
-#include <util/error_sink.h>
+#include <output_output.h>
 #include <algorithm>
 #include <iostream>
 #end

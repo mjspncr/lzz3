@@ -1,27 +1,27 @@
 namespace cpp
 {
-  // convert literal char lexeme to int
-  unsigned literalCharToInt (Session & session, Loc const & loc, std::string const & lexeme)
-  {
-    char const * str = lexeme.c_str ();
-    // skip wide prefix if present
-    if (* str == 'l' || * str == 'L')
-    {
-      ++ str;
-    }
-    // skip begin quote
-    ++ str;
-    // convert first char
-    return translateLiteralChar (session, loc, str, & str);
-  }
+   // convert valid literal char lexeme to int
+   unsigned literalCharToInt(Session &session, Loc const &loc, std::string const &lexeme)
+   {
+      char const *str = lexeme.c_str();
+      // skip wide prefix if present
+      if (*str == 'l' || *str == 'L')
+      {
+         ++str;
+      }
+      // skip begin quote
+      ++str;
+      // convert first char
+      return translateLiteralChar(session, loc, str, &str);
+   }
 }
 
 #hdr
-#include <cpp/session_fwd.h>
-#include <util/loc.h>
+#include <cpp_session_fwd.h>
+#include <util_loc.h>
 #include <string>
 #end
 
 #src
-#include <cpp/translate_literal_char.h>
+#include <cpp_translate_literal_char.h>
 #end

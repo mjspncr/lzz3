@@ -1,11 +1,11 @@
 namespace cpp
 {
-  typedef std::vector <TokenPtr> TokenPtrVector;
-  typedef TokenPtrVector::iterator TokenPtrVectorIter;
-  typedef TokenPtrVector::const_iterator TokenPtrVectorConstIter;
+   typedef std::vector<TokenPtr> TokenPtrVector;
+   typedef TokenPtrVector::iterator TokenPtrVectorIter;
+   typedef TokenPtrVector::const_iterator TokenPtrVectorConstIter;
 }
 
 #hdr
-#include <cpp/token_ptr.h>
+#include <cpp_token_ptr.h>
 #include <vector>
 #end

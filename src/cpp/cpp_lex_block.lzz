@@ -149,7 +149,7 @@ namespace
                }
                for (bool esc = false;;)
                {
-                  lexer.nextChar (ch);
+                  lexer.nextChar(ch);
                   if (ch == '\n')
                   {
                      throw std::runtime_error(Message(temp_loc, "newline in literal character"));
@@ -481,7 +481,7 @@ namespace
    }
 
    // block 9: enumerator init
-   struct LexBlock9() : LexBlock8 (TOKEN_RBRACE)
+   struct LexBlock9() : LexBlock8(TOKEN_RBRACE)
    {}
 }
 

@@ -1,11 +1,11 @@
 namespace cpp
 {
-  typedef std::deque <TokenPtr> TokenPtrDeque;
-  typedef TokenPtrDeque::iterator TokenPtrDequeIter;
-  typedef TokenPtrDeque::const_iterator TokenPtrDequeConstIter;
+   typedef std::deque<TokenPtr> TokenPtrDeque;
+   typedef TokenPtrDeque::iterator TokenPtrDequeIter;
+   typedef TokenPtrDeque::const_iterator TokenPtrDequeConstIter;
 }
 
 #hdr
-#include <cpp/token_ptr.h>
+#include <cpp_token_ptr.h>
 #include <deque>
 #end

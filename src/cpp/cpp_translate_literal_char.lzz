@@ -1,141 +1,140 @@
 namespace cpp
 {
-  // translate literal character, loc is location of literal character
-  // set next char in next_ch
-  // return char as unsigned int
-  unsigned translateLiteralChar (Session & session, Loc const & loc, char const * str, char const ** next_ch)
-  {
-    char ch = * str ++;
-    if (ch == 0)
-    {
-      throw ParseError (loc, "empty literal character"); 
-    }
-    unsigned out_ch = ch;
-    if (ch == '\\')
-    { 
-      // escape sequece, read next char and check if valid
-      ch = * str ++;
+   // translate literal character, loc is location of literal character
+   // set next char in next_ch
+   // return char as unsigned int
+   unsigned translateLiteralChar(Session &session, Loc const &loc, char const *str, char const **next_ch)
+   {
+      char ch = *str++;
       if (ch == 0)
       {
-        throw ParseError (loc, "missing escape character");
+         throw std::runtime_error(Message(loc, "empty literal character"));
       }
-      switch (ch)
-      {
-        // simple escape sequence
-        case '\'':
-        case '\"':
-        case '\?':
-        case '\\':
-        {
-          out_ch = ch;
-          break;
-        }
-        case 'a':
-        {
-          out_ch = '\a';
-          break;
-        }
-        case 'b':
-        {
-          out_ch = '\b';
-          break;
-        }
-        case 'f':
-        {
-          out_ch = '\f';
-          break;
-        }
-        case 'n':
-        {
-          out_ch = '\n';
-          break;
-        }
-        case 'r':
-        {
-          out_ch = '\r';
-          break;
-        }
-        case 't':
-        {
-          out_ch = '\t';
-          break;
-        }
-        case 'v':
-        {
-          out_ch = '\v';
-          break;
-        }
+      unsigned out_ch = ch;
+      if (ch == '\\')
+      { 
+         // escape sequece, read next char and check if valid
+         ch = *str++;
+         if (ch == 0)
+         {
+            throw std::runtime_error(Message(loc, "missing escape character"));
+         }
+         switch (ch)
+         {
+            // simple escape sequence
+            case '\'':
+            case '\"':
+            case '\?':
+            case '\\':
+            {
+               out_ch = ch;
+               break;
+            }
+            case 'a':
+            {
+               out_ch = '\a';
+               break;
+            }
+            case 'b':
+            {
+               out_ch = '\b';
+               break;
+            }
+            case 'f':
+            {
+               out_ch = '\f';
+               break;
+            }
+            case 'n':
+            {
+               out_ch = '\n';
+               break;
+            }
+            case 'r':
+            {
+               out_ch = '\r';
+               break;
+            }
+            case 't':
+            {
+               out_ch = '\t';
+               break;
+            }
+            case 'v':
+            {
+               out_ch = '\v';
+               break;
+            }
 
-        // hex number
-        case 'x':
-        {
-          // read lots of hex numbers
-          char out [128];
-          if (readHexDigits (str, 128, out, & str) == 0)
-          {
-            throw ParseError (loc, "missing hex digits"); 
-          }
-          out_ch = strtoul (out, 0, 16);
-          break;
-        }
+            // hex number
+            case 'x':
+            {
+               // read lots of hex numbers
+               char out[128];
+               if (readHexDigits(str, 128, out, &str) == 0)
+               {
+                  throw std::runtime_error(Message(loc, "missing hex digits"));
+               }
+               out_ch = strtoul(out, 0, 16);
+               break;
+            }
       
-        // octal digit
-        case '0':
-        case '1':
-        case '2':
-        case '3':
-        case '4':
-        case '5':
-        case '6':
-        case '7':
-        {
-          // read no more than two more
-          char out [12];
-          out [0] = ch;
-          readOctalDigits (str, 2, out + 1, & str);
-          out_ch = strtoul (out, 0, 8);
-          break;
-        }
+            // octal digit
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            {
+               // read no more than two more
+               char out[12];
+               out [0] = ch;
+               readOctalDigits(str, 2, out + 1, &str);
+               out_ch = strtoul(out, 0, 8);
+               break;
+            }
 
-        // universal char
-        case 'u':
-        case 'U':
-        {
-          int num_digits = (ch == 'u' ? 4 : 8);
-          char out [12];
-          if (readHexDigits (str, num_digits, out, & str) != num_digits)
-          {
-            throw ParseError (loc, "invalid universal character");
-          }
-          else
-          {
-            out_ch = strtoul (out, 0, 16);
-          }
-          break;
-        }
-        // not a valid escape char
-        default:
-        {
-          out_ch = ch;
-          session.warning (loc, "invalid escape sequence");
-          break;
-        }
+            // universal char
+            case 'u':
+            case 'U':
+            {
+               int num_digits = (ch == 'u' ? 4 : 8);
+               char out[12];
+               if (readHexDigits(str, num_digits, out, &str) != num_digits)
+               {
+                  throw std::runtime_error(Message(loc, "invalid universal character"));
+               }
+               else
+               {
+                  out_ch = strtoul(out, 0, 16);
+               }
+               break;
+            }
+            // not a valid escape char
+            default:
+            {
+               out_ch = ch;
+               session.warning(Message(loc, "invalid escape sequence"));
+               break;
+            }
+         }
       }
-    }
-    * next_ch = str;
-    return out_ch;
-  }
+      *next_ch = str;
+      return out_ch;
+   }
 }
 
 #hdr
-#include <util/loc.h>
-#include <cpp/session_fwd.h>
+#include <cpp_session_fwd.h>
+#include <util_loc.h>
 #end
 
 #src
-#include <cpp/read_hex_digits.h>
-#include <cpp/read_octal_digits.h>
-#include <cpp/session.h>
-#include <util/parse_error.h>
+#include <cpp_read_hex_digits.h>
+#include <cpp_read_octal_digits.h>
+#include <cpp_session.h>
 #include <stdlib.h>
 #end
