@@ -1,1242 +1,1241 @@
-// lexer
+// cpp_lexer
+// 
 
 namespace cpp
 {
-  enum LexState
-  {
-    // normal lex state
-    NORMAL_LEX_STATE = 0,
-    // include (just after #include)
-    INCLUDE_LEX_STATE = 2,
-  }
+   enum LexState
+   {
+      // normal lex state
+      NORMAL_LEX_STATE = 0,
+      // include (just after #include)
+      INCLUDE_LEX_STATE = 2,
+   };
 
-  class Session;
+   class Session;
 
-  class Lexer
-  {
-  public:
-    Lexer (Session & session, char const * filename, char const * fullname)
-      : session (session), reader_ (filename, fullname), from_string_ (false)
-    {}
-    Lexer (Session & session, std::string const & str, Loc const & loc)
-      : session (session), reader_ (str, loc), from_string_ (true)
-    {}
+   class Lexer
+   {
+   public:
+      Lexer(Session &session, char const *filename, char const *fullname)
+         : session(session), reader_(filename, fullname), from_string_(false)
+      {}
+      Lexer(Session &session, std::string const &str, Loc const &loc)
+         : session(session), reader_(str, loc), from_string_(true)
+      {}
 
-    // get session
-    inline Session & getSession () const
-    {
-      return session;
-    }
-
-    // true if lexing from string
-    bool fromString () const
-    {
-      return from_string_;
-    }
-
-    // true if lexing from file
-    inline bool fromFile () const
-    {
-      return ! fromString ();
-    }
-
-    // peekChar and nextChar are used in BLOCK lexer
-
-    // peek n chars, return true if successful
-    inline bool peekChar (char & ch, int n = 0)
-    {
-      return reader_.peekChar (ch, n);
-    }
-    // read char, return true if successful
-    inline bool nextChar (char & ch)
-    {
-      return reader_.nextChar (ch);
-    }
-
-    // discard rest of line
-    void discardRestOfLine ()
-    {
-      char ch;
-      do
+      // get session
+      inline Session &getSession() const
       {
-        reader_.nextChar (ch);
+         return session;
       }
-      while (ch != '\n');
-    }
 
-    // skip white space characters
-    void discardWs ()
-    {
-      while (peekCharKind (reader_) == C_WS)
+      // true if lexing from string
+      bool fromString() const
       {
-        char ch;
-        reader_.nextChar (ch);
+         return from_string_;
       }
-    }
 
-    // skip all white space characters, including newline
-    void discardAllWs ()
-    {
+      // true if lexing from file
+      inline bool fromFile() const
+      {
+         return !fromString();
+      }
+
+      // peekChar and nextChar are used in BLOCK lexer
+
+      // peek n chars, return true if successful
+      inline bool peekChar(char &ch, int n = 0)
+      {
+         return reader_.peekChar (ch, n);
+      }
+      // read char, return true if successful
+      inline bool nextChar(char &ch)
+      {
+         return reader_.nextChar (ch);
+      }
+
+      // discard rest of line
+      void discardRestOfLine()
+      {
+         char ch;
+         do
+         {
+            reader_.nextChar(ch);
+         }
+         while (ch != '\n');
+      }
+
+      // skip white space characters
+      void discardWs()
+      {
+         while (peekCharKind(reader_) == C_WS)
+         {
+            char ch;
+            reader_.nextChar (ch);
+         }
+      }
+
+      // skip all white space characters, including newline
+      void discardAllWs()
+      {
+         for (;;)
+         {
+            CharKind ch_kind = peekCharKind(reader_);
+            if (ch_kind == C_WS || ch_kind == C_LF)
+            {
+               char ch;
+               reader_.nextChar(ch);
+            }
+            else
+            {
+               break;
+            }
+         }
+      }
+
+      // read rest of line
+      inline void readRestOfLine(std::string &str)
+      {
+         readLine(str);
+      }
+
+      // read line as string, return false if end of file
+      bool readLine(std::string &str)
+      {
+         char ch;
+         if (! reader_.nextChar(ch))
+         {
+            return false;
+         }
+         while (ch != '\n')
+         {
+            str += ch;
+            reader_.nextChar(ch);
+         }
+         return true;
+      }
+
+      // get current location
+      Loc getLoc()
+      {
+         return reader_.getLocation();
+      }
+
+      // get next token, return true if not end of line, set location of token or end of line
+      bool getNextToken(LexState lex_state, Loc &loc, TokenPtr &token)
+      {
+         CharKind ch_kind = peekCharKind(reader_);
+         // if whitespace before next token
+         bool ws_before = false;
+         // remaining hex digits in universal char
+         int num_hex_digits = 0;
+         for (;;)
+         {
+            loc = reader_.getLocation();
+            int token_number = TOKEN_NULL;
+            std::string lexeme;
+            bool found_ws = false;
+            int state = S_START;
+            for (;;)
+            {
+               switch (state)
+               {
+                  // start
+                  case S_START:
+                  {
+                     switch (ch_kind)
+                     {
+                        // letter
+                        case C_D:
+                        case C_E:
+                        case C_F:
+                        case C_U:
+                        case C_u:
+                        case C_HEX_LETTER:
+                        case C_LETTER:
+                        {
+                           state = S_IDENT;
+                           break;
+                        }
+                        // l
+                        case C_L:
+                        {
+                           state = S_L;
+                           break;
+                        }
+                        // digit
+                        case C_DIGIT:
+                        {
+                           state = S_PP_NUMBER;
+                           break;
+                        }
+                        // dot
+                        case C_DOT:
+                        {
+                           state = S_DOT;
+                           break;
+                        }
+                        // '
+                        case C_SQUOTE:
+                        {
+                           state = S_CHAR_BEG;
+                           break;
+                        }
+                        // "
+                        case C_DQUOTE:
+                        {
+                           state = S_STRING;
+                           break;
+                        }
+                        // op
+                        case C_OP:
+                        {
+                           state = S_OP;
+                           break;
+                        }
+                        // #
+                        case C_HASH:
+                        {
+                           state = S_HASH;
+                           break;
+                        }
+                        // ! = * ^
+                        case C_BANG:
+                        case C_EQ:
+                        case C_CARET:
+                        case C_TIMES:
+                        {
+                           state = S_BANG;
+                           break;
+                        }
+                        // <
+                        case C_LT:
+                        {
+                           if (lex_state != INCLUDE_LEX_STATE)
+                           {
+                              state = S_LT;
+                           }
+                           else
+                           {
+                              state = S_SYS_FILENAME;
+                           }
+                           break;
+                        }
+                        // >
+                        case C_GT:
+                        {
+                           state = S_GT;
+                           break;
+                        }
+                        // +
+                        case C_PLUS:
+                        {
+                           state = S_PLUS;
+                           break;
+                        }
+                        // -
+                        case C_MINUS:
+                        {
+                           state = S_MINUS;
+                           break;
+                        }
+                        // |
+                        case C_BAR:
+                        {
+                           state = S_BAR;
+                           break;
+                        }
+                        // &
+                        case C_AMPERSAND:
+                        {
+                           state = S_AMPERSAND;
+                           break;
+                        }
+                        // :
+                        case C_COLON:
+                        {
+                           state = S_COLON;
+                           break;
+                        }
+                        // %
+                        case C_PERCENT:
+                        {
+                           state = S_PERCENT;
+                           break;
+                        }
+                        // /
+                        case C_DIVIDE:
+                        {
+                           int next_ch_kind = peekCharKind(reader_, 1);
+                           if (next_ch_kind == C_DIVIDE || next_ch_kind == C_TIMES)
+                           {
+                              state = S_COMMENT_BEG;
+                           }
+                           else
+                           {
+                              state = S_BANG;
+                           }
+                           break;
+                        }
+                        // white space
+                        case C_WS:
+                        {
+                           state = S_WS;
+                           break;
+                        }
+                        // backslash
+                        case C_BACKSLASH:
+                        {
+                           // check if start of universal char
+                           int next_ch_kind = peekCharKind(reader_, 1);
+                           if (next_ch_kind == C_U || next_ch_kind == C_u)
+                           {
+                              state = S_IDENT_U_CHAR;
+                           }
+                           else
+                           {
+                              state = S_UNKNOWN;
+                           }
+                           break;
+                        }
+                        // non-whitespace characters not part of other another token
+                        case C_OTHER:
+                        {
+                           state = S_UNKNOWN;
+                           break;
+                        }
+                        // eof
+                        case C_EOF:
+                        {
+                           lexeme = "end of file";
+                           token_number = TOKEN_EOT;
+                           break;
+                        }
+                        // new line
+                        case C_LF:
+                        {
+                           // consume newline, but don't yet read next char on line (otherwise #line will set wrong line number)
+                           char ch;
+                           reader_.nextChar(ch);
+                           return false;
+                        }
+                        // nac
+                        case C_NAC:
+                        {
+                           throw std::runtime_error(Message(loc, "invalid character"));
+                        }
+                     }
+                     break;
+                  }
+                  // ident
+                  case S_IDENT:
+                  {
+                     if (ch_kind > C_DIGIT)
+                     {
+                        if (ch_kind == C_BACKSLASH)
+                        {
+                           // might be universal char
+                           int next_ch_kind = peekCharKind(reader_, 1);
+                           if (next_ch_kind == C_U || next_ch_kind == C_u)
+                           {
+                              state = S_IDENT_U_CHAR;
+                           }
+                        }
+                        if (state == S_IDENT)
+                        {
+                           token_number = TOKEN_IDENT;
+                        }
+                     }
+                     break;
+                  }
+                  // universal char in ident
+                  case S_IDENT_U_CHAR:
+                  {
+                     // 4 hex digits if 'u', 8 if 'U'
+                     num_hex_digits = ch_kind == C_U ? 8 : 4;
+                     state = S_IDENT_U_CHAR_HEX_COUNT;
+                     break;
+                  }
+                  // counting chars in universal char
+                  case S_IDENT_U_CHAR_HEX_COUNT:
+                  {
+                     if (ch_kind <= C_HEX_LETTER || ch_kind == C_DIGIT)
+                     {
+                        if (-- num_hex_digits == 0)
+                        {
+                           state = S_IDENT; 
+                        }
+                     }
+                     else
+                     {
+                        // insufficent hex digits, error but can continue
+                        // scm::error (machine, loc, msgBadUniversalChar());
+                        // create identifier anyway or continue lexing identifier
+                        if (ch_kind > C_DIGIT)
+                        {
+                           token_number = TOKEN_IDENT;
+                        }
+                        else
+                        {
+                           state = S_IDENT;
+                        }
+                     }
+                     break;
+                  }
+                  // l
+                  case S_L:
+                  {
+                     if (ch_kind == C_SQUOTE)
+                     {
+                        state = S_CHAR_BEG;
+                     }
+                     // can't have 'L' prefix with header file
+                     else if (ch_kind == C_DQUOTE && lex_state != INCLUDE_LEX_STATE)
+                     {
+                        state = S_STRING;
+                     }
+                     else if (ch_kind <= C_DIGIT)
+                     {
+                        state = S_IDENT;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_IDENT;
+                     }
+                     break;
+                  }
+                  // pp number
+                  case S_PP_NUMBER:
+                  {
+                     if (ch_kind == C_E)
+                     {
+                        state = S_PP_NUMBER_E;
+                     }
+                     else if (ch_kind > C_DIGIT && ch_kind != C_DOT)
+                     {
+                        if (ch_kind == C_BACKSLASH)
+                        {
+                           // might be universal char
+                           int next_ch_kind = peekCharKind(reader_, 1);
+                           if (next_ch_kind == C_U || next_ch_kind == C_u)
+                           {
+                              state = S_PP_NUMBER_U_CHAR;
+                           }
+                        }
+                        if (state == S_PP_NUMBER)
+                        {
+                           // not a non digit, digit nor start of universal char
+                           token_number = TOKEN_PP_NUMBER;
+                        }
+                     }
+                     break;
+                  }
+                  // pp number followed by E or e
+                  case S_PP_NUMBER_E:
+                  {
+                     if (ch_kind == C_E)
+                     {
+                        // stay in same state
+                     }
+                     else if (ch_kind <= C_MINUS || ch_kind == C_DOT)
+                     {
+                        // non digit, digit, sign or dot
+                        state = S_PP_NUMBER;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_PP_NUMBER;
+                     }
+                     break;
+                  }
+                  // universal char in pp number
+                  case S_PP_NUMBER_U_CHAR:
+                  {
+                     // 4 hex digits if 'u', 8 if 'U'
+                     num_hex_digits = ch_kind == C_U ? 8 : 4;
+                     state = S_PP_NUMBER_U_CHAR_HEX_COUNT;
+                     break;
+                  }
+                  // counting chars in universal char
+                  case S_PP_NUMBER_U_CHAR_HEX_COUNT:
+                  {
+                     if (ch_kind <= C_HEX_LETTER || ch_kind == C_DIGIT)
+                     {
+                        // hex letter or digit
+                        if (-- num_hex_digits == 0)
+                        {
+                           state = S_PP_NUMBER; 
+                        }
+                     }
+                     else
+                     {
+                        // insufficent hex digits
+                        // scm::error (machine, loc, msgBadUniversalChar());
+                        // try to continue lexing pp number or create a pp number token
+                        if (ch_kind == C_E)
+                        {
+                           state = S_PP_NUMBER_E;
+                        }
+                        else if (ch_kind <= C_DIGIT || ch_kind == C_DOT)
+                        {
+                           // digit, non digit or dot
+                           state = S_PP_NUMBER;
+                        }
+                        else
+                        {
+                           token_number = TOKEN_PP_NUMBER;
+                        }
+                     }
+                     break;
+                  }
+                  // dot
+                  case S_DOT:
+                  {
+                     if (ch_kind == C_DIGIT)
+                     {
+                        state = S_PP_NUMBER;
+                     }
+                     else if (ch_kind == C_DOT && peekCharKind(reader_, 1) == C_DOT)
+                     {
+                        state = S_DOT_DOT;
+                     }
+                     else if (ch_kind == C_TIMES)
+                     {
+                        state = S_OP;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_DOT;
+                     }
+                     break;
+                  }
+                  // .. next . or %:% next :
+                  case S_LZZHASH:
+                     // // next #
+                  case S_DOT_DOT:
+                  {
+                     state = S_OP;
+                     break;
+                  }
+                  // #
+                  case S_HASH:
+                  {
+                     if (ch_kind == C_HASH)
+                     {
+                        state = S_OP;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_HASH;
+                     }
+                     break;
+                  }
+                  // ! = * ^ /
+                  case S_BANG:
+                  {
+                     if (ch_kind == C_EQ)
+                     {
+                        state = S_OP;
+                        break;
+                     }
+                     // fall through
+                  }
+                  // op
+                  case S_OP:
+                  {
+                     token_number = oper_table.getOperKind(lexeme);
+                     break;
+                  }
+                  // <
+                  case S_LT:
+                  {
+                     if (ch_kind == C_LT)
+                     {
+                        state = S_BANG;
+                     }
+                     else if (ch_kind == C_EQ || ch_kind == C_COLON || ch_kind == C_PERCENT)
+                     {
+                        state = S_OP;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_LT;
+                     }
+                     break;
+                  }
+                  // >
+                  case S_GT:
+                  {
+                     if (ch_kind == C_GT)
+                     {
+                        state = S_BANG;
+                     }
+                     else if (ch_kind == C_EQ)
+                     {
+                        state = S_OP;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_GT;
+                     }
+                     break;
+                  }
+                  // +
+                  case S_PLUS:
+                  {
+                     if (ch_kind == C_PLUS || ch_kind == C_EQ)
+                     {
+                        state = S_OP;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_PLUS;
+                     }
+                     break;
+                  }
+                  // -
+                  case S_MINUS:
+                  {
+                     if (ch_kind == C_MINUS || ch_kind == C_EQ)
+                     {
+                        state = S_OP;
+                     }
+                     else if (ch_kind == C_GT)
+                     {
+                        state = S_ARROW;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_MINUS;
+                     }
+                     break;
+                  }
+                  // ->
+                  case S_ARROW:
+                  {
+                     if (ch_kind == C_TIMES)
+                     {
+                        state = S_OP;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_PTR;
+                     }
+                     break;
+                  }
+                  // |
+                  case S_BAR:
+                  {
+                     if (ch_kind == C_BAR || ch_kind == C_EQ)
+                     {
+                        state = S_OP;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_BITOR;
+                     }
+                     break;
+                  }
+                  // &
+                  case S_AMPERSAND:
+                  {
+                     if (ch_kind == C_AMPERSAND || ch_kind == C_EQ)
+                     {
+                        state = S_OP;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_BITAND;
+                     }
+                     break;
+                  }
+                  // :
+                  case S_COLON:
+                  {
+                     if (ch_kind == C_COLON || ch_kind == C_GT)
+                     {
+                        state = S_OP;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_COLON;
+                     }
+                     break;
+                  }
+                  // %
+                  case S_PERCENT:
+                  {
+                     if (ch_kind == C_GT || ch_kind == C_EQ)
+                     {
+                        state = S_OP;
+                     }
+                     else if (ch_kind == C_COLON)
+                     {
+                        state = S_PERCENT_COLON;
+                     }
+                     else
+                     {
+                        token_number = TOKEN_MOD;
+                     }
+                     break;
+                  }
+                  // %:
+                  case S_PERCENT_COLON:
+                  {
+                     if (ch_kind == C_PERCENT && peekCharKind(reader_, 1) == C_COLON)
+                     {
+                        state = S_DOT_DOT; 
+                     }
+                     else
+                     {
+                        token_number = TOKEN_HASH;
+                     }
+                     break;
+                  }
+                  // char beg
+                  case S_CHAR_BEG:
+                  {
+                     if (ch_kind == C_SQUOTE)
+                     {
+                        // scm::error (machine, loc, msgEmptyLiteralChar());
+                        // assume ' '
+                        lexeme += ' ';
+                        state = S_CHAR_END;
+                     }
+                     else if (ch_kind == C_LF)
+                     {
+                        // scm::error (machine, loc, msgNewlineInLiteralChar());
+                        // assume ' '
+                        lexeme += " \'";
+                        token_number = TOKEN_LITERAL_CHAR;
+                     }
+                     else if (ch_kind == C_BACKSLASH)
+                     {
+                        state = S_CHAR_ESC; 
+                     }
+                     else
+                     {
+                        state = S_CHAR;
+                     }
+                     break;
+                  }
+                  // char
+                  case S_CHAR:
+                  {
+                     if (ch_kind == C_LF)
+                     {
+                        // scm::error (machine, loc, msgNewlineInLiteralChar());
+                        // add missing end quote 
+                        lexeme += '\'';
+                        token_number = TOKEN_LITERAL_CHAR;
+                     }
+                     else if (ch_kind == C_BACKSLASH)
+                     {
+                        state = S_CHAR_ESC;
+                     }
+                     else if (ch_kind == C_SQUOTE)
+                     {
+                        state = S_CHAR_END;
+                     }
+                     break;
+                  }
+                  // char escape
+                  case S_CHAR_ESC:
+                  {
+                     // can't be newline
+                     // accept any other character
+                     state = S_CHAR;
+                     break;
+                  }
+                  // char end
+                  case S_CHAR_END:
+                  {
+                     token_number = TOKEN_LITERAL_CHAR;
+                     break;
+                  }
+                  // string
+                  case S_STRING:
+                  {
+                     if (ch_kind == C_LF)
+                     {
+                        // scm::error (machine, loc, msgNewlineInLiteralString());
+                        // add mising end quote
+                        lexeme += '\"';
+                        token_number = TOKEN_LITERAL_STRING;
+                     }
+                     else if (ch_kind == C_BACKSLASH)
+                     {
+                        state = S_STRING_ESC;
+                     }
+                     else if (ch_kind == C_DQUOTE)
+                     {
+                        state = S_STRING_END;
+                     }
+                     else
+                     {
+                        state = S_STRING;
+                     }
+                     break;
+                  }
+                  // string escape
+                  case S_STRING_ESC:
+                  {
+                     // can't be newline
+                     // accept any other character
+                     state = S_STRING;
+                     break;
+                  }
+                  // string end
+                  case S_STRING_END:
+                  {
+                     token_number = TOKEN_LITERAL_STRING;
+                     break;
+                  }
+                  // system filename
+                  case S_SYS_FILENAME:
+                  {
+                     if (ch_kind == C_LF)
+                     {
+                        // scm::error (machine, loc, msgNewlineInLiteralString());
+                        // add missing end delimiter
+                        lexeme += '>';
+                        token_number = TOKEN_LITERAL_STRING;
+                     }
+                     else if (ch_kind == C_GT)
+                     {
+                        state = S_STRING_END;
+                     }
+                     break;
+                  }
+                  // unknown
+                  case S_UNKNOWN:
+                  {
+                     token_number = TOKEN_UNKNOWN;
+                     break;
+                  }
+                  // / next * or /
+                  case S_COMMENT_BEG:
+                  {
+                     if (ch_kind == C_DIVIDE)
+                     {
+                        if (peekCharKind(reader_, 1) == C_HASH)
+                        {
+                           state = S_LZZHASH;
+                        }
+                        else
+                        {
+                           state = S_CPP_COMMENT;
+                        }
+                     }
+                     else
+                     {
+                        state = S_C_COMMENT;
+                     }
+                     break;
+                  }
+                  // /* ...
+                  case S_C_COMMENT:
+                  {
+                     if (ch_kind == C_EOF)
+                     {
+                        // scm::error (machine, loc, msgEOFBeforeEndOfComment());
+                        // assume end
+                        found_ws = true;
+                     }
+                     else if (ch_kind == C_TIMES && peekCharKind(reader_, 1) == C_DIVIDE)
+                     {
+                        state = S_C_COMMENT_END;
+                     }
+                     break;
+                  }
+                  // /* ... * next /
+                  case S_C_COMMENT_END:
+                  {
+                     state = S_WS;
+                     break;
+                  }
+                  // // ...
+                  case S_CPP_COMMENT:
+                  {
+                     if (ch_kind == C_LF)
+                     {
+                        found_ws = true;
+                     }
+                     break;
+                  }
+                  // white space
+                  case S_WS:
+                  {
+                     if (ch_kind != C_WS)
+                     {
+                        found_ws = true;
+                     }
+                     break;
+                  }
+               }
+               if (token_number != TOKEN_NULL)
+               {
+                  token = new Token(token_number, loc, lexeme);
+                  if (found_ws)
+                  {
+                     token->setSpaceBefore();
+                  }
+                  return true;
+               }
+               if (found_ws)
+               {
+                  ws_before = true;
+                  break;
+               }
+               // consume next char and if not comment or whitespace add to lexeme
+               char ch;
+               reader_.nextChar(ch);
+               if (state < S_WS)
+               {
+                  // push ident char
+                  lexeme += ch;
+               }
+               ch_kind = peekCharKind(reader_);
+            }
+         }
+      }
+
+      // get next token
+      inline bool getNextToken(TokenPtr &token)
+      {
+         Loc loc;
+         return getNextToken(NORMAL_LEX_STATE, loc, token);
+      }
+      // get next token
+      inline bool getNextToken(Loc &loc, TokenPtr &token)
+      {
+         return getNextToken(NORMAL_LEX_STATE, loc, token);
+      }
+      // get next token
+      inline bool getNextToken(LexState lex_state, TokenPtr &token)
+      {
+         Loc loc;
+         return getNextToken(lex_state, loc, token);
+      }
+
+      // get filename
+      inline char const * getFilename() const
+      {
+         return reader_.getFilename();
+      }
+
+      // set line
+      inline void setLine(int line)
+      {
+         reader_.setLineline);
+      }
+      // set line and filename
+      inline void setLine(int line, char const * filename)
+      {
+         reader_.setLine(line, filename);
+      }
+      // pause reader
+      inline void pause()
+      {
+         reader_.pause();
+      }
+   private:
+      Session &session;
+      LineReader reader_;
+      OperTable oper_table;
+      // true if lexing string
+      bool from_string_;
+   };
+
+   // lex tokens to end of line, use normal lex state, set end of line location, return number of tokens lexed
+   int lexRestOfLine(Lexer &lexer, Loc &eol_loc, TokenPtrVector &tokens)
+   {
+      int num = 0;
       for (;;)
       {
-        CharKind ch_kind = peekCharKind (reader_);
-        if (ch_kind == C_WS || ch_kind == C_LF)
-        {
-          char ch;
-          reader_.nextChar (ch);
-        }
-        else
-        {
-          break;
-        }
-      }
-    }
-
-    // read rest of line
-    inline void readRestOfLine (std::string & str)
-    {
-      readLine (str);
-    }
-
-    // read line as string, return false if end of file
-    bool readLine (std::string & str)
-    {
-      char ch;
-      if (! reader_.nextChar (ch))
-      {
-        return false;
-      }
-      while (ch != '\n')
-      {
-        str += ch;
-        reader_.nextChar (ch);
-      }
-      return true;
-    }
-
-    // get current location
-    Loc getLoc ()
-    {
-      return reader_.getLocation ();
-    }
-
-    // get next token, return true if not end of line, set location of token or end of line
-    bool getNextToken (LexState lex_state, Loc & loc, TokenPtr & token)
-    {
-      CharKind ch_kind = peekCharKind (reader_);
-      // if whitespace before next token
-      bool ws_before = false;
-      // remaining hex digits in universal char
-      int num_hex_digits = 0;
-      for (;;)
-      {
-        loc = reader_.getLocation ();
-        int token_number = TOKEN_NULL;
-        string lexeme;
-        bool found_ws = false;
-        int state = S_START;
-        for (;;)
-        {
-          switch (state)
-          {
-            // start
-            case S_START:
-            {
-              switch (ch_kind)
-              {
-                // letter
-                case C_D:
-                case C_E:
-                case C_F:
-                case C_U:
-                case C_u:
-                case C_HEX_LETTER:
-                case C_LETTER:
-                {
-                  state = S_IDENT;
-                  break;
-                }
-                // l
-                case C_L:
-                {
-                  state = S_L;
-                  break;
-                }
-                // digit
-                case C_DIGIT:
-                {
-                  state = S_PP_NUMBER;
-                  break;
-                }
-                // dot
-                case C_DOT:
-                {
-                  state = S_DOT;
-                  break;
-                }
-                // '
-                case C_SQUOTE:
-                {
-                  state = S_CHAR_BEG;
-                  break;
-                }
-                // "
-                case C_DQUOTE:
-                {
-                  state = S_STRING;
-                  break;
-                }
-                // op
-                case C_OP:
-                {
-                  state = S_OP;
-                  break;
-                }
-                // #
-                case C_HASH:
-                {
-                  state = S_HASH;
-                  break;
-                }
-                // ! = * ^
-                case C_BANG:
-                case C_EQ:
-                case C_CARET:
-                case C_TIMES:
-                {
-                  state = S_BANG;
-                  break;
-                }
-                // <
-                case C_LT:
-                {
-                  if (lex_state != INCLUDE_LEX_STATE)
-                  {
-                    state = S_LT;
-                  }
-                  else
-                  {
-                    state = S_SYS_FILENAME;
-                  }
-                  break;
-                }
-                // >
-                case C_GT:
-                {
-                  state = S_GT;
-                  break;
-                }
-                // +
-                case C_PLUS:
-                {
-                  state = S_PLUS;
-                  break;
-                }
-                // -
-                case C_MINUS:
-                {
-                  state = S_MINUS;
-                  break;
-                }
-                // |
-                case C_BAR:
-                {
-                  state = S_BAR;
-                  break;
-                }
-                // &
-                case C_AMPERSAND:
-                {
-                  state = S_AMPERSAND;
-                  break;
-                }
-                // :
-                case C_COLON:
-                {
-                  state = S_COLON;
-                  break;
-                }
-                // %
-                case C_PERCENT:
-                {
-                  state = S_PERCENT;
-                  break;
-                }
-                // /
-                case C_DIVIDE:
-                {
-                  int next_ch_kind = peekCharKind (reader_, 1);
-                  if (next_ch_kind == C_DIVIDE || next_ch_kind == C_TIMES)
-                  {
-                    state = S_COMMENT_BEG;
-                  }
-                  else
-                  {
-                    state = S_BANG;
-                  }
-                  break;
-                }
-                // white space
-                case C_WS:
-                {
-                  state = S_WS;
-                  break;
-                }
-                // backslash
-                case C_BACKSLASH:
-                {
-                  // check if start of universal char
-                  int next_ch_kind = peekCharKind (reader_, 1);
-                  if (next_ch_kind == C_U || next_ch_kind == C_u)
-                  {
-                    state = S_IDENT_U_CHAR;
-                  }
-                  else
-                  {
-                    state = S_UNKNOWN;
-                  }
-                  break;
-                }
-                // non-whitespace characters not part of other another token
-                case C_OTHER:
-                {
-                  state = S_UNKNOWN;
-                  break;
-                }
-                // eof
-                case C_EOF:
-                {
-                  lexeme = "end of file";
-                  token_number = TOKEN_EOT;
-                  break;
-                }
-                // new line
-                case C_LF:
-                {
-                  // consume newline, but don't yet read next char on line (otherwise #line will set wrong line number)
-                  char ch;
-                  reader_.nextChar (ch);
-                  return false;
-                }
-                // nac
-                case C_NAC:
-                {
-                  throw ParseError (loc, "invalid character");
-                }
-              }
-              break;
-            }
-            // ident
-            case S_IDENT:
-            {
-              if (ch_kind > C_DIGIT)
-              {
-                if (ch_kind == C_BACKSLASH)
-                {
-                  // might be universal char
-                  int next_ch_kind = peekCharKind (reader_, 1);
-                  if (next_ch_kind == C_U || next_ch_kind == C_u)
-                  {
-                    state = S_IDENT_U_CHAR;
-                  }
-                }
-                if (state == S_IDENT)
-                {
-                  token_number = TOKEN_IDENT;
-                }
-              }
-              break;
-            }
-            // universal char in ident
-            case S_IDENT_U_CHAR:
-            {
-              // 4 hex digits if 'u', 8 if 'U'
-              num_hex_digits = ch_kind == C_U ? 8 : 4;
-              state = S_IDENT_U_CHAR_HEX_COUNT;
-              break;
-            }
-            // counting chars in universal char
-            case S_IDENT_U_CHAR_HEX_COUNT:
-            {
-              if (ch_kind <= C_HEX_LETTER || ch_kind == C_DIGIT)
-              {
-                if (-- num_hex_digits == 0)
-                {
-                  state = S_IDENT; 
-                }
-              }
-              else
-              {
-                // insufficent hex digits, error but can continue
-                // scm::error (machine, loc, msgBadUniversalChar ());
-                // create identifier anyway or continue lexing identifier
-                if (ch_kind > C_DIGIT)
-                {
-                  token_number = TOKEN_IDENT;
-                }
-                else
-                {
-                  state = S_IDENT;
-                }
-              }
-              break;
-            }
-            // l
-            case S_L:
-            {
-              if (ch_kind == C_SQUOTE)
-              {
-                state = S_CHAR_BEG;
-              }
-              // can't have 'L' prefix with header file
-              else if (ch_kind == C_DQUOTE && lex_state != INCLUDE_LEX_STATE)
-              {
-                state = S_STRING;
-              }
-              else if (ch_kind <= C_DIGIT)
-              {
-                state = S_IDENT;
-              }
-              else
-              {
-                token_number = TOKEN_IDENT;
-              }
-              break;
-            }
-            // pp number
-            case S_PP_NUMBER:
-            {
-              if (ch_kind == C_E)
-              {
-                state = S_PP_NUMBER_E;
-              }
-              else if (ch_kind > C_DIGIT && ch_kind != C_DOT)
-              {
-                if (ch_kind == C_BACKSLASH)
-                {
-                  // might be universal char
-                  int next_ch_kind = peekCharKind (reader_, 1);
-                  if (next_ch_kind == C_U || next_ch_kind == C_u)
-                  {
-                    state = S_PP_NUMBER_U_CHAR;
-                  }
-                }
-                if (state == S_PP_NUMBER)
-                {
-                  // not a non digit, digit nor start of universal char
-                  token_number = TOKEN_PP_NUMBER;
-                }
-              }
-              break;
-            }
-            // pp number followed by E or e
-            case S_PP_NUMBER_E:
-            {
-              if (ch_kind == C_E)
-              {
-                // stay in same state
-              }
-              else if (ch_kind <= C_MINUS || ch_kind == C_DOT)
-              {
-                // non digit, digit, sign or dot
-                state = S_PP_NUMBER;
-              }
-              else
-              {
-                token_number = TOKEN_PP_NUMBER;
-              }
-              break;
-            }
-            // universal char in pp number
-            case S_PP_NUMBER_U_CHAR:
-            {
-              // 4 hex digits if 'u', 8 if 'U'
-              num_hex_digits = ch_kind == C_U ? 8 : 4;
-              state = S_PP_NUMBER_U_CHAR_HEX_COUNT;
-              break;
-            }
-            // counting chars in universal char
-            case S_PP_NUMBER_U_CHAR_HEX_COUNT:
-            {
-              if (ch_kind <= C_HEX_LETTER || ch_kind == C_DIGIT)
-              {
-                // hex letter or digit
-                if (-- num_hex_digits == 0)
-                {
-                  state = S_PP_NUMBER; 
-                }
-              }
-              else
-              {
-                // insufficent hex digits
-                // scm::error (machine, loc, msgBadUniversalChar ());
-                // try to continue lexing pp number or create a pp number token
-                if (ch_kind == C_E)
-                {
-                  state = S_PP_NUMBER_E;
-                }
-                else if (ch_kind <= C_DIGIT || ch_kind == C_DOT)
-                {
-                  // digit, non digit or dot
-                  state = S_PP_NUMBER;
-                }
-                else
-                {
-                  token_number = TOKEN_PP_NUMBER;
-                }
-              }
-              break;
-            }
-            // dot
-            case S_DOT:
-            {
-              if (ch_kind == C_DIGIT)
-              {
-                state = S_PP_NUMBER;
-              }
-              else if (ch_kind == C_DOT && peekCharKind (reader_, 1) == C_DOT)
-              {
-                state = S_DOT_DOT;
-              }
-              else if (ch_kind == C_TIMES)
-              {
-                state = S_OP;
-              }
-              else
-              {
-                token_number = TOKEN_DOT;
-              }
-              break;
-            }
-            // .. next . or %:% next :
-            case S_LZZHASH:
-            // // next #
-            case S_DOT_DOT:
-            {
-              state = S_OP;
-              break;
-            }
-            // #
-            case S_HASH:
-            {
-              if (ch_kind == C_HASH)
-              {
-                state = S_OP;
-              }
-              else
-              {
-                token_number = TOKEN_HASH;
-              }
-              break;
-            }
-            // ! = * ^ /
-            case S_BANG:
-            {
-              if (ch_kind == C_EQ)
-              {
-                state = S_OP;
-                break;
-              }
-              // fall through
-            }
-            // op
-            case S_OP:
-            {
-              token_number = oper_table.getOperKind (lexeme);
-              break;
-            }
-            // <
-            case S_LT:
-            {
-              if (ch_kind == C_LT)
-              {
-                state = S_BANG;
-              }
-              else if (ch_kind == C_EQ || ch_kind == C_COLON || ch_kind == C_PERCENT)
-              {
-                state = S_OP;
-              }
-              else
-              {
-                token_number = TOKEN_LT;
-              }
-              break;
-            }
-            // >
-            case S_GT:
-            {
-              if (ch_kind == C_GT)
-              {
-                state = S_BANG;
-              }
-              else if (ch_kind == C_EQ)
-              {
-                state = S_OP;
-              }
-              else
-              {
-                token_number = TOKEN_GT;
-              }
-              break;
-            }
-            // +
-            case S_PLUS:
-            {
-              if (ch_kind == C_PLUS || ch_kind == C_EQ)
-              {
-                state = S_OP;
-              }
-              else
-              {
-                token_number = TOKEN_PLUS;
-              }
-              break;
-            }
-            // -
-            case S_MINUS:
-            {
-              if (ch_kind == C_MINUS || ch_kind == C_EQ)
-              {
-                state = S_OP;
-              }
-              else if (ch_kind == C_GT)
-              {
-                state = S_ARROW;
-              }
-              else
-              {
-                token_number = TOKEN_MINUS;
-              }
-              break;
-            }
-            // ->
-            case S_ARROW:
-            {
-              if (ch_kind == C_TIMES)
-              {
-                state = S_OP;
-              }
-              else
-              {
-                token_number = TOKEN_PTR;
-              }
-              break;
-            }
-            // |
-            case S_BAR:
-            {
-              if (ch_kind == C_BAR || ch_kind == C_EQ)
-              {
-                state = S_OP;
-              }
-              else
-              {
-                token_number = TOKEN_BITOR;
-              }
-              break;
-            }
-            // &
-            case S_AMPERSAND:
-            {
-              if (ch_kind == C_AMPERSAND || ch_kind == C_EQ)
-              {
-                state = S_OP;
-              }
-              else
-              {
-                token_number = TOKEN_BITAND;
-              }
-              break;
-            }
-            // :
-            case S_COLON:
-            {
-              if (ch_kind == C_COLON || ch_kind == C_GT)
-              {
-                state = S_OP;
-              }
-              else
-              {
-                token_number = TOKEN_COLON;
-              }
-              break;
-            }
-            // %
-            case S_PERCENT:
-            {
-              if (ch_kind == C_GT || ch_kind == C_EQ)
-              {
-                state = S_OP;
-              }
-              else if (ch_kind == C_COLON)
-              {
-                state = S_PERCENT_COLON;
-              }
-              else
-              {
-                token_number = TOKEN_MOD;
-              }
-              break;
-            }
-            // %:
-            case S_PERCENT_COLON:
-            {
-              if (ch_kind == C_PERCENT && peekCharKind (reader_, 1) == C_COLON)
-              {
-                state = S_DOT_DOT; 
-              }
-              else
-              {
-                token_number = TOKEN_HASH;
-              }
-              break;
-            }
-            // char beg
-            case S_CHAR_BEG:
-            {
-              if (ch_kind == C_SQUOTE)
-              {
-                // scm::error (machine, loc, msgEmptyLiteralChar ());
-                // assume ' '
-                lexeme += ' ';
-                state = S_CHAR_END;
-              }
-              else if (ch_kind == C_LF)
-              {
-                // scm::error (machine, loc, msgNewlineInLiteralChar ());
-                // assume ' '
-                lexeme += " \'";
-                token_number = TOKEN_LITERAL_CHAR;
-              }
-              else if (ch_kind == C_BACKSLASH)
-              {
-                state = S_CHAR_ESC; 
-              }
-              else
-              {
-                state = S_CHAR;
-              }
-              break;
-            }
-            // char
-            case S_CHAR:
-            {
-              if (ch_kind == C_LF)
-              {
-                // scm::error (machine, loc, msgNewlineInLiteralChar ());
-                // add missing end quote 
-                lexeme += '\'';
-                token_number = TOKEN_LITERAL_CHAR;
-              }
-              else if (ch_kind == C_BACKSLASH)
-              {
-                state = S_CHAR_ESC;
-              }
-              else if (ch_kind == C_SQUOTE)
-              {
-                state = S_CHAR_END;
-              }
-              break;
-            }
-            // char escape
-            case S_CHAR_ESC:
-            {
-              // can't be newline
-              // accept any other character
-              state = S_CHAR;
-              break;
-            }
-            // char end
-            case S_CHAR_END:
-            {
-              token_number = TOKEN_LITERAL_CHAR;
-              break;
-            }
-            // string
-            case S_STRING:
-            {
-              if (ch_kind == C_LF)
-              {
-                // scm::error (machine, loc, msgNewlineInLiteralString ());
-                // add mising end quote
-                lexeme += '\"';
-                token_number = TOKEN_LITERAL_STRING;
-              }
-              else if (ch_kind == C_BACKSLASH)
-              {
-                state = S_STRING_ESC;
-              }
-              else if (ch_kind == C_DQUOTE)
-              {
-                state = S_STRING_END;
-              }
-              else
-              {
-                state = S_STRING;
-              }
-              break;
-            }
-            // string escape
-            case S_STRING_ESC:
-            {
-              // can't be newline
-              // accept any other character
-              state = S_STRING;
-              break;
-            }
-            // string end
-            case S_STRING_END:
-            {
-              token_number = TOKEN_LITERAL_STRING;
-              break;
-            }
-            // system filename
-            case S_SYS_FILENAME:
-            {
-              if (ch_kind == C_LF)
-              {
-                // scm::error (machine, loc, msgNewlineInLiteralString ());
-                // add missing end delimiter
-                lexeme += '>';
-                token_number = TOKEN_LITERAL_STRING;
-              }
-              else if (ch_kind == C_GT)
-              {
-                state = S_STRING_END;
-              }
-              break;
-            }
-            // unknown
-            case S_UNKNOWN:
-            {
-              token_number = TOKEN_UNKNOWN;
-              break;
-            }
-            // / next * or /
-            case S_COMMENT_BEG:
-            {
-              if (ch_kind == C_DIVIDE)
-              {
-                if (peekCharKind (reader_, 1) == C_HASH)
-                {
-                  state = S_LZZHASH;
-                }
-                else
-                {
-                  state = S_CPP_COMMENT;
-                }
-              }
-              else
-              {
-                state = S_C_COMMENT;
-              }
-              break;
-            }
-            // /* ...
-            case S_C_COMMENT:
-            {
-              if (ch_kind == C_EOF)
-              {
-                // scm::error (machine, loc, msgEOFBeforeEndOfComment ());
-                // assume end
-                found_ws = true;
-              }
-              else if (ch_kind == C_TIMES && peekCharKind (reader_, 1) == C_DIVIDE)
-              {
-                state = S_C_COMMENT_END;
-              }
-              break;
-            }
-            // /* ... * next /
-            case S_C_COMMENT_END:
-            {
-              state = S_WS;
-              break;
-            }
-            // // ...
-            case S_CPP_COMMENT:
-            {
-              if (ch_kind == C_LF)
-              {
-                found_ws = true;
-              }
-              break;
-            }
-            // white space
-            case S_WS:
-            {
-              if (ch_kind != C_WS)
-              {
-                found_ws = true;
-              }
-              break;
-            }
-          }
-          if (token_number != TOKEN_NULL)
-          {
-            token = new Token (token_number, loc, lexeme);
-            if (found_ws)
-            {
-              token->setSpaceBefore ();
-            }
-            return true;
-          }
-          if (found_ws)
-          {
-            ws_before = true;
+         TokenPtr token;
+         if (!lexer.getNextToken(eol_loc, token))
+         {
             break;
-          }
-          // consume next char and if not comment or whitespace add to lexeme
-          char ch;
-          reader_.nextChar (ch);
-          if (state < S_WS)
-          {
-            // push ident char
-            lexeme += ch;
-          }
-          ch_kind = peekCharKind (reader_);
-        }
+         }
+         tokens.push_back(token);
+         ++ num;
       }
-    }
+      return num;
+   }
 
-    // get next token
-    inline bool getNextToken (TokenPtr & token)
-    {
-      Loc loc;
-      return getNextToken (NORMAL_LEX_STATE, loc, token);
-    }
-    // get next token
-    inline bool getNextToken (Loc & loc, TokenPtr & token)
-    {
-      return getNextToken (NORMAL_LEX_STATE, loc, token);
-    }
-    // get next token
-    inline bool getNextToken (LexState lex_state, TokenPtr & token)
-    {
-      Loc loc;
-      return getNextToken (lex_state, loc, token);
-    }
-
-    // get filename
-    inline char const * getFilename () const
-    {
-      return reader_.getFilename ();
-    }
-
-    // set line
-    inline void setLine (int line)
-    {
-      reader_.setLine (line);
-    }
-    // set line and filename
-    inline void setLine (int line, char const * filename)
-    {
-      reader_.setLine (line, filename);
-    }
-    // pause reader
-    inline void pause ()
-    {
-      reader_.pause ();
-    }
-  private:
-    Session & session;
-    LineReader reader_;
-    OperTable oper_table;
-    // true if lexing string
-    bool from_string_;
-  }
-
-  // lex tokens to end of line, use normal lex state, set end of line location, return number of tokens lexed
-  int lexRestOfLine (Lexer & lexer, Loc & eol_loc, TokenPtrVector & tokens)
-  {
-    int num = 0;
-    for (;;)
-    {
-      TokenPtr token;
-      if (! lexer.getNextToken (eol_loc, token))
-      {
-        break;
-      }
-      tokens.push_back (token);
-      ++ num;
-    }
-    return num;
-  }
-
-  // lex tokens to end of line, use normal lex state
-  inline int lexRestOfLine (Lexer & lexer, TokenPtrVector & tokens)
-  {
-    Loc eol_loc;
-    return lexRestOfLine (lexer, eol_loc, tokens);
-  }
+   // lex tokens to end of line, use normal lex state
+   inline int lexRestOfLine(Lexer &lexer, TokenPtrVector &tokens)
+   {
+      Loc eol_loc;
+      return lexRestOfLine(lexer, eol_loc, tokens);
+   }
   
-  // discard rest of line
-  inline void discardRestOfLine (Lexer & lexer)
-  {
-    lexer.discardRestOfLine ();
-  }
+   // discard rest of line
+   inline void discardRestOfLine(Lexer &lexer)
+   {
+      lexer.discardRestOfLine();
+   }
 }
 
 using namespace cpp;
-using namespace std;
 
 namespace
 {
-  // character kinds
-  enum CharKind
-  {
-    // hex letters 
-    C_D,           // 'D' 68
-                   // 'd' 100
-    C_E,           // 'E' 69
-                   // 'e' 101
-    C_F,           // 'F' 70
-                   // 'f' 102
-    C_HEX_LETTER,  // other hex letters
+   // character kinds
+   enum CharKind
+   {
+      // hex letters 
+      C_D,           // 'D' 68
+      // 'd' 100
+      C_E,           // 'E' 69
+      // 'e' 101
+      C_F,           // 'F' 70
+      // 'f' 102
+      C_HEX_LETTER,  // other hex letters
 
-    // hex letters above (<= C_HEX_LETTER)
+      // hex letters above (<= C_HEX_LETTER)
 
-    // other letters
-    C_L,           // 'L' 76
-                   // 'l' 108
-    C_U,           // 'U' 85
-    C_u,           // 'u' 117
-    C_LETTER,      // other letters
+      // other letters
+      C_L,           // 'L' 76
+      // 'l' 108
+      C_U,           // 'U' 85
+      C_u,           // 'u' 117
+      C_LETTER,      // other letters
 
-    // all letters above (<= C_LETTER)
+      // all letters above (<= C_LETTER)
 
-    // decimal digits
-    C_DIGIT,       // '0' to '9' 
+      // decimal digits
+      C_DIGIT,       // '0' to '9' 
 
-    // non digits, not including a universal character, are above (<= C_DIGIT)
+      // non digits, not including a universal character, are above (<= C_DIGIT)
 
-    // operators
-    C_PLUS,        // '+' 43
-    C_MINUS,       // '-' 45
+      // operators
+      C_PLUS,        // '+' 43
+      C_MINUS,       // '-' 45
 
-    // non digit or sign above (<= C_MINUS)
+      // non digit or sign above (<= C_MINUS)
 
-    C_TIMES,       // '*' 42
-    C_DIVIDE,      // '/' 47
-    C_EQ,          // '=' 61
-    C_LT,          // '<' 60
-    C_GT,          // '>' 62
-    C_BANG,        // '!' 33
-    C_AMPERSAND,   // '&' 38
-    C_BAR,         // '|' 124
-    C_CARET,       // '^' 94
-    C_PERCENT,     // '%' 37
-    C_DOT,         // '.' 46
-    C_SQUOTE,      // ''' 39
-    C_DQUOTE,      // '"' 34
-    C_BACKSLASH,   // '\' 92
-    C_COLON,       // ':' 58
-    C_HASH,        // '#' 35
+      C_TIMES,       // '*' 42
+      C_DIVIDE,      // '/' 47
+      C_EQ,          // '=' 61
+      C_LT,          // '<' 60
+      C_GT,          // '>' 62
+      C_BANG,        // '!' 33
+      C_AMPERSAND,   // '&' 38
+      C_BAR,         // '|' 124
+      C_CARET,       // '^' 94
+      C_PERCENT,     // '%' 37
+      C_DOT,         // '.' 46
+      C_SQUOTE,      // ''' 39
+      C_DQUOTE,      // '"' 34
+      C_BACKSLASH,   // '\' 92
+      C_COLON,       // ':' 58
+      C_HASH,        // '#' 35
 
-    // other operators
-    C_OP,          // '?' 63
-                   // '~' 126
-                   // '(' 40
-                   // ')' 41
-                   // '{' 123
-                   // '}' 125
-                   // '[' 91
-                   // ']' 93
-                   // ';' 59
-                   // '$' 36
-                   // ',' 44
+      // other operators
+      C_OP,          // '?' 63
+      // '~' 126
+      // '(' 40
+      // ')' 41
+      // '{' 123
+      // '}' 125
+      // '[' 91
+      // ']' 93
+      // ';' 59
+      // '$' 36
+      // ',' 44
 
-    // white space
-    C_WS,          // SP  32
-                   // HT  9
-                   // VT  11
-                   // FF  12
+      // white space
+      C_WS,          // SP  32
+      // HT  9
+      // VT  11
+      // FF  12
     
-    C_LF,          // LF  10
-    C_OTHER,       // other non-whitespace characters (like '@' and '`')
-    C_NAC,         // illegal characters
-    C_EOF,         // end of file
-  }
+      C_LF,          // LF  10
+      C_OTHER,       // other non-whitespace characters (like '@' and '`')
+      C_NAC,         // illegal characters
+      C_EOF,         // end of file
+   }
   
-  // char index
-  CharKind char_index [] =
-  {
-    // 0
-    C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_WS,
-    // 10
-    C_LF, C_WS, C_WS, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC,
-    // 20
-    C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC,
-    // 30
-    C_NAC, C_NAC, C_WS, C_BANG, C_DQUOTE, C_HASH, C_OP, C_PERCENT, C_AMPERSAND, C_SQUOTE,
-    // 40
-    C_OP, C_OP, C_TIMES, C_PLUS, C_OP, C_MINUS, C_DOT, C_DIVIDE, C_DIGIT, C_DIGIT,
-    // 50
-    C_DIGIT, C_DIGIT, C_DIGIT, C_DIGIT, C_DIGIT, C_DIGIT, C_DIGIT, C_DIGIT, C_COLON, C_OP,
-    // 60
-    C_LT, C_EQ, C_GT, C_OP, C_OTHER, C_HEX_LETTER, C_HEX_LETTER, C_HEX_LETTER, C_D, C_E,
-    // 70
-    C_F, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_L, C_LETTER, C_LETTER, C_LETTER,
-    // 80
-    C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_U, C_LETTER, C_LETTER, C_LETTER, C_LETTER,
-    // 90
-    C_LETTER, C_OP, C_BACKSLASH, C_OP, C_CARET, C_LETTER, C_OTHER, C_HEX_LETTER, C_HEX_LETTER, C_HEX_LETTER,
-    // 100
-    C_D, C_E, C_F, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_L, C_LETTER,
-    // 110
-    C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_u, C_LETTER, C_LETTER,
-    // 120
-    C_LETTER, C_LETTER, C_LETTER, C_OP, C_BAR, C_OP, C_OP, C_NAC,
-  };
+   // char index
+      CharKind char_index [] =
+      {
+         // 0
+         C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_WS,
+         // 10
+         C_LF, C_WS, C_WS, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC,
+         // 20
+         C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC, C_NAC,
+         // 30
+         C_NAC, C_NAC, C_WS, C_BANG, C_DQUOTE, C_HASH, C_OP, C_PERCENT, C_AMPERSAND, C_SQUOTE,
+         // 40
+         C_OP, C_OP, C_TIMES, C_PLUS, C_OP, C_MINUS, C_DOT, C_DIVIDE, C_DIGIT, C_DIGIT,
+         // 50
+         C_DIGIT, C_DIGIT, C_DIGIT, C_DIGIT, C_DIGIT, C_DIGIT, C_DIGIT, C_DIGIT, C_COLON, C_OP,
+         // 60
+         C_LT, C_EQ, C_GT, C_OP, C_OTHER, C_HEX_LETTER, C_HEX_LETTER, C_HEX_LETTER, C_D, C_E,
+         // 70
+         C_F, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_L, C_LETTER, C_LETTER, C_LETTER,
+         // 80
+         C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_U, C_LETTER, C_LETTER, C_LETTER, C_LETTER,
+         // 90
+         C_LETTER, C_OP, C_BACKSLASH, C_OP, C_CARET, C_LETTER, C_OTHER, C_HEX_LETTER, C_HEX_LETTER, C_HEX_LETTER,
+         // 100
+         C_D, C_E, C_F, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_L, C_LETTER,
+         // 110
+         C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_LETTER, C_u, C_LETTER, C_LETTER,
+         // 120
+         C_LETTER, C_LETTER, C_LETTER, C_OP, C_BAR, C_OP, C_OP, C_NAC,
+      };
 
-  // peek next char kind from reader
-  CharKind peekCharKind (LineReader & reader, int n = 0)
-  {
-    CharKind ch_kind = C_EOF;
-    char ch;
-    if (reader.peekChar (ch, n))
-    {
-      ch_kind = (ch >= 0 && ch <= 127) ? char_index [int (ch)] : C_LETTER;
-    }
-    return ch_kind;
-  }
+   // peek next char kind from reader
+   CharKind peekCharKind(LineReader &reader, int n = 0)
+   {
+      CharKind ch_kind = C_EOF;
+      char ch;
+      if (reader.peekChar(ch, n))
+      {
+         ch_kind = (ch >= 0 && ch <= 127) ? char_index [int(ch)] : C_LETTER;
+      }
+      return ch_kind;
+   }
 
-  // lex states
-  enum State
-  {
-    // ** start states **
+   // lex states
+   enum State
+   {
+      // ** start states **
 
-    // start state
-    S_START,
+      // start state
+      S_START,
 
-    // ** states with lexemes **
+      // ** states with lexemes **
 
-    // identifier
-    S_IDENT,
+      // identifier
+      S_IDENT,
 
-    // universal char in identifier
-    S_IDENT_U_CHAR,
+      // universal char in identifier
+      S_IDENT_U_CHAR,
 
-    // counting hex characters in universal char
-    S_IDENT_U_CHAR_HEX_COUNT,
+      // counting hex characters in universal char
+      S_IDENT_U_CHAR_HEX_COUNT,
 
-    // l
-    S_L,
+      // l
+      S_L,
 
-    // pp number
-    S_PP_NUMBER,
+      // pp number
+      S_PP_NUMBER,
 
-    // pp number E
-    S_PP_NUMBER_E,
+      // pp number E
+      S_PP_NUMBER_E,
 
-    // universal char in pp number
-    S_PP_NUMBER_U_CHAR,
+      // universal char in pp number
+      S_PP_NUMBER_U_CHAR,
 
-    // counting hex characters in universal char
-    S_PP_NUMBER_U_CHAR_HEX_COUNT,
+      // counting hex characters in universal char
+      S_PP_NUMBER_U_CHAR_HEX_COUNT,
 
-    // .
-    S_DOT,
+      // .
+      S_DOT,
 
-    // ..
-    S_DOT_DOT,
+      // ..
+      S_DOT_DOT,
 
-    // #
-    S_HASH,
+      // #
+      S_HASH,
 
-    // //#
-    S_LZZHASH,
+      // //#
+      S_LZZHASH,
 
-    // !
-    S_BANG,
+      // !
+      S_BANG,
 
-    // operator
-    S_OP,
+      // operator
+      S_OP,
 
-    // <
-    S_LT,
+      // <
+      S_LT,
 
-    // >
-    S_GT,
+      // >
+      S_GT,
 
-    // +
-    S_PLUS,
+      // +
+      S_PLUS,
 
-    // -
-    S_MINUS,
+      // -
+      S_MINUS,
 
-    // ->
-    S_ARROW,
+      // ->
+      S_ARROW,
 
-    // |
-    S_BAR,
+      // |
+      S_BAR,
 
-    // &
-    S_AMPERSAND,
+      // &
+      S_AMPERSAND,
 
-    // :
-    S_COLON,
+      // :
+      S_COLON,
 
-    // %
-    S_PERCENT,
+      // %
+      S_PERCENT,
 
-    // %:
-    S_PERCENT_COLON,
+      // %:
+      S_PERCENT_COLON,
 
-    // char begin
-    S_CHAR_BEG,
+      // char begin
+      S_CHAR_BEG,
 
-    // char
-    S_CHAR,
+      // char
+      S_CHAR,
 
-    // char end
-    S_CHAR_END,
+      // char end
+      S_CHAR_END,
 
-    // char escape
-    S_CHAR_ESC,
+      // char escape
+      S_CHAR_ESC,
 
-    // string
-    S_STRING,
+      // string
+      S_STRING,
 
-    // string escape
-    S_STRING_ESC,
+      // string escape
+      S_STRING_ESC,
 
-    // string end
-    S_STRING_END,
+      // string end
+      S_STRING_END,
 
-    // system filename
-    S_SYS_FILENAME,
+      // system filename
+      S_SYS_FILENAME,
 
-    // unknown token (non-whitespace char not start of other token)
-    S_UNKNOWN,
+      // unknown token (non-whitespace char not start of other token)
+      S_UNKNOWN,
 
-    // // or /*
-    S_COMMENT_BEG,
+      // // or /*
+      S_COMMENT_BEG,
 
-    // ** whitespace **
+      // ** whitespace **
 
-    // whitespace
-    S_WS,
+      // whitespace
+      S_WS,
     
-    // c and c++ comments
-    S_CPP_COMMENT,
-    S_C_COMMENT,
-    S_C_COMMENT_END,
-  }
+      // c and c++ comments
+      S_CPP_COMMENT,
+      S_C_COMMENT,
+      S_C_COMMENT_END,
+   }
 }
 
 #hdr
-#include <cpp/line_reader.h>
-#include <cpp/oper_table.h>
-#include <cpp/session_fwd.h>
-#include <cpp/token_ptr_vector.h>
+#include <cpp_line_reader.h>
+#include <cpp_oper_table.h>
+#include <cpp_session_fwd.h>
+#include <cpp_token_ptr_vector.h>
 #include <string>
 #end
 
 #src
-#include <cpp/session.h>
-#include <cpp/token.h>
-#include <cpp/token_numbers.h>
-#include <util/parse_error.h>
+#include <cpp_session.h>
+#include <cpp_token.h>
+#include <cpp_token_numbers.h>
 #include <stdio.h>
 #end
