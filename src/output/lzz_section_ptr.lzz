@@ -1,12 +1,15 @@
-class Section;
-typedef Ptr <Section> SectionPtr;
-template class Ptr <Section>;
+namespace lzz
+{
+   class Section;
+   typedef Ptr<Section> SectionPtr;
+}
+template class Ptr<lzz::Section>;
 
 #hdr
-#include <util/ptr.h>
+#include <util_ptr.h>
 #end
 
 #src
-#include <output/section.h>
-#include <util/ptr.tpl>
+#include <lzz_section.h>
+#include <util_ptr.tpl>
 #end

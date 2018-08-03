@@ -1,8 +1,11 @@
-typedef std::vector <SectionPtr> SectionPtrVector;
-typedef SectionPtrVector::iterator SectionPtrVectorIter;
-typedef SectionPtrVector::const_iterator SectionPtrVectorConstIter;
+namespace lzz
+{
+   typedef std::vector<SectionPtr> SectionPtrVector;
+   typedef SectionPtrVector::iterator SectionPtrVectorIter;
+   typedef SectionPtrVector::const_iterator SectionPtrVectorConstIter;
+}
 
 #hdr
-#include <output/section_ptr.h>
+#include <lzz_section_ptr.h>
 #include <vector>
 #end

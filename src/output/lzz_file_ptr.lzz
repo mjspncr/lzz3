@@ -1,12 +1,15 @@
-class File;
-typedef Ptr <File> FilePtr;
-template class Ptr <File>;
+namespace lzz
+{
+   class File;
+   typedef Ptr<File> FilePtr;
+}
+template class Ptr<lzz::File>;
 
 #hdr
-#include <util/ptr.h>
+#include <util_ptr.h>
 #end
 
 #src
-#include <output/file.h>
-#include <util/ptr.tpl>
+#include <lzz_file.h>
+#include <util_ptr.tpl>
 #end
