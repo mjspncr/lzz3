@@ -1,15 +1,14 @@
 namespace lzz
 {
    class File;
-   typedef Ptr<File> FilePtr;
+   typedef std::shared_ptr<File> FilePtr;
 }
-template class Ptr<lzz::File>;
+template class std::shared_ptr<lzz::File>;
 
 #hdr
-#include <util_ptr.h>
+#include <memory>
 #end
 
 #src
 #include <lzz_file.h>
-#include <util_ptr.tpl>
 #end

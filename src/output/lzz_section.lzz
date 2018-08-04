@@ -1,87 +1,81 @@
-// section in file
-class Section
+// lzz_section
+//
+// a section in a generated file
+//
+
+namespace lzz
 {
-public:
-  Section (SectionKind kind)
-    : m_kind (kind), m_indent (0)
-  {}
-  ~ Section ()
-  {}
+   class Section
+   {
+   public:
+      Section()
+         : m_indent(0)
+      {
+         m_os = new std::ostringstream();
+      }
+      ~Section()
+      {
+         delete m_os;
+      }
 
-  // get kind
-  inline SectionKind getKind () const
-  {
-    return m_kind;
-  }
+      // return output stream, do not first indent
+      std::ostream &getStream()
+      {
+         assert(m_os != 0);
+         return *m_os;
+      }
 
-  // return output stream, do not first indent
-  inline std::ostream & getStream ()
-  {
-    return m_os;
-  }
+      // indent, increment line and return output stream with optional indent offset
+      std::ostream &indent(int offset = 0)
+      {
+         return indentExactly((m_indent + offset) * 3);
+      }
 
-  // indent, increment line and return output stream with optional indent offset
-  std::ostream & indent (int offset = 0)
-  {
-    return indentExactly ((m_indent + offset) * 2);
-  }
+      // indent exactly number of spaces
+      std::ostream &indentExactly(int num_spaces)
+      {
+         enum { MAX_INDENT = 128 };
+         char buf[MAX_INDENT];
+         if (num > MAX_INDENT - 1)
+         {
+            num = MAX_INDENT - 1;
+         }
+         memset(buf, ' ', num_spaces);
+         buf[num_spaces] = '\0';
+         return getStream() << buf;
+      }
 
-  // indent exactly number of spaces
-  std::ostream & indentExactly (int num)
-  {
-    enum { MAX_INDENT = 128 };
-    char buf [MAX_INDENT];
-    if (num > MAX_INDENT - 1)
-    {
-      num = MAX_INDENT - 1;
-    }
-    memset (buf, ' ', num);
-    buf [num] = '\0';
-    m_os << buf;
-    return m_os;
-  }
+      // increment indent
+      inline void incIndent()
+      {
+         ++m_indent;
+      }
 
-  // increment indent
-  void incIndent ()
-  {
-    ++ m_indent;
-  }
+      // decrement indent
+      void decIndent()
+      {
+         assert(m_indent > 0);
+         -- m_indent;
+      }
 
-  // decrement indent
-  void decIndent ()
-  {
-    assert (m_indent > 0);
-    -- m_indent;
-  }
+      // close section and return contents as string
+      std::string close()
+      {
+         std::string content = getStream().str();
+         delete m_os;
+         m_os = 0;
+         return content;
+      }
 
-  // freeze output, return output as string and output size
-  std::string const & freeze ()
-  {
-    m_str = m_os.str ();
-    m_os.str (std::string ());
-    return m_str;
-  }
-
-  // get string, assume already frozen
-  std::string const & getString () const
-  {
-    return m_str;
-  }
-
-private:
-  SectionKind m_kind;
-  // string buffer
-  std::ostringstream m_os;
-  // string to hold content after freezing section
-  std::string m_str;
-  // current indentation
-  int m_indent;
+   private:
+      // string buffer
+      std::ostringstream *m_os;
+      // current indentation
+      int m_indent;
+   }
 }
 
-using namespace std;
-
 #hdr
-#include <output/section_kind.h>
 #include <sstream>
 #end
 

@@ -1,15 +1,14 @@
 namespace lzz
 {
    class Section;
-   typedef Ptr<Section> SectionPtr;
+   typedef std::shared_ptr<Section> SectionPtr;
 }
-template class Ptr<lzz::Section>;
+template class std::shared_ptr<lzz::Section>;
 
 #hdr
-#include <util_ptr.h>
+#include <memory>
 #end
 
 #src
 #include <lzz_section.h>
-#include <util_ptr.tpl>
 #end

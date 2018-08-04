@@ -16,7 +16,6 @@ namespace lzz
       SECTION_DECLARATION,
       // body, definitions
       SECTION_BODY,
-
       // inline sections for inlining inline file in header and source
       // inline header section
       SECTION_INLINE_HEADER,
@@ -30,5 +29,8 @@ namespace lzz
       SECTION_INLINE_TAIL,
       // tail
       SECTION_TAIL,
+
+      // max number of sections
+      MAX_SECTIONS,
    };
 }
