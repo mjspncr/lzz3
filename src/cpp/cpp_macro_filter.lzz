@@ -79,7 +79,7 @@ namespace cpp
                               Loc const &file_loc = is_sub ? sub_loc : loc;
                               std::string lexeme_str;
                               lexeme_str += '\"';
-                              lexeme_str += file_loc.getFilename();
+                              lexeme_str += file_loc.get_filename();
                               lexeme_str += '\"';
                               TokenPtrVector rep_tokens;
                               rep_tokens.push_back(new Token(TOKEN_LITERAL_STRING, loc, lexeme_str));
@@ -89,7 +89,7 @@ namespace cpp
                            {
                               // __LINE__
                               Loc const &line_loc = is_sub ? sub_loc : loc;
-                              std::string lexeme_str = intToString(line_loc.getLine());
+                              std::string lexeme_str = intToString(line_loc.get_line());
                               TokenPtrVector rep_tokens;
                               rep_tokens.push_back(new Token(TOKEN_LITERAL_INT, loc, lexeme_str));
                               subObjRepSet(loc, name, rep_tokens);

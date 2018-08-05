@@ -876,7 +876,7 @@ namespace cpp
                if (token_number != TOKEN_NULL)
                {
                   token = new Token(token_number, loc, lexeme);
-                  if (found_ws)
+                  if (ws_before)
                   {
                      token->setSpaceBefore();
                   }
@@ -927,7 +927,7 @@ namespace cpp
       // set line
       inline void setLine(int line)
       {
-         reader_.setLineline);
+         reader_.setLine(line);
       }
       // set line and filename
       inline void setLine(int line, char const * filename)
@@ -1237,5 +1237,6 @@ namespace
 #include <cpp_session.h>
 #include <cpp_token.h>
 #include <cpp_token_numbers.h>
+#include <util_message.h>
 #include <stdio.h>
 #end

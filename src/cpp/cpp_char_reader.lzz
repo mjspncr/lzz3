@@ -7,7 +7,7 @@ namespace cpp
         : file_reader_(filename), column_(1), peek_beg_(0), peek_end_(0)
      {}
      CharReader(std::string const &str, Loc const &loc)
-        : file_reader_(str, loc), column_(loc.getColumn()), peek_beg_(0), peek_end_(0)
+        : file_reader_(str, loc), column_(loc.get_column()), peek_beg_(0), peek_end_(0)
      {}
      // peek n chars ahead, return true if successful
      bool peekChar(char &c, int n = 0)

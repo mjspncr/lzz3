@@ -34,18 +34,17 @@ namespace
    // true if in current dir
    bool findInDir(std::string const &dir, std::string const &name, std::string &fullname)
    {
-      bool result = false;
       std::string file = join(dir, name);
-      if (exists(file) && ! isDirectory(file))
+      if (exists(file) && !isDirectory(file))
       {
-         result = true;
          fullname = file;
+         return true;
       }
-      return result;
+      return false;
    }
 
    // find in dir
-   inline bool FindInDir(std::string const &name, std::string &fullname; string const &dir) const
+   inline bool FindInDir(std::string const &name, std::string &fullname; std::string const &dir) const
    {
       return findInDir(dir, name, fullname);
    }

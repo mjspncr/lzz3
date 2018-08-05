@@ -109,7 +109,7 @@ namespace
                discardRestOfLine(lexer);
                return false;
             }
-            string const &lexeme = token->getLexeme();
+            std::string const &lexeme = token->getLexeme();
             if (lexeme == "__VA_ARGS__")
             {
                session.error(loc, "__VA_ARGS__ can not be a parameter name");

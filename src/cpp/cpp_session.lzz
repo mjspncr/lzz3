@@ -1,4 +1,7 @@
-class Output;
+// cpp_session.lzz
+//
+
+namespace lzz { class Output; }
 
 namespace cpp
 {
@@ -6,8 +9,8 @@ namespace cpp
    class Session
    {
    public:
-      Session(StringSet &strings, StringIntVector const &keywords, Output &output, std::ostream &out_stream)
-         : m_strings(strings), m_keywords(keywords), m_output(output), m_out_stream(out_stream)
+      Session(StringSet &strings, StringIntVector const &keywords, lzz::Output &output)
+         : m_strings(strings), m_keywords(keywords), m_output(output)
       {
          m_macro_table.init(*this); 
       }
@@ -34,26 +37,25 @@ namespace cpp
          return res;
       }
 
-      // pass warning and error messages through to error sink
+      void warning(Loc const &loc, std::string const &msg) const
+      {
+         m_output.warning(loc, msg);
+      }
       void warning(std::string const &msg) const
       {
-         m_out_stream << msg << std::endl;
-      }
-      void warning(Loc const & loc, std::string const & msg) const /* are these overloads used? */
-      {
-         m_out_stream << loc << msg << std::endl;
-      }
-      void error(std::string const &msg) const
-      {
-         m_out_stream << msg << std::endl;
+         m_output.warning(msg);
       }
       void error(Loc const &loc, std::string const &msg) const
       {
-         m_out_stream << loc << msg << std::endl;
+         m_output.error(loc, msg);
+      }
+      void error(std::string const &msg) const
+      {
+         m_output.error(msg);
       }
 
       // print (#hdr, #src, etc) block to file
-      inline Output &getOutput() const
+      inline lzz::Output &getOutput() const
       {
          return m_output;
       }
@@ -84,8 +86,7 @@ namespace cpp
       MacroTable m_macro_table;
       // preprocessor keywords
       KeywordTable m_keyword_table;
-      Output &m_output;
-      std::ostream &m_out_stream;
+      lzz::Output &m_output;
    };
 }
 
@@ -101,7 +102,7 @@ namespace cpp
 #end
 
 #src
-#include <output_output.h>
+#include <lzz_output.h>
 #include <algorithm>
 #include <iostream>
 #end

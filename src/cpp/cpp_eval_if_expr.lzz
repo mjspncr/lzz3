@@ -14,7 +14,7 @@ namespace
 {
    typedef long int ValueType;
 
-   struct ExprParser(Session &session, string const &dir_name, Loc const &eol_loc, TokenPtrVectorConstIter beg, TokenPtrVectorConstIter end)
+   struct ExprParser(Session &session, std::string const &dir_name, Loc const &eol_loc, TokenPtrVectorConstIter beg, TokenPtrVectorConstIter end)
    {
       // parse entry function, return true if expr is non-zero
       bool parse()
@@ -322,7 +322,7 @@ namespace
                ValueType divisor = parseUnaryExpr();
                if (divisor == 0)
                {
-                  throw ParseError (op_loc, "divide by zero");
+                  throw std::runtime_error(Message(op_loc, "divide by zero"));
                }
                value = is_divide ? value / divisor : value % divisor;
             }

@@ -114,13 +114,25 @@ namespace lzz
       // output error message
       void error(Loc const &loc, std::string const &msg)
       {
-         m_any_error = true; m_out_stream << loc << msg;
+         m_any_error = true;
+         m_out_stream << loc << msg << std::endl;
+      }
+      // output error message
+      void error(std::string const &msg)
+      {
+         m_any_error = true;
+         m_out_stream << msg << std::endl;
       }
 
       // output warning message, not fatal
       void warning(Loc const &loc, std::string const &msg)
       {
-         m_out_stream << loc << msg;
+         m_out_stream << loc << msg << std::endl;
+      }
+      // output warning message, not fatal
+      void warning(std::string const &msg)
+      {
+         m_out_stream << msg << std::endl;
       }
 
    private:

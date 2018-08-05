@@ -8,8 +8,8 @@ namespace cpp
            line_(1), column_(1), newline_(true)
       {}
       LineReader(std::string const &str, Loc const &loc)
-         : char_reader_(str, loc), peek_beg_(0), peek_end_(0), filename_(loc.getFilename()), fullname_(loc.getFullname()),
-           line_(loc.getLine()), column_(loc.getColumn()), newline_(true)
+         : char_reader_(str, loc), peek_beg_(0), peek_end_(0), filename_(loc.get_filename()), fullname_(loc.get_fullname()),
+           line_(loc.get_line()), column_(loc.get_column()), newline_(true)
       {}
       // peek n chars, return true if successful
       bool peekChar(char &c, int n = 0)

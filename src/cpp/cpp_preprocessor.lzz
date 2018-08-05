@@ -1,7 +1,7 @@
 // cpp_preprocessor
 // 
 
-class File;
+namespace lzz { class File; }
 
 namespace cpp
 {
@@ -214,27 +214,27 @@ namespace cpp
                            }
                            case HDR_DIR:
                            {
-                              prepFileBlock(dir_loc, dir_name, session.getOutput().getHdrFile());
+                              prepFileBlock(dir_loc, dir_name, session.getOutput().get_hdr());
                               break;
                            }
                            case SRC_DIR:
                            {
-                              prepFileBlock(dir_loc, dir_name, session.getOutput().getSrcFile());
+                              prepFileBlock(dir_loc, dir_name, session.getOutput().get_src());
                               break;
                            }
                            case INL_DIR:
                            {
-                              prepFileBlock(dir_loc, dir_name, session.getOutput().getInlFile());
+                              prepFileBlock(dir_loc, dir_name, session.getOutput().get_inl());
                               break;
                            }
                            case TPL_DIR:
                            {
-                              prepFileBlock(dir_loc, dir_name, session.getOutput().getTplFile());
+                              prepFileBlock(dir_loc, dir_name, session.getOutput().get_tpl());
                               break;
                            }
                            case TNL_DIR:
                            {
-                              prepFileBlock(dir_loc, dir_name, session.getOutput().getTnlFile());
+                              prepFileBlock(dir_loc, dir_name, session.getOutput().get_tnl());
                               break;
                            }
                         }
@@ -312,7 +312,7 @@ namespace cpp
       void openIncludeFile(std::string const &dir_name, Loc const &name_loc, bool insert, std::string const &name, bool is_system)
       {
          std::string filename;
-         if (!findIncludeFile(name_loc.getFullname(), name, is_system, filename))
+         if (!findIncludeFile(name_loc.get_fullname(), name, is_system, filename))
          {
             throw std::runtime_error(Message(name_loc, "file not found: %") << name);
          }
@@ -502,7 +502,9 @@ namespace cpp
          fs.lexer.readRestOfLine (str);
          if (is.rs == IFR_ON)
          {
-            throw std::runtime_error(Message(dir_loc, str));
+            std::ostringstream ss;
+            ss << dir_loc << str;
+            throw std::runtime_error(ss.str());
          }
       }
 
@@ -536,7 +538,7 @@ namespace cpp
                // "#pragma tpl" alone means yes
                if (beg == end || isYes ((*beg++)->getLexeme()))
                {
-                  session.getOutput().useTpl();
+                  session.getOutput().use_tpl();
                }
             }
             else if (has_lzz)
@@ -551,7 +553,7 @@ namespace cpp
       }
 
       // preprocess #warning line, dir_loc is location of directive
-      void prepwarning(Loc const &dir_loc)
+      void prepWarning(Loc const &dir_loc)
       {
          FileStat &fs = *fs_stack.back();
          IfStat &is = fs.is_stack.back();
@@ -565,7 +567,7 @@ namespace cpp
       }
 
       // #hdr, #src, #inl, #tpl and #tnl blocks
-      void prepFileBlock(Loc const &dir_loc, std::string const &dir_name, File & file)
+      void prepFileBlock(Loc const &dir_loc, std::string const &dir_name, lzz::File &file)
       {
          // get current file stat and if state
          FileStat &fs = *fs_stack.back();
@@ -586,7 +588,7 @@ namespace cpp
          // print if live and block not empty
          if (is.rs == IFR_ON && ! str.empty())
          {
-            printBlock(file, loc, str);
+            lzz::print_block(file, loc, str);
          }
       }
 
@@ -825,10 +827,10 @@ namespace
    void readFileBlock(Session &session, Lexer &lexer, Loc const &dir_loc, std::string const &dir_name, Loc &loc, std::string &str)
    {
       loc = lexer.getLoc();
-      ostringstream os;
+      std::ostringstream os;
       for (;;)
       {
-         Loc line_loc = lexer.getLoc();
+         //Loc line_loc = lexer.getLoc();
          std::string line; 
          if (!lexer.readLine(line))
          {
@@ -947,8 +949,7 @@ namespace
 #include <util_parse_yes_no.h>
 #include <util_string_icompare.h>
 #include <util_trim.h>
-#include <output_file.h>
-#include <output_output.h>
+#include <lzz_output.h>
 #include <algorithm>
 #include <iostream>
 #include <sstream>

@@ -44,7 +44,7 @@ namespace
       {
          bool found_end = false;
          Loc start_loc;
-         ostringstream ss;
+         std::ostringstream ss;
          // first use tokens
          if (!tokens.empty())
          {
@@ -59,7 +59,7 @@ namespace
                else
                {
                   // otherwise append lexeme and pop token
-                  if (!start_loc.isSet())
+                  if (!start_loc.is_set())
                   {
                      start_loc = token->getLocation();
                   }
@@ -85,7 +85,7 @@ namespace
                // error if lexing from file 
                if (lexer.fromFile())
                {
-                  throw std::runtime_error(start_loc, "unexpected end of file in literal block");
+                  throw std::runtime_error(Message(start_loc, "unexpected end of file in literal block"));
                }
                // otherwise lexing BLOCK so must have found end
                found_end = true;
@@ -111,7 +111,7 @@ namespace
                      // should not be end of file
                      if (!lexer.nextChar(ch))
                      {
-                        throw std::runtime_error(temp_loc, "unexpected end of file in C-style comment");
+                        throw std::runtime_error(Message(temp_loc, "unexpected end of file in C-style comment"));
                      }
                      ss << ch;
                      if (ch == '*' && lexer.peekChar(next_ch) && next_ch == '/')
@@ -279,7 +279,7 @@ namespace
                }
             }
          }
-         if (start_loc.isSet())
+         if (start_loc.is_set())
          {
             loc = start_loc;
             lexeme = ss.str();
@@ -493,7 +493,6 @@ namespace
 #end
 
 #src
-#include <config_config.h>
 #include <cpp_lexer.h>
 #include <cpp_preprocessor.h>
 #include <cpp_token.h>

@@ -9,7 +9,7 @@ namespace cpp
          return;
       }
       Loc const &loc = token->getLocation();
-      string const &lexeme = token->getLexeme();
+      std::string const &lexeme = token->getLexeme();
       char const *s = lexeme.c_str();
       // true if octal error
       bool octal_error = false;

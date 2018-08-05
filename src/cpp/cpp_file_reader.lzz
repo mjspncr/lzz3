@@ -11,8 +11,8 @@ namespace cpp
          buf_ = new char [FILE_BUF_SIZE];
       }
       // read from string at location
-      FileReader(std::string const & str, Loc const & loc)
-         : filename_(loc.getFilename()), state_(FILE_EOF), peek_beg_(0), peek_end_(0)
+      FileReader(std::string const &str, Loc const &loc)
+         : filename_(loc.get_filename()), state_(FILE_EOF), peek_beg_(0), peek_end_(0)
       {
          // save string in buffer
          int len = str.length();

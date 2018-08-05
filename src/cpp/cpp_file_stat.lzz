@@ -52,7 +52,7 @@ namespace cpp
          is_stack.push_back(IfStat());
       }
       FileStat(Session &session, std::string const &str, Loc const &loc, bool insert)
-         : lexer(session, str, loc), realname(loc.getFullname()), insert(insert)
+         : lexer(session, str, loc), realname(loc.get_fullname()), insert(insert)
       {
          is_stack.push_back(IfStat());
       }
