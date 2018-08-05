@@ -49,7 +49,7 @@ namespace lzz
       }
 
       // return output stream, do not first indent
-      std::ostream &getStream()
+      std::ostream &get_stream()
       {
          assert(m_os != 0);
          return *m_os;
@@ -58,31 +58,27 @@ namespace lzz
       // indent, increment line and return output stream with optional indent offset
       std::ostream &indent(int offset = 0)
       {
-         return indentExactly((m_indent + offset) * 3);
+         return indent_exactly((m_indent + offset) * 3);
       }
 
       // indent exactly number of spaces
-      std::ostream &indentExactly(int num_spaces)
+      std::ostream &indent_exactly(int num_spaces)
       {
-         enum { MAX_INDENT = 128 };
+         int const MAX_INDENT = 128;
          char buf[MAX_INDENT];
-         if (num > MAX_INDENT - 1)
-         {
-            num = MAX_INDENT - 1;
-         }
+         num_spaces = std::min(MAX_INDENT, num_spaces);
          memset(buf, ' ', num_spaces);
-         buf[num_spaces] = '\0';
-         return getStream() << buf;
+         return get_stream().write(buf, num_spaces);
       }
 
       // increment indent
-      inline void incIndent()
+      inline void inc_indent()
       {
          ++m_indent;
       }
 
       // decrement indent
-      void decIndent()
+      void dec_indent()
       {
          assert(m_indent > 0);
          -- m_indent;
@@ -91,7 +87,8 @@ namespace lzz
       // close section and return contents as string
       std::string close()
       {
-         std::string content = getStream().str();
+         assert(m_os != 0);
+         std::string content = m_os->str();
          delete m_os;
          m_os = 0;
          return content;

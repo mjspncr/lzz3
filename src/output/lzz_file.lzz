@@ -1,7 +1,7 @@
 // lzz_file
 //
 // an lzz generated file
-/
+//
 
 namespace lzz
 {
@@ -44,7 +44,7 @@ namespace lzz
       // true if has section
       bool has_section(int section_num) const
       {
-         return m_sections[setion_num];
+         return m_sections[section_num].get() != 0;
       }
 
       // get section, create one if not present
@@ -53,8 +53,7 @@ namespace lzz
          SectionPtr &section_ptr = m_sections[section_num];
          if (!section_ptr)
          {
-            assert(!m_frozen);
-            sections_ptr.reset(new Section);
+            section_ptr.reset(new Section);
          }
          return *section_ptr;
       }
@@ -74,19 +73,19 @@ namespace lzz
       // indent exactly number of spaces
       std::ostream &indent_exactly(int section_num, int num_spaces)
       {
-         return get_section(num).indentExactly(num_spaces);
+         return get_section(section_num).indent_exactly(num_spaces);
       }
 
       // increment indent
       void inc_indent(int section_num)
       {
-         get_section(section_num).incIndent();
+         get_section(section_num).inc_indent();
       }
 
       // decrement indent
       void dec_indent(int section_num)
       {
-         get_section(section_num).decIndent();
+         get_section(section_num).dec_indent();
       }
 
       // get section content, close section
@@ -175,7 +174,7 @@ namespace lzz
          {
             FileContent content(*this);
             content.append(SECTION_HEADER);
-            if (m_kind == FILE_SOURCE)
+            if (m_kind == FILE_SRC)
             {
                // inline sections
                content.append(SECTION_INLINE_HEADER);
@@ -188,7 +187,7 @@ namespace lzz
             content.append(SECTION_TOP);
             content.append(SECTION_DECLARATION);
             content.append(SECTION_BODY);
-            if (m_kind == FILE_HEADER)
+            if (m_kind == FILE_HDR)
             {
                // inline sections
                content.append(SECTION_INLINE_HEADER);
@@ -198,12 +197,12 @@ namespace lzz
                content.append(SECTION_INLINE_TAIL);
             }
             content.append(SECTION_TAIL);
-            // compare with existing file if smart write on
-            if (!(smart_write && content.same(filename)))
-            {
-               content.write(filename);
-            }
             m_sections.clear();
+            // compare with existing file if smart write on
+            if (!(m_smart_write && content.same()))
+            {
+               content.write();
+            }
          }
          return;
       }
@@ -211,7 +210,7 @@ namespace lzz
       // delete file, optionally delete on disk
       void remove(bool remove_on_disk)
       {
-         m_sections.clear(); // clear memory contents
+         m_sections.clear();
          if (remove_on_disk)
          {
             file_op::delIfExists(m_fullname.c_str());
@@ -224,49 +223,49 @@ namespace lzz
       std::string m_name;
       // full name (path/base.ext)
       std::string m_fullname;
-      // has #lines
-      bool m_has_hash_lines;
+      // generate #lines
+      bool m_hash_lines;
       // sections, file closed if empty
-      SetionPtrVector m_sections;
+      SectionPtrVector m_sections;
       // write only if conents different
       bool m_smart_write;
    };
 
    // print hash line to file section, get filename and line number from loc
-   void printHashLine(File &file, int section_num, Loc const &loc)
+   void print_hash_line(File &file, int section_num, Loc const &loc)
    {
-      if (file.hasHashLines())
+      if (file.has_hash_lines())
       {
-         char const *fullname = loc.getFullname();
-         file.get_stream(section_num) << "#line " << loc.getLine() << " \"" << fullname << '\"' << '\n';
+         char const *fullname = loc.get_fullname();
+         file.get_stream(section_num) << "#line " << loc.get_line() << " \"" << fullname << '\"' << '\n';
       }
    }
 
    // indent and print line with newline
-   void printLine(File &file, int section_num, std::string const &line, int offset = 0)
+   void print_line(File &file, int section_num, std::string const &line, int offset = 0)
    {
       file.indent(section_num, offset) << line << '\n';
    }
 
    // indent and print line and newline at location
-   void printLine(File &file, int section_num, Loc const &loc, std::string const &line, int offset = 0)
+   void print_line(File &file, int section_num, Loc const &loc, std::string const &line, int offset = 0)
    {
-      printHashLine(file, section_num, loc);
+      print_hash_line(file, section_num, loc);
       file.indent(section_num, offset) << line << '\n';
    }
 
    // print open brace and indent 
-   void printOpenBrace(File &file, int section_num)
+   void print_open_brace(File &file, int section_num)
    {
       file.indent(section_num) << '{' << '\n';
-      file.incIndent(section_num);
+      file.inc_indent(section_num);
    }
 
    // print close brace with optional semi-colon and decrement indent level
-   void printCloseBrace(File &file, int section_num, bool semi)
+   void print_close_brace(File &file, int section_num, bool semi)
    {
-      file.decIndent(section_num);
-      ostream &os = file.indent(section_num) << '}';
+      file.dec_indent(section_num);
+      std::ostream &os = file.indent(section_num) << '}';
       if (semi)
       {
          os << ';';
@@ -275,10 +274,10 @@ namespace lzz
    }
 
    // print (#hdr, #src, etc) block to file
-   void printBlock(File &file, Loc const &loc, std::string const &str)
+   void print_block(File &file, Loc const &loc, std::string const &str)
    {
       // aways goes in user section
-      printHashLine(file, SECTION_USER, loc);
+      print_hash_line(file, SECTION_USER, loc);
       file.get_stream(SECTION_USER) << str << '\n';
    }
 }
@@ -288,24 +287,24 @@ using namespace lzz;
 namespace
 {
    // file conent
-   struct FileContent(File const &file)
+   struct FileContent(File &file)
    {
       // append section content
       void append(int section_num)
       {
-         contents.insert(contents.end(), std::string())->swap(file.get_content(section_num))
+         file.get_content(section_num).swap(*contents.insert(contents.end(), std::string()));
       }
 
       // true if file exists and contents equal
       bool same()
       {
          bool equal = false;
-         std::string const &filename = file.getFullName();
+         std::string const &filename = file.get_fullname();
          if (file_op::exists(filename))
          {
             if (FILE *fp = fopen(filename.c_str(), "r"))
             {
-               if (std::find_if(contents.begin(), contents.end(), std::not1(Same(fp))) == contents.end() && fget(fp) == EOF)
+               if (std::find_if(contents.begin(), contents.end(), std::not1(Same(fp))) == contents.end() && fgetc(fp) == EOF)
                {
                   equal = true;
                }
@@ -322,7 +321,7 @@ namespace
       // write contents to file
       void write()
       {
-         std::string const &filename = file.getFullName();
+         std::string const &filename = file.get_fullname();
          if (FILE *fp = fopen(filename.c_str(), "w"))
          {
             std::for_each(contents.begin(), contents.end(), Write(fp));
@@ -360,7 +359,7 @@ namespace
 }
 
 #hdr
-#include <lzz_file_type.h>
+#include <lzz_section.h>
 #include <lzz_section_ptr_vector.h>
 #include <util_loc.h>
 #include <cstdio>
@@ -368,10 +367,10 @@ namespace
 #end
 
 #src
-#include <lzz_section.h>
 #include <util_file_op.h>
 #include <util_message.h>
 #include <algorithm>
 #include <functional>
+#include <list>
 #include <stdexcept>
 #end

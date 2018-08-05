@@ -157,13 +157,13 @@ namespace lzz
             m_hdr.body() << "#undef LZZ_INLINE" << '\n';
 
             // inline file
-            if (m_hdr.hasSection(SECTION_INLINE_USER) || m_hdr.hasSection(SECTION_INLINE_BODY))
+            if (m_hdr.has_section(SECTION_INLINE_USER) || m_hdr.has_section(SECTION_INLINE_BODY))
             {
                assert(!m_inl.is_open());
-               m_hdr.inlineHeader() << "#ifdef LZZ_ENABLE_INLINE" << '\n';
-               m_hdr.inlineTop()    << "#define LZZ_INLINE inline" << '\n';
-               m_hdr.inlineBody()   << "#undef LZZ_INLINE" << '\n';
-               m_hdr.inlineTail()   << "#endif" << '\n';
+               m_hdr.inline_header() << "#ifdef LZZ_ENABLE_INLINE" << '\n';
+               m_hdr.inline_top()    << "#define LZZ_INLINE inline" << '\n';
+               m_hdr.inline_body()   << "#undef LZZ_INLINE" << '\n';
+               m_hdr.inline_tail()   << "#endif" << '\n';
             }
             else if (m_inl.is_open())
             {
@@ -217,15 +217,15 @@ namespace lzz
             if (m_hdr.has_section(SECTION_INLINE_USER) || m_hdr.has_section(SECTION_INLINE_BODY))
             {
                assert(!m_inl.is_open());
-               m_src.inlineHeader() << "#ifndef LZZ_ENABLE_INLINE" << '\n';
-               m_src.inlineTop()    << "#define LZZ_INLINE" << '\n';
-               m_src.inlineBody()   << "#undef LZZ_INLINE" << '\n';
-               m_src.inlineTail()   << "#endif" << '\n';
+               m_src.inline_header() << "#ifndef LZZ_ENABLE_INLINE" << '\n';
+               m_src.inline_top()    << "#define LZZ_INLINE" << '\n';
+               m_src.inline_body()   << "#undef LZZ_INLINE" << '\n';
+               m_src.inline_tail()   << "#endif" << '\n';
             }
             else if (m_inl.is_open())
             {
                m_src.header() << "#ifndef LZZ_ENABLE_INLINE" << '\n';
-               m_src.header() << "#include \"" << m_inl.getName() << '\"' << '\n';
+               m_src.header() << "#include \"" << m_inl.get_name() << '\"' << '\n';
                m_src.header() << "#endif" << '\n';
             }
 
@@ -277,7 +277,7 @@ namespace lzz
 
             // include header file
             open_hdr();
-            m_tpl.header() << "#include \"" << m_hdr.getName() << '\"' << '\n';
+            m_tpl.header() << "#include \"" << m_hdr.get_name() << '\"' << '\n';
          }
       }
     
@@ -290,7 +290,7 @@ namespace lzz
             {
                // write to header part of file
                m_tpl.header() << "#ifndef LZZ_ENABLE_INLINE" << '\n';
-               m_tpl.header() << "#include \"" << m_tnl.getName() << '\"' << '\n';
+               m_tpl.header() << "#include \"" << m_tnl.get_name() << '\"' << '\n';
                m_tpl.header() << "#endif" << '\n';
             }
          }
@@ -324,7 +324,7 @@ namespace lzz
          }
       }
 
-      void close_tnl(bool save)
+      void close_tnl()
       {
          if (m_tnl.is_open())
          {
@@ -353,17 +353,11 @@ namespace lzz
    };
 }
 
+using namespace lzz;
 using namespace config;
 
 namespace
 {
-   // get fullname and name from path and ext
-   void get_fullname(std::string const &path, std::string const &base, std::string const &ext, std::string &fullname, std::string &name)
-   {
-      name = file_op::addExt(base, ext);
-      fullname = file_op::join(path, name);
-   }
-
    // get include guard identifier, name is filename w/o path
    std::string get_include_guard_id(std::string const &name)
    {
@@ -376,7 +370,7 @@ namespace
       }
       result += name;
       // replace non identifier chars with underscore
-      for (string::iterator i = result.begin(); i != result.end(); ++ i)
+      for (std::string::iterator i = result.begin(); i != result.end(); ++i)
       {
          char &ch = * i;
          if (!isalnum(ch))
@@ -388,7 +382,7 @@ namespace
    }
 
    // print file info
-   void print_info(File const &file)
+   void print_info(File &file)
    {
       // info goes in header part of file
       std::ostream &os = file.header();

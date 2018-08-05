@@ -5,20 +5,34 @@ namespace lzz
 {
    class Output;
 
-   // register output and logger functions in new table, return ref to table
-   int registerOutput (lua_State *L, Output &output)
+   // expose lzz api
+   class OutputLua
    {
-      // metatable for FileSection
-      luaL_newmetatable(L, META_FILE_SECTION);
+   public:
+      OutputLua(lua_State *L, Output &output)
+         : L(L)
+      {
+         lua_newtable(L);
+         lua_pushlightuserdata(L, &output);
+         luaL_setfuncs(L, output_fns, 1);
+         lua_setglobal(L, "lzz");
+      }
+      ~OutputLua()
+      {
+         lua_pushnil(L);
+         lua_setglobal(L, "lzz");
+      }
+
+   private:
+      lua_State *L;
+   };
+
+   // create FileSection metatable
+   void register_file_section(lua_State *L)
+   {
+      luaL_newmetatable(L, MT_FILE_SECTION);
       luaL_setfuncs(L, file_section_fns, 0);
-      lua_setfield(L, -1, "__index");
-      // lzz functions
-      lua_newtable(L);
-      lua_pushlightuserdata(L, &output);
-      luaL_setfuncs(L, logger_fns, 1);
-      lua_pushlightuserdata(L, & output);
-      luaL_setfuncs(L, output_fns, 1);
-      return luaL_ref(L, LUA_REGISTRYINDEX);
+      lua_setfield(L, -1, "__index"); // mt.__index=mt and pops mt
    }
 }
 
@@ -46,133 +60,113 @@ namespace
       return 0;
    }
 
+   // File and section number pair
+   char const MT_FILE_SECTION [] = "lzz.FileSection";
+   struct FileSection(File &file, int section_num) {}
+
    // hdr file
-   int lzz_hdr_file(lua_State *L)
+   int lzz_hdr(lua_State *L)
    {
-      Output & output = * static_cast <Output *> (lua_touserdata (L, lua_upvalueindex (1)));
-      bool inl = lua_toboolean (L, 1) != 0;
-      bool tpl = lua_toboolean (L, 2) != 0;
-      // section only BODY or DECL 
-      SectionKind section = SECTION_BODY;
-      if (char const * section_str = luaL_optstring (L, 3, 0))
-      {
-         if (strcmp (section_str, "DECL") == 0)
-         {
-            section = SECTION_DECLARATION;
-         }
-      }
-      File & file = output.getHdrFile (inl, tpl);
-      new (lua_newuserdata (L, sizeof (FileSection))) FileSection (file, section);
-      luaL_setmetatable (L, META_FILE_SECTION);
+      Output &output = *static_cast<Output *>(lua_touserdata(L, lua_upvalueindex(1)));
+      bool inl = lua_toboolean(L, 1) != 0;
+      bool tpl = lua_toboolean(L, 2) != 0;
+      int section_num = luaL_optinteger(L, 3, SECTION_BODY);
+      File &file = output.get_hdr(inl, tpl);
+      new(lua_newuserdata(L, sizeof(FileSection))) FileSection(file, section_num);
+      luaL_setmetatable(L, MT_FILE_SECTION);
       return 1;
    }
 
    // src file
-   int lzz_src_file (lua_State * L)
+   int lzz_src(lua_State *L)
    {
-      Output & output = * static_cast <Output *> (lua_touserdata (L, lua_upvalueindex (1)));
-      SectionKind section = SECTION_BODY;
-      if (char const * section_str = luaL_optstring (L, 1, 0))
-      {
-         if (strcmp (section_str, "DECL") == 0)
-         {
-            section = SECTION_DECLARATION;
-         }
-      }
-      File & file = output.getSrcFile ();
-      new (lua_newuserdata (L, sizeof (FileSection))) FileSection (file, section);
-      luaL_setmetatable (L, META_FILE_SECTION);
+      Output &output = *static_cast<Output *>(lua_touserdata(L, lua_upvalueindex(1)));
+      int section_num = luaL_optinteger(L, 1, SECTION_BODY);
+      File &file = output.get_src();
+      new(lua_newuserdata(L, sizeof(FileSection))) FileSection(file, section_num);
+      luaL_setmetatable(L, MT_FILE_SECTION);
       return 1;
    }
 
-   char const META_FILE_SECTION [] = "LZZ_FILE_SECTION";
-   struct FileSection (File & file, SectionKind section) {}
-
    // print open brace and indent
-   int lzz_print_open_brace (lua_State * L)
+   int lzz_print_open_brace(lua_State *L)
    {
-      FileSection const & fs = * static_cast <FileSection const *> (luaL_checkudata (L, 1, META_FILE_SECTION));
-      printOpenBrace (fs.file, fs.section);
+      FileSection const &fs = *static_cast<FileSection const *>(luaL_checkudata(L, 1, MT_FILE_SECTION));
+      print_open_brace(fs.file, fs.section_num);
       return 0;
    }
 
    // print close brace and unindent
-   int lzz_print_close_brace (lua_State * L)
+   int lzz_print_close_brace(lua_State *L)
    {
-      FileSection const & fs = * static_cast <FileSection const *> (luaL_checkudata (L, 1, META_FILE_SECTION));
-      bool semi = lua_toboolean (L, 2) != 0;
-      printCloseBrace (fs.file, fs.section, semi);
+      FileSection const &fs = *static_cast<FileSection const *>(luaL_checkudata(L, 1, MT_FILE_SECTION));
+      bool semi = lua_toboolean(L, 2) != 0;
+      print_close_brace(fs.file, fs.section_num, semi);
       return 0; 
    }
 
    // print line
-   int lzz_print (lua_State * L)
+   int lzz_print(lua_State *L)
    {
-      FileSection const & fs = * static_cast <FileSection const *> (luaL_checkudata (L, 1, META_FILE_SECTION));
-      Loc const & loc = checkLoc (L, 2);
-      char const * line = luaL_checkstring (L, 3);
-      int offset = (int) luaL_optinteger (L, 4, 0); 
-      printLine (fs.file, fs.section, loc, line, offset);
+      FileSection const &fs = *static_cast<FileSection const *>(luaL_checkudata(L, 1, MT_FILE_SECTION));
+      Loc const &loc = get_loc(L, 2);
+      char const *line = luaL_checkstring(L, 3);
+      int offset = luaL_optinteger(L, 4, 0); 
+      print_line(fs.file, fs.section_num, loc, line, offset);
       return 0;
    }
 
    // print brace enclosed block
-   int lzz_print_enclosed_block (lua_State * L)  
+   int lzz_print_enclosed_block(lua_State *L)
    {
-      FileSection const & fs = * static_cast <FileSection const *> (luaL_checkudata (L, 1, META_FILE_SECTION));
-      File & file = fs.file;
-      SectionKind skind = fs.section;
-      Loc const & loc = checkLoc (L, 2);
-      char const * code = luaL_checkstring (L, 3);
-      file.indent (skind) << '{' << '\n';
-      printHashLine (file, skind, loc);
-      if (code [0] != '\0')
+      FileSection const &fs = *static_cast<FileSection const *>(luaL_checkudata(L, 1, MT_FILE_SECTION));
+      File &file = fs.file;
+      int section_num = fs.section_num;
+      Loc const &loc = get_loc(L, 2);
+      char const *code = luaL_checkstring(L, 3);
+      file.indent(section_num) << '{' << '\n';
+      print_hash_line(file, section_num, loc);
+      if (code[0] != '\0')
       {
-         file.indentExactly (skind, loc.getColumn () - 1) << code << '\n';
+         file.indent_exactly(section_num, loc.get_column() - 1) << code << '\n';
       }
-      file.indent (skind) << '}' << '\n';
+      file.indent(section_num) << '}' << '\n';
       return 0;
    }
 
-   luaL_Reg const logger_fns [] =
+   luaL_Reg const output_fns[] =
    {
-      { "warning",  lzz_warning },
-      { "error",    lzz_error },
+      { "warning", lzz_warning },
+      { "error", lzz_error },
+      { "hdr", lzz_hdr },
+      { "src", lzz_src },
       { 0, 0 },
    };
 
-   luaL_Reg const output_fns [] =
+   luaL_Reg const file_section_fns[] =
    {
-      { "hdrFile",  lzz_hdr_file },
-      { "srcFile",  lzz_src_file },
+      { "print_open_brace", lzz_print_open_brace },
+      { "print_close_brace",  lzz_print_close_brace },
+      { "print_enclosed_block", lzz_print_enclosed_block },
+      { "print", lzz_print },
       { 0, 0 },
    };
 
-   luaL_Reg const file_section_fns [] =
-   {
-      { "printOpenBrace",     lzz_print_open_brace },
-      { "printCloseBrace",    lzz_print_close_brace },
-      { "printEnclosedBlock", lzz_print_enclosed_block },
-      { "print",              lzz_print },
-      { 0, 0 },
-   };
-
-   // get loc at index i
+   // get loc at arg i
    basil::Loc get_loc(lua_State *L, int i)
    {
-      return *static_cast<basil::Loc*>(check_type(L, i, basil::MT_LOC));
+      return *static_cast<basil::Loc*>(luaL_checkudata(L, i, basil::MT_LOC));
    }
 }
 
 #hdr
-#include <lua.hpp>
+#include <lua.h>
 #end
 
 #src
-#include <output/file.h>
-#include <output/output.h>
-#include <basil/engine.h>
-#include <util/error_sink.h>
-#include <util/loc_lua.h>
+#include <lzz_output.h>
+#include <basil_engine.h>
+#include <lualib.h>
+#include <lauxlib.h>
 #include <cstring>
 #end
