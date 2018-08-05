@@ -1,8 +1,9 @@
-// app_main
+// lzzapp_main
 //
 
 int main(int argc, char ** argv)
 {
+   using namespace config;
    try
    {
       StringVector filenames;
@@ -21,7 +22,7 @@ int main(int argc, char ** argv)
       {
          throw std::runtime_error("missing filenames");
       }
-      if (!run_lzz(filenames))
+      if (!app::run(filenames))
       {
          return 1;
       }
@@ -39,10 +40,8 @@ int main(int argc, char ** argv)
    return 0;
 }
 
-using namespace config;
-
 #src
-#include <app_run_lzz.h>
+#include <app_run.h>
 #include <config_options.h>
 #include <config_parse.h>
 #include <config_print_help.h>

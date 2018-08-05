@@ -1,23 +1,29 @@
 // app_run_lzz
 //
 
-// run lzz on filenames, return false if any error
-bool run_lzz(StringVector const &filenames)
+namespace app
 {
-   basil::Engine engine;
-   lzz::register_types(engine.L);
-   engine.load(cpp::token_numbers, cpp::token_numbers_end, "lzz");
-   bool any_error = false;
-   std::ostream &out_stream = std::cout; // for errors and warnings
-   for (StringVectorConstIter i = filenames.begin (), endi = filenames.end (); i != endi; ++i)
+   // run lzz on filenames, return false if any error
+   bool run(StringVector const &filenames)
    {
-      if (!run_one(engine, *i, out_stream))
+      basil::Engine engine;
+      register_types(engine.L);
+      engine.load(cpp::token_numbers, cpp::token_numbers_end, "lzz");
+      bool any_error = false;
+      std::ostream &out_stream = std::cout; // for errors and warnings
+      for (StringVectorConstIter i = filenames.begin (), endi = filenames.end (); i != endi; ++i)
       {
-         any_error = true;
+         if (!run_one(engine, *i, out_stream))
+         {
+            any_error = true;
+         }
       }
+      return !any_error;
    }
-   return !any_error;
 }
+
+using namespace lzz;
+using namespace cpp;
 
 namespace
 {
@@ -28,13 +34,13 @@ namespace
       file_op::getPathAndName(filename, path, name);
       name = file_op::remExt(name);
       StringSet strings;
-      lzz::Output output(path, name, out_stream);
+      Output output(path, name, out_stream);
       bool any_error = false;
       try
       {
-         lzz::OutputLua output_lua(engine.L, output);
-         cpp::Session session(strings, engine.get_keywords(), output);
-         cpp::Preprocessor preprocessor(session, filename);
+         OutputLua output_lua(engine.L, output);
+         Session session(strings, engine.get_keywords(), output);
+         Preprocessor preprocessor(session, filename);
          if (!engine.parse(0, preprocessor, out_stream) || output.has_error())
          {
             any_error = true;
