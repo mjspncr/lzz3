@@ -18,7 +18,7 @@ namespace cpp
       // send token through filter
       void next(TokenPtr const &token)
       {
-         Loc const & loc = token->getLoc();
+         Loc const &loc = token->getLoc();
          int number = token->getNumber();
          bool pass = true;
          switch (state)
@@ -82,7 +82,7 @@ namespace cpp
                               lexeme_str += file_loc.get_filename();
                               lexeme_str += '\"';
                               TokenPtrVector rep_tokens;
-                              rep_tokens.push_back(new Token(TOKEN_LITERAL_STRING, loc, lexeme_str));
+                              rep_tokens.push_back(TokenPtr(new Token(TOKEN_LITERAL_STRING, loc, lexeme_str)));
                               subObjRepSet(loc, name, rep_tokens);
                            }
                            else if (macro_kind == LINE_MACRO)
@@ -91,7 +91,7 @@ namespace cpp
                               Loc const &line_loc = is_sub ? sub_loc : loc;
                               std::string lexeme_str = intToString(line_loc.get_line());
                               TokenPtrVector rep_tokens;
-                              rep_tokens.push_back(new Token(TOKEN_LITERAL_INT, loc, lexeme_str));
+                              rep_tokens.push_back(TokenPtr(new Token(TOKEN_LITERAL_INT, loc, lexeme_str)));
                               subObjRepSet(loc, name, rep_tokens);
                            }
                            else
@@ -119,14 +119,14 @@ namespace cpp
                   if (!arg_tokens.empty())
                   {
                      // add next arg and clear arg set
-                     args.push_back(new MacroArg(arg_tokens));
+                     args.push_back(MacroArgPtr(new MacroArg(arg_tokens)));
                      arg_tokens.clear();
                   }
                   else if (number == TOKEN_COMMA || ! args.empty() || (num_params == 1 && ! var))
                   {
                      // undefined behavior (16.3/10), just give warning
                      session.warning(token->getLocation(), "empty macro argument");
-                     args.push_back(new MacroArg(arg_tokens));
+                     args.push_back(MacroArgPtr(new MacroArg(arg_tokens)));
                   }
                   // end of arg list if right paren
                   if (number == TOKEN_RPAREN)
@@ -139,8 +139,8 @@ namespace cpp
                      if (var && num_args + 1 == num_params)
                      {
                         // add empty arg for var param
-                        args.push_back(new MacroArg(arg_tokens));
-                        ++ num_args;
+                        args.push_back(MacroArgPtr(new MacroArg(arg_tokens)));
+                        ++num_args;
                      }
                      std::string const &macro_name = func_macro->getName();
                      if (num_args != num_params)
@@ -257,7 +257,7 @@ namespace cpp
       void subObjRepSet(std::string const &name, TokenPtrVector const &rep_tokens)
       {
          TokenPtrVector tokens;
-         for (TokenPtrVectorConstIter i = rep_tokens.begin(), endi = rep_tokens.end(); i != endi; ++ i)
+         for (TokenPtrVectorConstIter i = rep_tokens.begin(), endi = rep_tokens.end(); i != endi; ++i)
          {
             TokenPtr token = *i;
             tokens.push_back(token);
@@ -291,7 +291,7 @@ namespace cpp
       void subFuncRepSet(std::string const &name, TokenPtrVector const &rep_tokens, MacroArgPtrVector const &args, bool var)
       {
          TokenPtrVector tokens;
-         for (TokenPtrVectorConstIter i = rep_tokens.begin(), endi = rep_tokens.end(); i != endi; ++ i)
+         for (TokenPtrVectorConstIter i = rep_tokens.begin(), endi = rep_tokens.end(); i != endi; ++i)
          {
             TokenPtr const &token = *i;
             int number = token->getNumber();
@@ -306,7 +306,7 @@ namespace cpp
             {
                int param = number - TOKEN_IDENT_PARAM_START;
                TokenPtrVector arg_tokens;
-               cloneTokens(args[param]->getTokens(), arg_tokens);
+               clone_tokens(args[param]->getTokens(), arg_tokens);
                if (i + 1 != endi && (*(i + 1))->getNumber() == TOKEN_DBLHASH)
                {
                   tokens.insert(tokens.end(), arg_tokens.begin(), arg_tokens.end());
@@ -345,7 +345,7 @@ namespace cpp
                {
                   int param = number - TOKEN_IDENT_PARAM_START;
                   TokenPtrVector arg_tokens;
-                  cloneTokens(args [param]->getTokens(), arg_tokens);
+                  clone_tokens(args [param]->getTokens(), arg_tokens);
                   // remove last comma if param is var param and arg set is empty 
                   if (var && size_t(param) == args.size() - 1 && !tokens.empty() && tokens.back()->getNumber() == TOKEN_COMMA)
                   {
@@ -416,7 +416,7 @@ namespace cpp
             }
          }
          str += '\"';
-         return new Token(TOKEN_LITERAL_STRING, loc, str);
+         return TokenPtr(new Token(TOKEN_LITERAL_STRING, loc, str));
       }
 
       // concat token to last token in tokens, append new tokens, sub_loc is location of/ macro substitution,

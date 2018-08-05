@@ -1,15 +1,16 @@
+// cpp_token_ptr.lzz
+//
+
 namespace cpp
 {
-   class Token;
-   typedef Ptr<Token> TokenPtr;
+   typedef std::shared_ptr<class Token> TokenPtr;
 }
-template class Ptr<cpp::Token>;
+template class std::shared_ptr<cpp::Token>;
 
 #hdr
-#include <util_ptr.h>
+#include <memory>
 #end
 
 #src
 #include <cpp_token.h>
-#include <util_ptr.tpl>
 #end

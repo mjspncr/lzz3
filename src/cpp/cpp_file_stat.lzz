@@ -28,7 +28,7 @@ namespace cpp
       IfSyntax ss;
       // read state
       IfRead rs;
-      IfStat(Loc const & loc = Loc(), IfSyntax ss = IFS_NONE, IfRead rs = IFR_ON)
+      IfStat(Loc const &loc = Loc(), IfSyntax ss = IFS_NONE, IfRead rs = IFR_ON)
          : loc(loc), ss(ss), rs(rs) 
       {}
       ~IfStat()
@@ -46,7 +46,7 @@ namespace cpp
       IfStatVector is_stack;
       // true if #insert-ing file
       bool insert;
-      FileStat(Session & session, char const *filename, char const *fullname, bool insert)
+      FileStat(Session &session, char const *filename, char const *fullname, bool insert)
          : lexer(session, filename, fullname), realname(fullname), insert(insert)
       {
          is_stack.push_back(IfStat());

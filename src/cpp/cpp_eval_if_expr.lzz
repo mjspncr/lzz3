@@ -317,7 +317,7 @@ namespace
             else if (kind == TOKEN_DIVIDE || kind == TOKEN_MOD)
             {
                bool is_divide = kind == TOKEN_DIVIDE;
-               Loc const & op_loc = token->getLocation();
+               Loc const &op_loc = token->getLocation();
                nextToken();
                ValueType divisor = parseUnaryExpr();
                if (divisor == 0)

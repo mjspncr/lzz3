@@ -1,15 +1,13 @@
 namespace cpp
 {
-   class Macro;
-   typedef Ptr<Macro> MacroPtr;
+   typedef std::shared_ptr<class Macro> MacroPtr;
 }
-template class Ptr<cpp::Macro>;
+template class std::shared_ptr<cpp::Macro>;
 
 #hdr
-#include <util_ptr.h>
+#include <memory>
 #end
 
 #src
 #include <cpp_macro.h>
-#include <util_ptr.tpl>
 #end

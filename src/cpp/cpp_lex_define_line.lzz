@@ -68,7 +68,7 @@ namespace cpp
       // if on command line and replacement set is empty without assignment then replacment set is '1'
       if (is_cmd && !has_asgn && tokens.empty())
       {
-         tokens.push_back(new Token(TOKEN_LITERAL_INT, Loc(), "1"));
+         tokens.push_back(TokenPtr(new Token(TOKEN_LITERAL_INT, Loc(), "1")));
       }
       return true;
    }

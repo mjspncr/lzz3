@@ -34,7 +34,7 @@ namespace cpp
       // get kind
       virtual MacroKind getKind() const = 0;
    private:
-      // location of definition
+      // location of macro definition
       Loc loc_;
       // macro name
       std::string name_;
@@ -47,7 +47,7 @@ namespace cpp
       RepMacro(Loc const &loc, std::string const &name, TokenPtrVector const &rep_tokens)
          : Macro(loc, name), rep_tokens_(rep_tokens)
       {}
-      inline ~ RepMacro()
+      inline ~RepMacro()
       {}
       // get replacement token set
       inline TokenPtrVector const &getRepTokens() const
@@ -57,7 +57,7 @@ namespace cpp
       // get tokens, makes copy
       void getRepTokens(TokenPtrVector &tokens) const
       {
-         cloneTokens(rep_tokens_, tokens);
+         clone_tokens(rep_tokens_, tokens);
       }
    private:
       // replacement token set (need to be marked for gc)
@@ -71,7 +71,7 @@ namespace cpp
       ObjMacro(Loc const &loc, std::string const &name, TokenPtrVector const &rep_tokens)
          : RepMacro(loc, name, rep_tokens)
       {}
-      ~ ObjMacro()
+      ~ObjMacro()
       {}
       // get kind
       MacroKind getKind() const

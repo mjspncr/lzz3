@@ -94,9 +94,9 @@ namespace cpp
    };
 
    // clone tokens in vector
-   void cloneTokens(TokenPtrVector const &tokens, TokenPtrVector &cloned)
+   void clone_tokens(TokenPtrVector const &tokens, TokenPtrVector &cloned)
    {
-      for (TokenPtrVectorConstIter i = tokens.begin(), endi = tokens.end(); i != endi; ++ i)
+      for (TokenPtrVectorConstIter i = tokens.begin(), endi = tokens.end(); i != endi; ++i)
       {
          cloned.push_back((*i)->clone());
       }

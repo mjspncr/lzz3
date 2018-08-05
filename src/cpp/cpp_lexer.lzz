@@ -875,7 +875,7 @@ namespace cpp
                }
                if (token_number != TOKEN_NULL)
                {
-                  token = new Token(token_number, loc, lexeme);
+                  token.reset(new Token(token_number, loc, lexeme));
                   if (ws_before)
                   {
                      token->setSpaceBefore();

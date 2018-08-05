@@ -167,10 +167,10 @@ namespace lzz
          return false;
       }
 
-      // save contents to disk
-      void save()
+      // close file, write file to disk if open and save=true, otherwise delete existing file if delete_old=true
+      void close(bool save, bool delete_old)
       {
-         if (!m_sections.empty())
+         if (save && !m_sections.empty())
          {
             FileContent content(*this);
             content.append(SECTION_HEADER);
@@ -204,16 +204,9 @@ namespace lzz
                content.write();
             }
          }
-         return;
-      }
-
-      // delete file, optionally delete on disk
-      void remove(bool remove_on_disk)
-      {
-         m_sections.clear();
-         if (remove_on_disk)
+         else if (delete_old && file_op::exists(m_fullname))
          {
-            file_op::delIfExists(m_fullname.c_str());
+            file_op::del(m_fullname.c_str());
          }
       }
 

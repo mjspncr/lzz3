@@ -4,7 +4,7 @@ namespace cpp
    class Lexer;
 
    // lex block token, return true if successful
-   bool lexBlock(Session & session, int lex_state, Lexer &lexer, TokenPtrDeque &tokens, Loc &loc, std::string &lexeme)
+   bool lexBlock(Session &session, int lex_state, Lexer &lexer, TokenPtrDeque &tokens, Loc &loc, std::string &lexeme)
    {
       switch (lex_state)
       {

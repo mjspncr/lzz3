@@ -20,29 +20,21 @@ namespace lzz
       // close all files
       void close(bool save)
       {
+         // write any last code before closing any files
          if (save)
          {
-            // close all before save
-            close_hdr();
-            close_src();
-            close_inl();
-            close_tpl();
-            close_tnl();
-            m_hdr.save();
-            m_src.save();
-            m_inl.save();
-            m_tpl.save();
-            m_tnl.save();
+            finalize_hdr();
+            finalize_src();
+            finalize_inl();
+            finalize_tpl();
+            finalize_tnl();
          }
-         else
-         {
-            bool remove_on_disk = getOptionValue(opt_delete_old);
-            m_hdr.remove(remove_on_disk);
-            m_src.remove(remove_on_disk);
-            m_inl.remove(remove_on_disk);
-            m_tpl.remove(remove_on_disk);
-            m_tnl.remove(remove_on_disk);
-         }
+         bool delete_old = getOptionValue(opt_delete_old);
+         m_hdr.close(save, delete_old);
+         m_src.close(save, delete_old);
+         m_inl.close(save, delete_old);
+         m_tpl.close(save, delete_old);
+         m_tnl.close(save, delete_old);
       }
 
       // get header file
@@ -135,12 +127,19 @@ namespace lzz
          m_out_stream << msg << std::endl;
       }
 
+      // true if has any error
+      bool has_error() const
+      {
+         return m_any_error;
+      }
+
    private:
       //
-      // open/close header
+      // open/finalize header
       //
       void open_hdr()
       {
+         // open and initialize
          if (m_hdr.open())
          {            
             // info
@@ -161,8 +160,9 @@ namespace lzz
          }
       }
 
-      void close_hdr()
+      void finalize_hdr()
       {
+         // finalize if open
          if (m_hdr.is_open())
          {
             // undef LZZ_INLINE before rest
@@ -203,7 +203,7 @@ namespace lzz
       }
 
       //
-      // open/close source file
+      // open/finalize source file
       //
       void open_src()
       {
@@ -221,7 +221,7 @@ namespace lzz
          }
       }
 
-      void close_src()
+      void finalize_src()
       {
          if (m_src.is_open())
          {
@@ -247,7 +247,7 @@ namespace lzz
       }
 
       //
-      // open/close inline file
+      // open/finalize inline file
       //
       void open_inl()
       {
@@ -268,7 +268,7 @@ namespace lzz
          }
       }
 
-      void close_inl()
+      void finalize_inl()
       {
          if (m_inl.is_open())
          {
@@ -278,7 +278,7 @@ namespace lzz
       }
 
       //
-      // open/close template file
+      // open/finalize template file
       //
       void open_tpl()
       {
@@ -286,14 +286,13 @@ namespace lzz
          {
             // info
             print_info(m_tpl);
-
             // include header file
             open_hdr();
             m_tpl.header() << "#include \"" << m_hdr.get_name() << '\"' << '\n';
          }
       }
     
-      void close_tpl()
+      void finalize_tpl()
       {
          if (m_tpl.is_open())
          {
@@ -309,7 +308,7 @@ namespace lzz
       }
 
       //
-      // open/close template inline file
+      // open/finalize template inline file
       //
       void open_tnl()
       {
@@ -336,7 +335,7 @@ namespace lzz
          }
       }
 
-      void close_tnl()
+      void finalize_tnl()
       {
          if (m_tnl.is_open())
          {
@@ -412,6 +411,7 @@ namespace
 #src
 #include <config_options.h>
 #include <util_file_op.h>
+#include <util_array_size.h>
 #include <cassert>
 #include <cctype>
 #include <cstring>

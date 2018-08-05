@@ -49,27 +49,26 @@ namespace cpp
          lexeme_str.append(str +  4, 6);
          lexeme_str.append(str + 19, 5);
          lexeme_str+= '\"';
-         rep_tokens.push_back(new Token(TOKEN_LITERAL_STRING, Loc(), lexeme_str));
-         addMacro(new ObjMacro(Loc(), "__DATE__", rep_tokens));
+         rep_tokens.push_back(TokenPtr(new Token(TOKEN_LITERAL_STRING, Loc(), lexeme_str)));
+         addMacro(MacroPtr(new ObjMacro(Loc(), "__DATE__", rep_tokens)));
          rep_tokens.clear();
 
          // __TIME__
          lexeme_str = '\"';
          lexeme_str.append(str + 11, 8);
          lexeme_str+= '\"';
-         rep_tokens.push_back(new Token(TOKEN_LITERAL_STRING, Loc(), lexeme_str));
-         addMacro(new ObjMacro(Loc(), "__TIME__", rep_tokens));
+         rep_tokens.push_back(TokenPtr(new Token(TOKEN_LITERAL_STRING, Loc(), lexeme_str)));
+         addMacro(MacroPtr(new ObjMacro(Loc(), "__TIME__", rep_tokens)));
          rep_tokens.clear();
 
          // __FILE__
-         addMacro(new FileMacro(Loc(), "__FILE__"));
-
+         addMacro(MacroPtr(new FileMacro(Loc(), "__FILE__")));
          // __LINE__
-         addMacro(new LineMacro(Loc(), "__LINE__"));
+         addMacro(MacroPtr(new LineMacro(Loc(), "__LINE__")));
 
          // __cplusplus
-         rep_tokens.push_back(new Token(TOKEN_LITERAL_INT, Loc(), "199711L"));
-         addMacro(new ObjMacro(Loc(), "__cplusplus", rep_tokens));
+         rep_tokens.push_back(TokenPtr(new Token(TOKEN_LITERAL_INT, Loc(), "199711L")));
+         addMacro(MacroPtr(new ObjMacro(Loc(), "__cplusplus", rep_tokens)));
          rep_tokens.clear();
 
          // add -D macros

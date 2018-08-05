@@ -1,16 +1,17 @@
+// cpp_file_state_ptr.lzz
+//
+
 namespace cpp
 {
-   struct FileStat;
-   typedef Ptr<FileStat> FileStatPtr;
+   typedef std::shared_ptr<struct FileStat> FileStatPtr;
 }
-template class Ptr<cpp::FileStat>;
+template class std::shared_ptr<cpp::FileStat>;
 
 #hdr
-#include <util_ptr.h>
+#include <memory>
 #end
 
 #src
 #include <cpp_file_stat.h>
-#include <util_ptr.tpl>
 #end
 

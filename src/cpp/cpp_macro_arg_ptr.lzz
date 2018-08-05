@@ -1,15 +1,16 @@
+// cpp_macro_arg_ptr.lzz
+//
+
 namespace cpp
 {
-   class MacroArg;
-   typedef Ptr<MacroArg> MacroArgPtr;
+   typedef std::shared_ptr<class MacroArg> MacroArgPtr;
 }
-template class Ptr<cpp::MacroArg>;
+template class std::shared_ptr<cpp::MacroArg>;
 
 #hdr
-#include <util_ptr.h>
+#include <memory>
 #end
 
 #src
 #include <cpp_macro_arg.h>
-#include <util_ptr.tpl>
 #end

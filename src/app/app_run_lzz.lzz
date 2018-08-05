@@ -1,0 +1,67 @@
+// app_run_lzz
+//
+
+// run lzz on filenames, return false if any error
+bool run_lzz(StringVector const &filenames)
+{
+   basil::Engine engine;
+   lzz::register_types(engine.L);
+   engine.load(cpp::token_numbers, cpp::token_numbers_end, "lzz");
+   bool any_error = false;
+   std::ostream &out_stream = std::cout; // for errors and warnings
+   for (StringVectorConstIter i = filenames.begin (), endi = filenames.end (); i != endi; ++i)
+   {
+      if (!run_one(engine, *i, out_stream))
+      {
+         any_error = true;
+      }
+   }
+   return !any_error;
+}
+
+namespace
+{
+   // run one file, return true if no errors
+   bool run_one(basil::Engine const &engine, std::string const &filename, std::ostream &out_stream)
+   {
+      std::string path, name;
+      file_op::getPathAndName(filename, path, name);
+      name = file_op::remExt(name);
+      StringSet strings;
+      lzz::Output output(path, name, out_stream);
+      bool any_error = false;
+      try
+      {
+         lzz::OutputLua output_lua(engine.L, output);
+         cpp::Session session(strings, engine.get_keywords(), output);
+         cpp::Preprocessor preprocessor(session, filename);
+         if (!engine.parse(0, preprocessor, out_stream) || output.has_error())
+         {
+            any_error = true;
+         }
+      }
+      catch (std::runtime_error const &e)
+      {
+         out_stream << e.what () << std::endl;
+         any_error = true;
+      }
+      output.close(!any_error);
+      return !any_error;
+   }
+}
+
+#hdr
+#include <util_string_vector.h>
+#end
+
+#src
+#include <cpp_preprocessor.h>
+#include <cpp_session.h>
+#include <cpp_token_numbers.h>
+#include <lzz_output.h>
+#include <lzz_output_lua.h>
+#include <util_file_op.h>
+#include <util_string_set.h>
+#include <basil_engine.h>
+#include <iostream>
+#end

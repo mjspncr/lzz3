@@ -1,7 +1,9 @@
+// lzz_section_ptr
+//
+
 namespace lzz
 {
-   class Section;
-   typedef std::shared_ptr<Section> SectionPtr;
+   typedef std::shared_ptr<class Section> SectionPtr;
 }
 template class std::shared_ptr<lzz::Section>;
 

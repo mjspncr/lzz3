@@ -1,3 +1,6 @@
+// lzz_section_ptr_vector
+//
+
 namespace lzz
 {
    typedef std::vector<SectionPtr> SectionPtrVector;

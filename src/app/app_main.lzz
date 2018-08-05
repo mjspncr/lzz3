@@ -1,0 +1,51 @@
+// app_main
+//
+
+int main(int argc, char ** argv)
+{
+   try
+   {
+      StringVector filenames;
+      parseOptions(argc, argv, filenames);
+      if (getOptionValue(opt_help))
+      {
+         printHelp(std::cout);
+         return 0;
+      }
+      if (getOptionValue(opt_version))
+      {
+         printVersion(std::cout);
+         return 0;
+      }
+      if (filenames.empty())
+      {
+         throw std::runtime_error("missing filenames");
+      }
+      if (!run_lzz(filenames))
+      {
+         return 1;
+      }
+   }
+   catch (std::exception const &e)
+   {
+      std::cout << e.what () << std::endl;
+      return 1;
+   }
+   catch (...)
+   {
+      std::cout << "unknown exception" << std::endl;
+      return 1;
+   }
+   return 0;
+}
+
+using namespace config;
+
+#src
+#include <app_run_lzz.h>
+#include <config_options.h>
+#include <config_parse.h>
+#include <config_print_help.h>
+#include <stdexcept>
+#include <iostream>
+#end

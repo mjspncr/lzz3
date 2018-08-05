@@ -46,7 +46,7 @@ namespace cpp
          return true;
       }
       // read char, return true if successful
-      bool nextChar(char & ch)
+      bool nextChar(char &ch)
       {
          // check in peek buffer first
          if (peek_beg_ == peek_end_)
@@ -69,7 +69,7 @@ namespace cpp
          if (state_ == FILE_OPEN)
          {
             // save file position
-            if (fgetpos(fp_, & file_pos_) != 0)
+            if (fgetpos(fp_, &file_pos_) != 0)
             {
                throw std::runtime_error(Message("failed to get current file position: %") << filename_);
             }
@@ -95,7 +95,7 @@ namespace cpp
                if (state_ == FILE_CLOSED)
                {
                   // set file position
-                  if (fsetpos(fp_, & file_pos_) != 0)
+                  if (fsetpos(fp_, &file_pos_) != 0)
                   {
                      throw std::runtime_error(Message("failed to set file position: %") << filename_);
                   }

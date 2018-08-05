@@ -14,7 +14,7 @@ namespace cpp
          : session(session), macro_filter(session, out_tokens), insert_all(insert_all), lexing_line(false), from_file(true), real_mode(false)
       {
          // push main file on file stack
-         fs_stack.push_back(new FileStat(session, session.intern(filename), session.intern(file_op::realPath(filename)), true));
+         fs_stack.push_back(FileStatPtr(new FileStat(session, session.intern(filename), session.intern(file_op::realPath(filename)), true)));
          // auto includes
          StringVector const &auto_includes = config::getOptionValue(config::opt_auto_includes);
          if (!auto_includes.empty())
@@ -30,7 +30,7 @@ namespace cpp
       Preprocessor(Session &session, std::string const &str, Loc const &loc)
          : session(session), macro_filter(session, out_tokens), insert_all(false), lexing_line(false), from_file(false), real_mode(false)
       {
-         fs_stack.push_back(new FileStat(session, str, loc, true));
+         fs_stack.push_back(FileStatPtr(new FileStat(session, str, loc, true)));
       }
       // true if lexing from file
       inline bool fromFile() const
@@ -77,8 +77,8 @@ namespace cpp
                // not lexing line
                lexing_line = false;
                // current file stat and if stat
-               FileStat & fs = * fs_stack.back();
-               IfStat & is = fs.is_stack.back();
+               FileStat &fs = * fs_stack.back();
+               IfStat &is = fs.is_stack.back();
                // advance to next non blank line
                while (!fs.lexer.getNextToken(token)) {}
                // check end of file
@@ -321,7 +321,7 @@ namespace cpp
          {
             // pause current lexer and push new file stat
             fs_stack.back()->lexer.pause();
-            fs_stack.push_back(new FileStat(session, session.intern(filename), fullname, insert || insert_all));
+            fs_stack.push_back(FileStatPtr(new FileStat(session, session.intern(filename), fullname, insert || insert_all)));
          }
       }
 
@@ -620,7 +620,7 @@ using namespace cpp;
 namespace
 {
    // lex #include line, return true if found name and live
-   bool lexIncludeLine(Session &session, Lexer &lexer, Loc const &dir_loc, std::string const & dir_name, bool live, Loc &name_loc, std::string &name)
+   bool lexIncludeLine(Session &session, Lexer &lexer, Loc const &dir_loc, std::string const &dir_name, bool live, Loc &name_loc, std::string &name)
    {
       Loc loc;
       TokenPtr token;
@@ -899,7 +899,7 @@ namespace
    char const WS[] = " \t";
 
    // return header file name without delimiters, set is_system true if delimited by < and >
-   std::string removeIncludeFileDelimiters(std::string const & str, bool &is_system)
+   std::string removeIncludeFileDelimiters(std::string const &str, bool &is_system)
    {
       is_system = str[0] == '<';
       return removeDelimiters(str);

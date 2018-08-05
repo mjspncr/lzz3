@@ -27,12 +27,12 @@ namespace lzz
       lua_State *L;
    };
 
-   // create FileSection metatable
-   void register_file_section(lua_State *L)
+   // create metatables
+   void register_types(lua_State *L)
    {
       luaL_newmetatable(L, MT_FILE_SECTION);
       luaL_setfuncs(L, file_section_fns, 0);
-      lua_setfield(L, -1, "__index"); // mt.__index=mt and pops mt
+      lua_setfield(L, -1, "__index"); // mt.__index=mt and pop mt
    }
 }
 
