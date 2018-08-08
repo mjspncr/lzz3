@@ -1,21 +1,21 @@
 -- lzz.namespace_entity
 --
 
-local _entity = {}
- 
 -- class table
-local _Entity = {}
-_Entity.__index = _Entity
+local Entity = {}
+Entity.__index = Entity
 
 -- add entity to namespace
-function _Entity:add_entity(entity)
+function Entity:add_entity(entity)
    -- append to array
    table.insert(self, entity)
 end
 
+local module = {}
+ 
 -- return new namespace entity 
-function _entity.new(args)
-   return setmetatable(args, _Entity)
+function module.new(args)
+   return setmetatable(args, Entity)
 end
 
-return _entity
+return module

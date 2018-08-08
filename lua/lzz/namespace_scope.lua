@@ -1,20 +1,20 @@
 -- lzz.namespace_scope
 --
 
-local class = {}
-
 -- class table
-local Class = {}
-Class.__index = Class
+local Scope = {}
+Scope.__index = Scope
 
 -- accept visitor
-function Class:accept(visitor)
+function Scope:accept(visitor)
    return visitor:on_namespace_scope(self)
 end
 
+local module = {}
+
 -- new scope
-function class.new(namespace)
-   return setmetatable({namespace=namespace}, Class)
+function module.new(namespace)
+   return setmetatable({namespace=namespace}, Scope)
 end
 
-return class
+return module

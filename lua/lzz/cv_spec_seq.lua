@@ -1,8 +1,6 @@
 -- lzz.cv_spec_seq
 --
 
-local class = {}
-
 -- class table
 local Class = {}
 Class.__index = Class
@@ -40,7 +38,7 @@ local names =
 function Class:add(token)
    local flag = flags[token.lexeme]
    if self.flags & flag ~= 0 then
-      lzz.warning(token.loc, 'duplicate specifier: '..token.lexeme)
+      lzz.warning(token.loc, 'duplicate specifier: ' .. token.lexeme)
    else
       self.flags = self.flags | flag
    end
@@ -55,8 +53,11 @@ function Class:get_cv()
    end
 end
 
--- return new object
-function class.new()
+-- class module
+local module = {}
+
+-- return new class instance
+function module.new()
    local self = {
       flags = 0,
    }
@@ -64,8 +65,8 @@ function class.new()
 end
 
 -- cv constant to string
-function class.to_string(cv)
+function module.to_string(cv)
    return names[cv]
 end
 
-return class
+return module

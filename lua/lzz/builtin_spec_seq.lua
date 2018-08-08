@@ -1,8 +1,6 @@
 -- lzz.builtin_spec_seq
 --
 
-local class = {}
-
 -- class table
 local Class = {}
 Class.__index = Class
@@ -36,7 +34,7 @@ local flags =
    ['wchar']    = WCHAR,
 }
 
--- compound flags
+-- compound flags  
 local SIGNED_INT        = SIGNED|INT
 local UNSIGNED_INT      = UNSIGNED|INT
 local LONG_INT          = LONG|INT
@@ -112,8 +110,11 @@ function Class:get_builtin()
    return nil
 end
 
--- return new object
-function class.new()
+-- class module
+local module = {}
+
+-- return new class instance
+function module.new()
    local self = {
       flags = 0,
    }
@@ -121,8 +122,8 @@ function class.new()
 end
 
 -- builtin constant to string
-function class.to_string(builtin)
+function module.to_string(builtin)
    return names[builtin]
 end
 
-return class
+return module
