@@ -1,21 +1,18 @@
 -- lzz.actions.on_simple_actions
 --
 
-local fsm = require('lzz.parser_fsm')
-local visit_decl_spec_seq = require('lzz.visit_decl_spec_seq')
--- 
+local _fsm = require('lzz.parser_fsm')
+local _visit_decl_spec_seq = require('lzz.visit_decl_spec_seq')
+local _visit_dcl = require('lzz.visit_dcl')
 
 -- obj-decl -> xBVx-decl-spec-seq obj-dcl
-function fsm.Decl:onNode()
-   print 'Decl:onNode'
-   local decl_spec = visit_decl_spec_seq.get_decl_spec(self[1])
-   --[=[
+function _fsm.Decl:onNode()
+   -- decl-spec-seq may be nil, is optional
    local decl_spec
    if self[1] then
-      decl_spec = getDeclSpec(self[1])
-   else
-      decl_spec = DeclSpecSel():getDeclSpec()
+      decl_spec = _visit_decl_spec_seq.get_decl_spec(self[1])
+   else 
+      decl_spec = {}
    end
-   return onDcl(decl_spec, self[2])
-   --]=]
+   return _visit_dcl.on_dcl(decl_spec, self[2])
 end

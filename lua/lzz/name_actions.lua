@@ -4,10 +4,10 @@
 local _fsm = require('lzz.parser_fsm')
 local _name = require('lzz.name')
 
--- helper function, if nested_name is not nil return QualifiedName, otherwise return name
+-- if nested_name is not nil return new qualified name, otherwise return name
 local function on_name(nested_name, name)
    if nested_name then
-      -- nested name visitor, return nested name
+      -- if nested_name just a :: then create a qualified name with nil nested_name
       visitor = {}
       -- nested-name -> DCOLON
       function visitor:onNestedName1(node)
@@ -72,19 +72,25 @@ end
 function _fsm.Oper1:onNode()
    return '()'
 end
+
 -- oper -> LBRACK RBRACK
 function _fsm.Oper2:onNode()
    return '[]'
 end
+
 -- oper -> NEW LBRACK RBRACK
 function _fsm.Oper3:onNode()
    return 'new[]'
 end
+
 -- oper -> DELETE LBRACK RBRACK
 function _fsm.Oper4:onNode()
    return 'delete[]'
 end
+
 -- oper -> token-oper
 function _fsm.Oper5:onNode()
    return self[1].lexeme
 end
+
+return nil
