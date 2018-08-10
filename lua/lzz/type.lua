@@ -30,7 +30,7 @@ BuiltinType.__index = BuiltinType
 
 -- to string
 function BuiltinType:to_string(dcl_string)
-   return to_string_helper1(_builtin_spec_seq.to_string(self.builtin), self.cv, dcl_string)
+   return to_string_helper1(dcl_string, _builtin_spec_seq.to_string(self.builtin), self.cv)
 end
 
 -- user type
@@ -48,39 +48,39 @@ PtrType.__index = PtrType
 
 -- to string
 function PtrType:to_string(dcl_string)
-   return to_string_helper2(dcl_string, '*', self.cv, self.to_type)
+   return to_string_helper2(dcl_string, self.oper, self.cv, self.to_type)
 end
 
--- reference type
-local RefType = {}
-RefType.__index = RefType
+-- pointer to member type
+local PtrToMbrType = {}
+PtrToMbrType.__index = PtrToMbrType
 
 -- to string
-function RefType:to_string(dcl_string)
-   return to_string_helper2(dcl_string, '&', self.cv, self.to_type)
+function PtrToMbrType:to_string(dcl_string)
+   return to_string_helper2(dcl_string, self.name:to_string() .. '::*', self.cv, self.to_type)
 end
 
 -- class module
 local module = {}
 
--- return new builtin type instance
-function module.new_builtin(builtin)
-   return setmetatable({builtin=builtin}, BuiltinType)
+-- return new builtin type instance, takes builtin and cv (optional)
+function module.new_builtin(args)
+   return setmetatable(args, BuiltinType)
 end
 
--- return new user type instance
-function module.new_user(name)
-   return setmetatable({name=name}, UserType)
+-- return new user type instance, takes name cv 
+function module.new_user(args)
+   return setmetatable(args, UserType)
 end
 
--- return new pointer type instance
-function module.new_ptr(to_type)
-   return setmetatable({to_type=to_type}, PtrType)
+-- return new pointer type instance, args is oper, to_type and optional cv
+function module.new_ptr(args)
+   return setmetatable(args, PtrType)
 end
 
--- return new refrence type instance
-function module.new_ref(to_type)
-   return setmetatable({to_type=to_type}, RefType)
+-- return new pointer to member type instance, args is name, to_type and optional cv
+function module.new_ptr_to_mbr(args)
+   return setmetatable(args, PtrToMbrType)
 end
 
 return module

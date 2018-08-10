@@ -58,19 +58,22 @@ end
 
 -- xUVx-decl-spec-seq -> obj-name
 function Visitor:onUDeclSpecSeq1(node)
-   self.type = _type.new_user(node[1])
+   self.type = _type.new_user{name=node[1]}
 end
 -- xUVx-decl-spec-seq -> xxVx-decl-spec-seq obj-name
 function Visitor:onUDeclSpecSeq2(node)
    node[1]:accept(self)
-   self.type = _type.new_user(node[2])
+   self.type = _type.new_user{name=node[2]}
 end
 
 -- visit decl-spec-seq, return table
 local function visit_decl_spec_seq(node)
    local decl_spec_seq = {}
-   node:accept(setmetatable(decl_spec_seq, Visitor))
-   return setmetatable(decl_spec_seq, nil)
+   if node then
+      node:accept(setmetatable(decl_spec_seq, Visitor))
+      setmetatable(decl_spec_seq, nil)
+   end
+   return decl_spec_seq
 end
 
 -- function module
@@ -87,21 +90,28 @@ function module.get_decl_spec(node)
 
    if not type then
       if builtin_spec_seq then
-         type = _type.new_builtin(builtin_spec_seq:get_builtin())
+         type = _type.new_builtin{builtin=builtin_spec_seq:get_builtin()}
       else
          -- must be constructor decl spec seq 
       end
    end
-   
+
    -- if have cv spec seq then must have type
    if cv_spec_seq then
       type.cv = cv_spec_seq:get_cv()
    end
-
-   print(type:to_string())
-
    -- return table with type and ftor specs
    return {type=type, ftor_spec_seq=ftor_spec_seq}
+end
+
+-- visit cv-spec-seq-opt and return cv
+function module.get_cv(node)
+   local decl_spec_seq = visit_decl_spec_seq(node)
+   local cv_spec_seq = decl_spec_seq.cv_spec_seq
+   if cv_spec_seq then
+      return cv_spec_seq:get_cv()
+   end
+   return nil
 end
 
 return module
