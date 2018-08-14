@@ -15,6 +15,10 @@ namespace lzz
          lua_newtable(L);
          lua_pushlightuserdata(L, &output);
          luaL_setfuncs(L, output_fns, 1);
+         lua_pushinteger(L, SECTION_BODY);
+         lua_setfield(L, -2, "BODY");
+         lua_pushinteger(L, SECTION_DECLARATION);
+         lua_setfield(L, -2, "DECL");
          lua_setglobal(L, "lzz");
       }
       ~OutputLua()
@@ -65,27 +69,55 @@ namespace
    struct FileSection(File &file, int section_num) {}
 
    // hdr file
-   int lzz_hdr(lua_State *L)
+   int lzz_hdr_helper(lua_State *L, int section_num)
    {
       Output &output = *static_cast<Output *>(lua_touserdata(L, lua_upvalueindex(1)));
       bool inl = lua_toboolean(L, 1) != 0;
       bool tpl = lua_toboolean(L, 2) != 0;
-      int section_num = luaL_optinteger(L, 3, SECTION_BODY);
       File &file = output.get_hdr(inl, tpl);
       new(lua_newuserdata(L, sizeof(FileSection))) FileSection(file, section_num);
       luaL_setmetatable(L, MT_FILE_SECTION);
       return 1;
    }
+   // hdr file
+   int lzz_hdr(lua_State *L)
+   {
+      return lzz_hdr_helper(L, luaL_optinteger(L, 3, SECTION_BODY));
+   }
+   // hdr declaration
+   int lzz_hdr_decl(lua_State *L)
+   {
+      return lzz_hdr_helper(L, SECTION_DECLARATION);
+   }
+   // hdr body
+   int lzz_hdr_body(lua_State *L)
+   {
+      return lzz_hdr_helper(L, SECTION_BODY);
+   }
 
    // src file
-   int lzz_src(lua_State *L)
+   int lzz_src_helper(lua_State *L, int section_num)
    {
       Output &output = *static_cast<Output *>(lua_touserdata(L, lua_upvalueindex(1)));
-      int section_num = luaL_optinteger(L, 1, SECTION_BODY);
       File &file = output.get_src();
       new(lua_newuserdata(L, sizeof(FileSection))) FileSection(file, section_num);
       luaL_setmetatable(L, MT_FILE_SECTION);
       return 1;
+   }
+   // src declaration
+   int lzz_src(lua_State *L)
+   {
+      return lzz_src_helper(L, luaL_optinteger(L, 1, SECTION_BODY));
+   }
+   // src declaration
+   int lzz_src_decl(lua_State *L)
+   {
+      return lzz_src_helper(L, SECTION_DECLARATION);
+   }
+   // src file
+   int lzz_src_body(lua_State *L)
+   {
+      return lzz_src_helper(L, SECTION_BODY);
    }
 
    // print open brace and indent
@@ -140,6 +172,10 @@ namespace
       { "error", lzz_error },
       { "hdr", lzz_hdr },
       { "src", lzz_src },
+      { "hdr_decl", lzz_hdr_decl },
+      { "hdr_body", lzz_hdr_body },
+      { "src_decl", lzz_src_decl },
+      { "src_body", lzz_src_body },
       { 0, 0 },
    };
 

@@ -69,4 +69,9 @@ function module.to_string(cv)
    return names[cv]
 end
 
+-- true if const
+function module.is_const(cv)
+   return cv == CONST
+end
+
 return module

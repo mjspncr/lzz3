@@ -33,7 +33,7 @@ end
 -- xxxS-decl-spec-seq -> xxxS-decl-spec-seq ftor-spec
 function Visitor:onSDeclSpecSeq2(node)
    node[1]:accept(self)
-   return self:add_ftor_spec(node[1])
+   return self:add_ftor_spec(node[2])
 end   
 
 -- xxVx-decl-spec-seq -> cv-spec
@@ -58,12 +58,12 @@ end
 
 -- xUVx-decl-spec-seq -> obj-name
 function Visitor:onUDeclSpecSeq1(node)
-   self.type = _type.new_user{name=node[1]}
+   self.type = _type.new_user_type{name=node[1]}
 end
 -- xUVx-decl-spec-seq -> xxVx-decl-spec-seq obj-name
 function Visitor:onUDeclSpecSeq2(node)
    node[1]:accept(self)
-   self.type = _type.new_user{name=node[2]}
+   self.type = _type.new_user_type{name=node[2]}
 end
 
 -- visit decl-spec-seq, return table
@@ -90,7 +90,7 @@ function module.get_decl_spec(node)
 
    if not type then
       if builtin_spec_seq then
-         type = _type.new_builtin{builtin=builtin_spec_seq:get_builtin()}
+         type = _type.new_builtin_type{builtin=builtin_spec_seq:get_builtin()}
       else
          -- must be constructor decl spec seq 
       end

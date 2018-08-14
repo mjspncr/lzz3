@@ -50,7 +50,7 @@ Class.__index = Class
 function Class:add(token)
    local flag = flags[token.lexeme]
    if self.flags & flag ~= 0 then
-      lzz.warning(token.loc, 'duplicate type specifier: ' .. token.lexeme)
+      lzz.warning(token.loc, 'duplicate function or storage specifier: ' .. token.lexeme)
    else
       self.flags = self.flags | flag
       self[flag] = token.loc
@@ -77,8 +77,72 @@ for name, flag in pairs {
    Class['has_' .. name] = function (self) return self.flags & flag ~= 0 end
 end
 
+-- true if has any flags set
+function Class:has(flags)
+   return self.flags & flags ~= 0
+end
+--[=[ 
+-- true if has all flags set
+function Class:has_all(flags)
+   return self.flags & flags == flags
+end
+--]=]
+function Class:which(flags)
+   return self.flags & flags
+end
+
+-- call error function if any flag set
+function Class:error_if_any1(flags, on_error)
+   local has_error = false
+   if self:has(flags) then
+      local i = 1
+      while i <= flags do
+         if self:has(i) then
+            on_error(self[i], names[i])
+            has_error = true
+         end
+         i = i << 1
+      end
+   end
+   return has_error
+end
+
+-- call error function if any two flags set
+function Class:error_if_any2(flags, on_error)
+   local has_error = false
+   if self:has(flags) then
+      flags = self.flags & flags
+      local i = 1
+      while i <= flags do
+         if flags & i > 0 then
+            local j = i << 1
+            while j <= flags do
+               if flags & j > 0 then
+                  on_error(self[i], names[i], names[j])
+                  has_error = true
+               end
+               j = j << 1
+            end
+         end
+         i = i << 1
+      end
+   end
+   return has_error
+end
+
 -- class module
 local module = {}
+
+-- expose flags
+module.INLINE = INLINE
+module.VIRTUAL = VIRTUAL
+module.EXPLICIT = EXPLICIT
+module.STATIC = STATIC
+module.EXTERN = EXTERN
+module.MUTABLE = MUTABLE
+module.AUTO = AUTO
+module.REGISTER = REGISTER
+module.DLLAPI = DLLAPI
 
 -- return new class instance
 function module.new()
@@ -88,4 +152,17 @@ function module.new()
    return setmetatable(self, Class)
 end
 
+-- return ftor flags as string
+function module.to_string(flags)
+   local strings = {}
+   local i = 1
+   while i <= flags do
+      if flags & i > 0 then
+         table.insert(strings, names[i])
+      end
+   end
+   return table.concat(strings, ' ')
+end
+
 return module
+       

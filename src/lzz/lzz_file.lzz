@@ -18,7 +18,7 @@ namespace lzz
    {
    public:
       File(FileKind kind, std::string const &path, std::string const &name, std::string const &ext, bool hash_lines, bool smart_write)
-         : m_kind(kind), m_name(file_op::join(name, ext)), m_fullname(file_op::join(path, m_name)), m_hash_lines(hash_lines), m_smart_write(smart_write)
+         : m_kind(kind), m_name(file_op::addExt(name, ext)), m_fullname(file_op::join(path, m_name)), m_hash_lines(hash_lines), m_smart_write(smart_write)
       {}
       ~File()
       {}

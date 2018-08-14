@@ -2,7 +2,7 @@
 --
 
 --
--- base (or leaf) names
+-- base/leaf names
 --
 
 -- all base names have a loccation
@@ -11,48 +11,70 @@ local function get_loc(self)
 end
 
 -- simple name, loc and ident
-local SimpleName = {get_loc=get_loc}
+local SimpleName = {
+  get_loc = get_loc
+}
 SimpleName.__index = SimpleName
-
+-- accept
+function SimpleName:accept(visitor)
+   visitor:on_simple_name(self)
+end
 -- return name as string
 function SimpleName:to_string()
    return self.ident
 end
 
 -- operator name, loc and oper
-local OperName = {get_loc=get_loc}
+local OperName = {
+   get_loc = get_loc
+}
 OperName.__index = OperName 
-
+-- accept
+function OperName:accept(visitor)
+   visitor:on_oper_name(self)
+end
 -- return name as string
 function OperName:to_string()
    return self.oper
 end
 
 -- destructor name
-local DtorName = {get_loc=get_loc}
+local DtorName = {
+   get_loc = get_loc
+}
 DtorName.__index = DtorName
-
+-- accept
+function DtorName:accept(visitor)
+   visitor:on_dtor_name(self)
+end
 -- return name as string
 function DtorName:to_string()
    return '~' .. self.ident
 end
 
 --
--- compound names
+-- non leaf names
 --
 
 -- template name, has_tmpl flag, base_name, and args
 local TemplateName = {}
 TemplateName.__index = TemplateName
-
+-- get loc
+function TemplateName:get_loc()
+   return self.base_name:get_loc()
+end
+-- accept
+function TemplateName:accept(visitor)
+   visitor:on_template_name(self)
+end
 -- return name as string
 function TemplateName:to_string()
-   -- just in case old complier avoid >>
+   -- avoid >> just in case
    local args = self.args
    if string.sub(args, -1) == '>' then
       args = args .. ' '
    end
-   local s = string.format('%s <%s>', self.base_name:to_string(), args)
+   local s = string.format('%s<%s>', self.base_name:to_string(), args)
    if self.has_tmpl then
       return 'template ' .. s
    else
@@ -61,9 +83,18 @@ function TemplateName:to_string()
 end
 
 -- qualified name, nested_name and name
-local QualifiedName = {}
+local QualifiedName = {
+   is_qualified = true
+}
 QualifiedName.__index = QualifiedName
-
+-- get loc
+function QualifiedName:get_loc()
+   return self.name:get_loc()
+end
+-- accept
+function QualifiedName:accept(visitor)
+   visitor:on_qualified_name(self)
+end
 -- return name as string
 function QualifiedName:to_string()
    local s = '::' .. self.name:to_string()
